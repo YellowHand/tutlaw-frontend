@@ -16,7 +16,7 @@ export function LoginPage() {
     try {
       const res = await api.post("/api/auth/login", { privateEmail, password });
       login(res.data.accessToken);
-      navigate("/dashboard");
+      navigate("/subjects");
     } catch (err: any) {
       setError(err.response?.data?.message ?? "Logowanie nie powiodło się");
     }
