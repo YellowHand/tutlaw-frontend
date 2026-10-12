@@ -8,6 +8,7 @@ import {
   type TestQueueItem,
   type TestAnswerResult,
 } from "../api/review";
+import { getLearningSettings } from "../api/settings";
 import { Skeleton } from "../components/ui/Skeleton";
 import { cn } from "../lib/cn";
 import { ROUTES } from "../config/routes";
@@ -24,7 +25,7 @@ import {
   OPTION_KEYS,
   displayKeyOf,
   originalKeyOf,
-  pickOptionOrder,
+  chooseOptionOrder,
   type OptionKey,
   type OptionOrder,
 } from "../features/tests/shuffle";
@@ -34,11 +35,14 @@ const MAX_EXTRA_BATCH = 10;
 /** Pytanie z kolejnością odpowiedzi ustaloną na czas sesji (losową albo z bazy, gdy pytanie odwołuje się do innych odpowiedzi). */
 type TestQuestion = TestQueueItem & { order: OptionOrder };
 
-/** Nadaje pytaniom kolejność odpowiedzi. Przy każdym nowym ułożeniu kolejki losujemy od nowa. */
-function prepareQuestions(items: TestQueueItem[]): TestQuestion[] {
+/**
+ * Nadaje pytaniom kolejność odpowiedzi. Przy każdym nowym ułożeniu kolejki losujemy od nowa,
+ * chyba że użytkownik wyłączył mieszanie w ustawieniach nauki (wtedy zawsze kolejność z bazy).
+ */
+function prepareQuestions(items: TestQueueItem[], shuffle: boolean): TestQuestion[] {
   return items.map((item) => ({
     ...item,
-    order: pickOptionOrder([item.optionA, item.optionB, item.optionC]),
+    order: chooseOptionOrder([item.optionA, item.optionB, item.optionC], shuffle),
   }));
 }
 
@@ -284,6 +288,8 @@ export function TestSessionPage() {
   const fetchedKeyRef = useRef<string | null>(null);
   // Numer ostatniego zapytania o kolejkę: spóźniona odpowiedź na starsze zapytanie jest ignorowana.
   const requestRef = useRef(0);
+  // Czy mieszać kolejność odpowiedzi (ustawienie użytkownika, domyślnie tak); wczytywane razem z pierwszą kolejką.
+  const shuffleRef = useRef(true);
 
   const numericSubjectId = subjectId ? Number(subjectId) : undefined;
   const numericSourceId = sourceId ? Number(sourceId) : undefined;
@@ -306,10 +312,15 @@ export function TestSessionPage() {
     const requestId = ++requestRef.current;
     setLoading(true);
     setLoadError(null);
-    getTestQueue(numericSubjectId, numericSourceId, undefined, numericCategoryId)
-      .then((items) => {
+    // Gdy nie uda się wczytać ustawień, mieszamy (zachowanie domyślne); to nie powód, żeby blokować test.
+    const shuffleSetting = getLearningSettings()
+      .then((settings) => settings.shuffleOptions)
+      .catch(() => true);
+    Promise.all([getTestQueue(numericSubjectId, numericSourceId, undefined, numericCategoryId), shuffleSetting])
+      .then(([items, shuffle]) => {
         if (requestRef.current !== requestId) return;
-        setQueue(prepareQuestions(items));
+        shuffleRef.current = shuffle;
+        setQueue(prepareQuestions(items, shuffle));
         setCurrentIndex(0);
         setSelected(null);
         setResult(null);
@@ -470,7 +481,7 @@ export function TestSessionPage() {
     try {
       const extraItems = await load();
 
-      setQueue(prepareQuestions(extraItems));
+      setQueue(prepareQuestions(extraItems, shuffleRef.current));
       setCurrentIndex(0);
       setSelected(null);
       setResult(null);
@@ -507,7 +518,7 @@ export function TestSessionPage() {
   function handleRepeatMistakes() {
     if (toReview.length === 0) return;
 
-    setQueue(prepareQuestions(toReview));
+    setQueue(prepareQuestions(toReview, shuffleRef.current));
     setIsExtraBatch(true);
     setCurrentIndex(0);
     setSelected(null);

@@ -20,7 +20,7 @@ export function ExportCard() {
         <p className="mt-1 text-sm text-fg-muted">
           Plik JSON z wszystkim, co o Tobie przechowujemy: adresami e-mail, datą akceptacji regulaminu, zaznaczonymi
           rozdziałami, stanem każdej fiszki (kiedy wrócisz do niej na powtórce), pełną historią Twoich odpowiedzi oraz
-          zgłoszeniami błędów w pytaniach. Nie ma w nim hasła.
+          zgłoszeniami błędów w pytaniach oraz ustawieniami nauki. Nie ma w nim hasła.
         </p>
       </div>
 

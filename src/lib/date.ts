@@ -2,6 +2,13 @@ const WEEKDAY_FORMATTER = new Intl.DateTimeFormat("pl-PL", { weekday: "long" });
 const DAY_MONTH_FORMATTER = new Intl.DateTimeFormat("pl-PL", { day: "numeric", month: "long" });
 const RELATIVE_TIME_FORMATTER = new Intl.RelativeTimeFormat("pl", { numeric: "auto" });
 
+const FULL_DATE_FORMATTER = new Intl.DateTimeFormat("pl-PL", { day: "numeric", month: "long", year: "numeric" });
+
+/** „RRRR-MM-DD" jako „12 października 2026" (data kalendarzowa, bez przesunięć strefy czasowej). */
+export function formatDatePl(isoDate: string): string {
+  return FULL_DATE_FORMATTER.format(parseLocalDate(isoDate));
+}
+
 export function formatFullDatePl(date: Date): string {
   return `${WEEKDAY_FORMATTER.format(date)}, ${DAY_MONTH_FORMATTER.format(date)}`;
 }

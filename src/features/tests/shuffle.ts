@@ -70,6 +70,15 @@ export function pickOptionOrder(texts: readonly [string, string, string], random
   return order as unknown as OptionOrder;
 }
 
+/** Kolejność odpowiedzi zależnie od ustawienia użytkownika: bez mieszania zawsze A, B, C jak w bazie. */
+export function chooseOptionOrder(
+  texts: readonly [string, string, string],
+  shuffle: boolean,
+  random: () => number = Math.random
+): OptionOrder {
+  return shuffle ? pickOptionOrder(texts, random) : IDENTITY;
+}
+
 /** Litera, pod którą oryginalna odpowiedź jest teraz wyświetlana. */
 export function displayKeyOf(order: OptionOrder, originalKey: OptionKey): OptionKey {
   return OPTION_KEYS[order.indexOf(originalKey)];

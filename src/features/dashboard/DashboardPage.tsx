@@ -6,6 +6,7 @@ import { ProgressSummaryCard } from "./ProgressSummaryCard";
 import { WeeklyBarsCard } from "./WeeklyBarsCard";
 import { RetentionRingCard } from "./RetentionRingCard";
 import { TestsStatsPanel } from "./TestsStatsPanel";
+import { ExamCountdown } from "./ExamCountdown";
 
 export function DashboardPage() {
   const [mode, setMode] = useState<DashboardMode>("flashcards");
@@ -13,6 +14,8 @@ export function DashboardPage() {
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 p-4 sm:p-6">
       <h1 className="text-lg font-semibold">Cześć!</h1>
+
+      <ExamCountdown />
 
       <DueReviewBanner />
 
