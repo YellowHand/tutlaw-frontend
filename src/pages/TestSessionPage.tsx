@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { ArrowRight, CheckCircle2, ChevronLeft, ChevronRight, XCircle } from "lucide-react";
 import {
+  getMistakesQueue,
   getTestQueue,
   submitTestAnswer,
   getAvailableNewCardsCount,
@@ -277,7 +278,16 @@ function QuestionBody({
   );
 }
 
-export function TestSessionPage() {
+interface TestSessionPageProps {
+  /**
+   * "scope" (domyślnie): test z wybranego zakresu (całość, rodzaj, przedmiot, źródło).
+   * "mistakes": „Powtórz moje błędy" – pytania, w których ostatnia odpowiedź była błędna.
+   */
+  mode?: "scope" | "mistakes";
+}
+
+export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
+  const mistakesMode = mode === "mistakes";
   const { subjectId } = useParams();
   const [searchParams] = useSearchParams();
   const sourceId = searchParams.get("sourceId");
@@ -325,12 +335,13 @@ export function TestSessionPage() {
     subjectId: numericSubjectId,
     sourceId: numericSourceId,
     categoryId: numericCategoryId,
+    enabled: !mistakesMode,
   });
   const refetchBacklog = backlog.refetch;
 
   useEffect(() => {
     // Bez subjectId i categoryId (trasa /app/test) test obejmuje cały materiał użytkownika.
-    const key = `${subjectId ?? "all"}:${sourceId ?? ""}:${categoryId ?? ""}:${reloadCount}`;
+    const key = `${mistakesMode ? "mistakes" : "scope"}:${subjectId ?? "all"}:${sourceId ?? ""}:${categoryId ?? ""}:${reloadCount}`;
     if (fetchedKeyRef.current === key) return;
     fetchedKeyRef.current = key;
 
@@ -341,7 +352,10 @@ export function TestSessionPage() {
     const shuffleSetting = getLearningSettings()
       .then((settings) => settings.shuffleOptions)
       .catch(() => true);
-    Promise.all([getTestQueue(numericSubjectId, numericSourceId, undefined, numericCategoryId), shuffleSetting])
+    const itemsRequest = mistakesMode
+      ? getMistakesQueue()
+      : getTestQueue(numericSubjectId, numericSourceId, undefined, numericCategoryId);
+    Promise.all([itemsRequest, shuffleSetting])
       .then(([items, shuffle]) => {
         if (requestRef.current !== requestId) return;
         shuffleRef.current = shuffle;
@@ -365,20 +379,22 @@ export function TestSessionPage() {
         setLoadError(loadErrorMessage(e, "pytań"));
         setLoading(false);
       });
-  }, [subjectId, sourceId, categoryId, reloadCount, numericSubjectId, numericSourceId, numericCategoryId]);
+  }, [mistakesMode, subjectId, sourceId, categoryId, reloadCount, numericSubjectId, numericSourceId, numericCategoryId]);
 
   useEffect(() => {
-    if (loading || loadError || currentIndex < queue.length) return;
+    // Powtórka błędów nie ma „nowych pytań do dołożenia": to zamknięta lista.
+    if (mistakesMode || loading || loadError || currentIndex < queue.length) return;
     // Gdy nie uda się sprawdzić, ile jest nowych pytań, po prostu nie pokazujemy przycisku „Rozwiąż jeszcze".
     getAvailableNewCardsCount(numericSubjectId, numericSourceId, numericCategoryId)
       .then(setAvailableExtra)
       .catch(() => setAvailableExtra(0));
-  }, [loading, loadError, currentIndex, queue.length, numericSubjectId, numericSourceId, numericCategoryId]);
+  }, [mistakesMode, loading, loadError, currentIndex, queue.length, numericSubjectId, numericSourceId, numericCategoryId]);
 
   // Na końcu sesji (i po każdej nowej kolejce) pytamy o zaległości jeszcze raz: ile zostało na kolejne dni.
+  // W „Powtórz moje błędy" zaległości z zakresu nie są tematem sesji, więc o nie nie pytamy.
   useEffect(() => {
-    if (finished) void refetchBacklog();
-  }, [finished, queue, refetchBacklog]);
+    if (finished && !mistakesMode) void refetchBacklog();
+  }, [finished, mistakesMode, queue, refetchBacklog]);
 
   const handleSelect = useCallback(
     async (option: OptionKey) => {
@@ -588,16 +604,37 @@ export function TestSessionPage() {
     );
   }
 
+  if (finished && !viewing && mistakesMode && queue.length === 0) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-4 p-10 text-center">
+        <CheckCircle2 className="text-success" size={40} aria-hidden="true" />
+        <p className="text-xl font-bold">Nie masz błędów do powtórzenia.</p>
+        <p className="max-w-md text-sm text-fg-muted">
+          Tu trafiają pytania, w których ostatnia odpowiedź w teście była błędna. Gdy się pomylisz, pytanie pojawi się
+          tutaj, a po poprawnej odpowiedzi zniknie z listy.
+        </p>
+        <button
+          onClick={() => navigate(ROUTES.tests)}
+          className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl bg-accent px-6 text-sm font-medium text-accent-fg hover:opacity-90"
+        >
+          Wróć do Testów
+        </button>
+      </div>
+    );
+  }
+
   if (finished && !viewing) {
     const extraBatch = availableExtra !== null ? Math.min(MAX_EXTRA_BATCH, availableExtra) : 0;
     // Liczby z serwera pokazujemy dopiero po odświeżeniu na końcu sesji, żeby nie mignęły stare.
-    const backlogDeferred = backlog.data && !backlog.isFetching ? backlog.data.deferred : 0;
+    const backlogDeferred = !mistakesMode && backlog.data && !backlog.isFetching ? backlog.data.deferred : 0;
     const backlogBatch = Math.min(EXTRA_DUE_BATCH, backlogDeferred);
 
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 p-10 text-center">
         <CheckCircle2 className="text-success" size={40} aria-hidden="true" />
-        <p className="text-xl font-bold">Brawo! Skończyłeś test na dziś.</p>
+        <p className="text-xl font-bold">
+          {mistakesMode ? "Brawo! Przerobiłeś swoje błędy." : "Brawo! Skończyłeś test na dziś."}
+        </p>
 
         {extraError && (
           <p role="alert" className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
@@ -682,6 +719,7 @@ export function TestSessionPage() {
             <span>
               <span className="font-medium text-fg">{shownIndex + 1}</span> / {queue.length}
             </span>
+            {mistakesMode && <span className="rounded-md bg-surface-2 px-2 py-0.5 text-xs">Moje błędy</span>}
             {viewing && <span className="rounded-md bg-surface-2 px-2 py-0.5 text-xs">Podgląd</span>}
           </p>
 
@@ -723,7 +761,7 @@ export function TestSessionPage() {
           />
         </div>
 
-        {!isExtraBatch && !viewing && backlog.data && (
+        {!mistakesMode && !isExtraBatch && !viewing && backlog.data && (
           <BacklogNotice deferred={backlog.data.deferred} className="text-xs text-fg-muted" />
         )}
       </div>

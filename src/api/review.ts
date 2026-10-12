@@ -97,6 +97,26 @@ export async function getTestQueue(
   return res.data;
 }
 
+/** Ile pytań czeka w „Powtórz moje błędy" i jak duża jest jedna sesja. */
+export interface MistakesCount {
+  /** Pytania, w których ostatnia odpowiedź w teście (z ostatnich dni) była błędna, a które nadal można ćwiczyć. */
+  count: number;
+  lookbackDays: number;
+  /** Maksymalna liczba pytań w jednej sesji. */
+  sessionSize: number;
+}
+
+export async function getMistakesCount(): Promise<MistakesCount> {
+  const res = await api.get<MistakesCount>("/api/review/mistakes-count");
+  return res.data;
+}
+
+/** Sesja z błędów: do kilkudziesięciu najświeższych pytań z błędną ostatnią odpowiedzią, w losowej kolejności. */
+export async function getMistakesQueue(): Promise<TestQueueItem[]> {
+  const res = await api.get<TestQueueItem[]>("/api/review/mistakes-queue");
+  return res.data;
+}
+
 export async function getAvailableNewCardsCount(
   subjectId?: number,
   sourceId?: number,

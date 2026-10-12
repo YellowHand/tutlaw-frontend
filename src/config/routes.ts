@@ -26,6 +26,8 @@ export const ROUTES = {
   // Sesje z całego materiału użytkownika (bez wybranego przedmiotu).
   studyAll: "/app/study",
   testAll: "/app/test",
+  // Sesja z pytań, w których ostatnia odpowiedź w teście była błędna.
+  testMistakes: "/app/test/mistakes",
 
   study: (subjectId: string | number, sourceId?: string | number) =>
     sourceId !== undefined ? `/app/study/${subjectId}?sourceId=${sourceId}` : `/app/study/${subjectId}`,

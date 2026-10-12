@@ -8,6 +8,7 @@ import { CatalogTile, TileGrid } from "./CatalogTile";
 import { iconForCategory } from "./categoryIcons";
 import { describeItems } from "./format";
 import { useTestCatalog } from "./hooks";
+import { MistakesCard } from "./MistakesCard";
 import { StartTestCard } from "./StartTestCard";
 
 /** Poziom 1: rodzaj (Student, Prawo karne i postępowanie karne, ...). */
@@ -28,6 +29,8 @@ export function TestsPage() {
           description="Pytania ze wszystkich rodzajów naraz: zaległe powtórki i nowe pytania."
           to={ROUTES.testAll}
         />
+
+        <MistakesCard />
 
         <section aria-labelledby="test-kinds" className="flex flex-col gap-3">
           <h2 id="test-kinds" className="text-sm font-medium text-fg-muted">
