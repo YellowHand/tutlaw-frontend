@@ -11,10 +11,12 @@ interface StartTestCardProps {
   title: string;
   description: string;
   to: string;
+  /** Opis przycisku; domyślnie „Rozpocznij test". */
+  actionLabel?: string;
 }
 
 /** Duży pasek „Test z całego …" nad listą kafelków. */
-export function StartTestCard({ icon: Icon, title, description, to }: StartTestCardProps) {
+export function StartTestCard({ icon: Icon, title, description, to, actionLabel = "Rozpocznij test" }: StartTestCardProps) {
   return (
     <Card className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center gap-4">
@@ -26,9 +28,9 @@ export function StartTestCard({ icon: Icon, title, description, to }: StartTestC
           <p className="text-sm text-fg-muted">{description}</p>
         </div>
       </div>
-      <Link to={to} className={START_BUTTON}>
+      <Link to={to} className={`${START_BUTTON} shrink-0 whitespace-nowrap`}>
         <Play size={16} aria-hidden="true" />
-        Rozpocznij test
+        {actionLabel}
       </Link>
     </Card>
   );

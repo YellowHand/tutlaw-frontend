@@ -1,4 +1,4 @@
-import { ClipboardList, FolderOpen } from "lucide-react";
+import { ClipboardList, FolderOpen, Timer } from "lucide-react";
 import { PageHeader } from "../../components/layout/PageHeader";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { ErrorState } from "../../components/ui/ErrorState";
@@ -31,6 +31,14 @@ export function TestsPage() {
         />
 
         <MistakesCard />
+
+        <StartTestCard
+          icon={Timer}
+          title="Egzamin próbny"
+          description="Losowy zestaw pytań z limitem czasu i progiem zaliczenia, a na końcu raport. Nie zmienia Twoich powtórek."
+          to={ROUTES.exam}
+          actionLabel="Przejdź do egzaminu"
+        />
 
         <section aria-labelledby="test-kinds" className="flex flex-col gap-3">
           <h2 id="test-kinds" className="text-sm font-medium text-fg-muted">

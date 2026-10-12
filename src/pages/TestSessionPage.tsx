@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { ArrowRight, CheckCircle2, ChevronLeft, ChevronRight, XCircle } from "lucide-react";
+import { getPracticeQueue } from "../api/exam";
 import {
   getMistakesQueue,
   getTestQueue,
@@ -282,14 +283,31 @@ interface TestSessionPageProps {
   /**
    * "scope" (domyślnie): test z wybranego zakresu (całość, rodzaj, przedmiot, źródło).
    * "mistakes": „Powtórz moje błędy" – pytania, w których ostatnia odpowiedź była błędna.
+   * "practice": pytania wskazane w adresie (?cardIds=1,2,3), np. błędy z egzaminu próbnego.
    */
-  mode?: "scope" | "mistakes";
+  mode?: "scope" | "mistakes" | "practice";
+}
+
+/** Numery pytań z adresu (?cardIds=1,2,3): tylko dodatnie liczby całkowite, bez powtórzeń, do 200. */
+function parseCardIds(raw: string | null): number[] {
+  if (!raw) return [];
+  const ids = raw
+    .split(",")
+    .map((part) => Number(part))
+    .filter((id) => Number.isInteger(id) && id > 0);
+  return Array.from(new Set(ids)).slice(0, 200);
 }
 
 export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
   const mistakesMode = mode === "mistakes";
+  const practiceMode = mode === "practice";
+  // Sesje z gotowej, zamkniętej listy pytań: nie dokładamy nowych i wracamy gdzie indziej niż zwykły test.
+  const fixedListMode = mistakesMode || practiceMode;
+  const backTo = practiceMode ? ROUTES.exam : ROUTES.tests;
+  const backLabel = practiceMode ? "Wróć do egzaminu" : "Wróć do Testów";
   const { subjectId } = useParams();
   const [searchParams] = useSearchParams();
+  const cardIdsParam = searchParams.get("cardIds");
   const sourceId = searchParams.get("sourceId");
   const categoryId = searchParams.get("categoryId");
   const navigate = useNavigate();
@@ -335,13 +353,13 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
     subjectId: numericSubjectId,
     sourceId: numericSourceId,
     categoryId: numericCategoryId,
-    enabled: !mistakesMode,
+    enabled: !fixedListMode,
   });
   const refetchBacklog = backlog.refetch;
 
   useEffect(() => {
     // Bez subjectId i categoryId (trasa /app/test) test obejmuje cały materiał użytkownika.
-    const key = `${mistakesMode ? "mistakes" : "scope"}:${subjectId ?? "all"}:${sourceId ?? ""}:${categoryId ?? ""}:${reloadCount}`;
+    const key = `${mode}:${subjectId ?? "all"}:${sourceId ?? ""}:${categoryId ?? ""}:${cardIdsParam ?? ""}:${reloadCount}`;
     if (fetchedKeyRef.current === key) return;
     fetchedKeyRef.current = key;
 
@@ -352,9 +370,15 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
     const shuffleSetting = getLearningSettings()
       .then((settings) => settings.shuffleOptions)
       .catch(() => true);
-    const itemsRequest = mistakesMode
-      ? getMistakesQueue()
-      : getTestQueue(numericSubjectId, numericSourceId, undefined, numericCategoryId);
+    let itemsRequest: Promise<TestQueueItem[]>;
+    if (mistakesMode) {
+      itemsRequest = getMistakesQueue();
+    } else if (practiceMode) {
+      const ids = parseCardIds(cardIdsParam);
+      itemsRequest = ids.length === 0 ? Promise.resolve([]) : getPracticeQueue(ids);
+    } else {
+      itemsRequest = getTestQueue(numericSubjectId, numericSourceId, undefined, numericCategoryId);
+    }
     Promise.all([itemsRequest, shuffleSetting])
       .then(([items, shuffle]) => {
         if (requestRef.current !== requestId) return;
@@ -379,22 +403,22 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
         setLoadError(loadErrorMessage(e, "pytań"));
         setLoading(false);
       });
-  }, [mistakesMode, subjectId, sourceId, categoryId, reloadCount, numericSubjectId, numericSourceId, numericCategoryId]);
+  }, [mode, mistakesMode, practiceMode, cardIdsParam, subjectId, sourceId, categoryId, reloadCount, numericSubjectId, numericSourceId, numericCategoryId]);
 
   useEffect(() => {
-    // Powtórka błędów nie ma „nowych pytań do dołożenia": to zamknięta lista.
-    if (mistakesMode || loading || loadError || currentIndex < queue.length) return;
+    // Sesja z gotowej listy (błędy, egzamin) nie ma „nowych pytań do dołożenia".
+    if (fixedListMode || loading || loadError || currentIndex < queue.length) return;
     // Gdy nie uda się sprawdzić, ile jest nowych pytań, po prostu nie pokazujemy przycisku „Rozwiąż jeszcze".
     getAvailableNewCardsCount(numericSubjectId, numericSourceId, numericCategoryId)
       .then(setAvailableExtra)
       .catch(() => setAvailableExtra(0));
-  }, [mistakesMode, loading, loadError, currentIndex, queue.length, numericSubjectId, numericSourceId, numericCategoryId]);
+  }, [fixedListMode, loading, loadError, currentIndex, queue.length, numericSubjectId, numericSourceId, numericCategoryId]);
 
   // Na końcu sesji (i po każdej nowej kolejce) pytamy o zaległości jeszcze raz: ile zostało na kolejne dni.
-  // W „Powtórz moje błędy" zaległości z zakresu nie są tematem sesji, więc o nie nie pytamy.
+  // W sesjach z gotowej listy (błędy, egzamin) zaległości z zakresu nie są tematem, więc o nie nie pytamy.
   useEffect(() => {
-    if (finished && !mistakesMode) void refetchBacklog();
-  }, [finished, mistakesMode, queue, refetchBacklog]);
+    if (finished && !fixedListMode) void refetchBacklog();
+  }, [finished, fixedListMode, queue, refetchBacklog]);
 
   const handleSelect = useCallback(
     async (option: OptionKey) => {
@@ -598,26 +622,29 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
       <SessionLoadError
         message={loadError}
         onRetry={() => setReloadCount((c) => c + 1)}
-        backTo={ROUTES.tests}
-        backLabel="Wróć do Testów"
+        backTo={backTo}
+        backLabel={backLabel}
       />
     );
   }
 
-  if (finished && !viewing && mistakesMode && queue.length === 0) {
+  if (finished && !viewing && fixedListMode && queue.length === 0) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 p-10 text-center">
         <CheckCircle2 className="text-success" size={40} aria-hidden="true" />
-        <p className="text-xl font-bold">Nie masz błędów do powtórzenia.</p>
+        <p className="text-xl font-bold">
+          {practiceMode ? "Te pytania nie są już dostępne." : "Nie masz błędów do powtórzenia."}
+        </p>
         <p className="max-w-md text-sm text-fg-muted">
-          Tu trafiają pytania, w których ostatnia odpowiedź w teście była błędna. Gdy się pomylisz, pytanie pojawi się
-          tutaj, a po poprawnej odpowiedzi zniknie z listy.
+          {practiceMode
+            ? "Zostały zawieszone, usunięte albo zablokowane, więc nie ma z czego zrobić sesji."
+            : "Tu trafiają pytania, w których ostatnia odpowiedź w teście była błędna. Gdy się pomylisz, pytanie pojawi się tutaj, a po poprawnej odpowiedzi zniknie z listy."}
         </p>
         <button
-          onClick={() => navigate(ROUTES.tests)}
+          onClick={() => navigate(backTo)}
           className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl bg-accent px-6 text-sm font-medium text-accent-fg hover:opacity-90"
         >
-          Wróć do Testów
+          {backLabel}
         </button>
       </div>
     );
@@ -626,14 +653,18 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
   if (finished && !viewing) {
     const extraBatch = availableExtra !== null ? Math.min(MAX_EXTRA_BATCH, availableExtra) : 0;
     // Liczby z serwera pokazujemy dopiero po odświeżeniu na końcu sesji, żeby nie mignęły stare.
-    const backlogDeferred = !mistakesMode && backlog.data && !backlog.isFetching ? backlog.data.deferred : 0;
+    const backlogDeferred = !fixedListMode && backlog.data && !backlog.isFetching ? backlog.data.deferred : 0;
     const backlogBatch = Math.min(EXTRA_DUE_BATCH, backlogDeferred);
 
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 p-10 text-center">
         <CheckCircle2 className="text-success" size={40} aria-hidden="true" />
         <p className="text-xl font-bold">
-          {mistakesMode ? "Brawo! Przerobiłeś swoje błędy." : "Brawo! Skończyłeś test na dziś."}
+          {mistakesMode
+            ? "Brawo! Przerobiłeś swoje błędy."
+            : practiceMode
+              ? "Brawo! Przerobiłeś pytania z egzaminu."
+              : "Brawo! Skończyłeś test na dziś."}
         </p>
 
         {extraError && (
@@ -685,10 +716,10 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
         )}
 
         <button
-          onClick={() => navigate(ROUTES.tests)}
+          onClick={() => navigate(backTo)}
           className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl bg-accent px-6 text-sm font-medium text-accent-fg hover:opacity-90"
         >
-          Wróć do Testów
+          {backLabel}
         </button>
 
         {history.length > 0 && (
@@ -720,6 +751,7 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
               <span className="font-medium text-fg">{shownIndex + 1}</span> / {queue.length}
             </span>
             {mistakesMode && <span className="rounded-md bg-surface-2 px-2 py-0.5 text-xs">Moje błędy</span>}
+            {practiceMode && <span className="rounded-md bg-surface-2 px-2 py-0.5 text-xs">Błędy z egzaminu</span>}
             {viewing && <span className="rounded-md bg-surface-2 px-2 py-0.5 text-xs">Podgląd</span>}
           </p>
 
@@ -761,7 +793,7 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
           />
         </div>
 
-        {!mistakesMode && !isExtraBatch && !viewing && backlog.data && (
+        {!fixedListMode && !isExtraBatch && !viewing && backlog.data && (
           <BacklogNotice deferred={backlog.data.deferred} className="text-xs text-fg-muted" />
         )}
       </div>

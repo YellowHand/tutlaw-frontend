@@ -17,6 +17,7 @@ import { SourcesPage } from "../pages/SourcesPage";
 import { ChaptersPage } from "../pages/ChaptersPage";
 import { StudySessionPage } from "../pages/StudySessionPage";
 import { TestSessionPage } from "../pages/TestSessionPage";
+import { ExamPage } from "../features/exam/ExamPage";
 import { TestsPage } from "../features/tests/TestsPage";
 import { TestCategoryPage } from "../features/tests/TestCategoryPage";
 import { TestSubjectPage } from "../features/tests/TestSubjectPage";
@@ -52,6 +53,8 @@ export function Router() {
             <Route path="study/:subjectId" element={<StudySessionPage />} />
             <Route path="test" element={<TestSessionPage />} />
             <Route path="test/mistakes" element={<TestSessionPage mode="mistakes" />} />
+            <Route path="test/practice" element={<TestSessionPage mode="practice" />} />
+            <Route path="exam" element={<ExamPage />} />
             <Route path="test/:subjectId" element={<TestSessionPage />} />
 
             <Route path="tests" element={<TestsPage />} />

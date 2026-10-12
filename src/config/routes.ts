@@ -28,6 +28,10 @@ export const ROUTES = {
   testAll: "/app/test",
   // Sesja z pytań, w których ostatnia odpowiedź w teście była błędna.
   testMistakes: "/app/test/mistakes",
+  // Sesja testowa z podanych pytań (np. błędy z egzaminu próbnego).
+  testPractice: (cardIds: readonly number[]) => `/app/test/practice?cardIds=${cardIds.join(",")}`,
+  // Egzamin próbny: ustawienia, egzamin, raport i historia.
+  exam: "/app/exam",
 
   study: (subjectId: string | number, sourceId?: string | number) =>
     sourceId !== undefined ? `/app/study/${subjectId}?sourceId=${sourceId}` : `/app/study/${subjectId}`,
