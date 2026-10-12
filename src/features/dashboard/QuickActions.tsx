@@ -11,7 +11,7 @@ interface QuickAction {
 }
 
 const ACTIONS: QuickAction[] = [
-  { to: ROUTES.flashcards, label: "Fiszki", description: "Wróć do powtórek", icon: Layers },
+  { to: ROUTES.flashcards, label: "Fiszki", description: "Wybierz materiał do nauki", icon: Layers },
   { to: ROUTES.tests, label: "Testy", description: "Sprawdź się w teście", icon: ClipboardList },
 ];
 

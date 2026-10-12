@@ -1,27 +1,32 @@
-import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { BookOpen, ChevronRight } from "lucide-react";
-import { getSubjectsByCategory, type Subject } from "../api/subjects";
 import { Card } from "../components/ui/Card";
 import { Skeleton } from "../components/ui/Skeleton";
 import { EmptyState } from "../components/ui/EmptyState";
+import { ErrorState } from "../components/ui/ErrorState";
 import { PageHeader } from "../components/layout/PageHeader";
 import { ROUTES } from "../config/routes";
+import { parseId, useCategories, useSubjects } from "../features/flashcards/hooks";
+import { loadErrorMessage } from "../lib/errors";
+import { NotFoundPage } from "../features/misc/NotFoundPage";
 
 export function SubjectsPage() {
   const { categoryId } = useParams();
-  const [subjects, setSubjects] = useState<Subject[] | null>(null);
+  const id = parseId(categoryId);
+  const { data: subjects, isError, error, refetch } = useSubjects(id);
+  // Nagłówek bierzemy z listy kategorii (jest już w pamięci po wejściu tutaj z listy). Gdy się nie uda, zostaje domyślny.
+  const { data: categories } = useCategories();
+  const category = categories?.find((c) => c.id === id);
 
-  useEffect(() => {
-    if (!categoryId) return;
-    getSubjectsByCategory(Number(categoryId)).then(setSubjects);
-  }, [categoryId]);
+  if (id === undefined) return <NotFoundPage />;
 
   return (
     <div>
-      <PageHeader title="Przedmioty" />
+      <PageHeader title={category?.itemsLabel ?? "Przedmioty"} subtitle={category?.name} />
       <div className="px-4 pb-8 sm:px-8">
-        {subjects === null ? (
+        {isError ? (
+          <ErrorState message={loadErrorMessage(error, "listy")} onRetry={() => refetch()} />
+        ) : subjects === undefined ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[0, 1, 2].map((i) => (
               <Skeleton key={i} className="h-32 w-full" />

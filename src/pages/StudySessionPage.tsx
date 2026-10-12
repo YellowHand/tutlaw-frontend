@@ -5,6 +5,9 @@ import { getReviewQueue, submitReview, getAvailableNewCardsCount, type ReviewQue
 import { Skeleton } from "../components/ui/Skeleton";
 import { cn } from "../lib/cn";
 import { ROUTES } from "../config/routes";
+import { useRefreshReviewDataOnExit } from "../features/review/hooks";
+import { SessionLoadError } from "../features/review/SessionLoadError";
+import { loadErrorMessage } from "../lib/errors";
 
 const MAX_EXTRA_BATCH = 10;
 
@@ -81,48 +84,70 @@ export function StudySessionPage() {
   const [searchParams] = useSearchParams();
   const sourceId = searchParams.get("sourceId");
   const navigate = useNavigate();
+  useRefreshReviewDataOnExit();
 
   const [queue, setQueue] = useState<ReviewQueueItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadCount, setReloadCount] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  // Ocena się nie zapisała / nie udało się pobrać kolejnej porcji: pokazujemy komunikat zamiast milczeć.
+  const [rateError, setRateError] = useState(false);
+  const [extraError, setExtraError] = useState(false);
   const [availableExtra, setAvailableExtra] = useState<number | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   // null = bieżąca fiszka; liczba = indeks w history (podgląd tylko do odczytu)
   const [viewIndex, setViewIndex] = useState<number | null>(null);
-  const cardShownAt = useRef<number>(Date.now());
+  // Ustawiane przy każdym wczytaniu pytania; początkowe 0 nigdy nie trafia do backendu.
+  const cardShownAt = useRef<number>(0);
   const pausedAtRef = useRef<number | null>(null);
   const fetchedKeyRef = useRef<string | null>(null);
+  // Numer ostatniego zapytania o kolejkę: spóźniona odpowiedź na starsze zapytanie jest ignorowana.
+  const requestRef = useRef(0);
 
   const numericSubjectId = subjectId ? Number(subjectId) : undefined;
   const numericSourceId = sourceId ? Number(sourceId) : undefined;
-  const finished = !loading && currentIndex >= queue.length;
+  const finished = !loading && !loadError && currentIndex >= queue.length;
 
   useEffect(() => {
-    if (!subjectId) return;
-
-    const key = `${subjectId}:${sourceId ?? ""}`;
+    // Bez subjectId (trasa /app/study) kolejka obejmuje cały materiał użytkownika.
+    const key = `${subjectId ?? "all"}:${sourceId ?? ""}:${reloadCount}`;
     if (fetchedKeyRef.current === key) return;
     fetchedKeyRef.current = key;
 
+    const requestId = ++requestRef.current;
     setLoading(true);
-    getReviewQueue(Number(subjectId), numericSourceId).then((items) => {
-      setQueue(items);
-      setCurrentIndex(0);
-      setShowAnswer(false);
-      setHistory([]);
-      setViewIndex(null);
-      pausedAtRef.current = null;
-      setLoading(false);
-      cardShownAt.current = Date.now();
-    });
-  }, [subjectId, sourceId]);
+    setLoadError(null);
+    getReviewQueue(numericSubjectId, numericSourceId)
+      .then((items) => {
+        if (requestRef.current !== requestId) return;
+        setQueue(items);
+        setCurrentIndex(0);
+        setShowAnswer(false);
+        setHistory([]);
+        setViewIndex(null);
+        setRateError(false);
+        setExtraError(false);
+        pausedAtRef.current = null;
+        setLoading(false);
+        cardShownAt.current = Date.now();
+      })
+      .catch((e: unknown) => {
+        if (requestRef.current !== requestId) return;
+        setLoadError(loadErrorMessage(e, "fiszek"));
+        setLoading(false);
+      });
+  }, [subjectId, sourceId, reloadCount, numericSubjectId, numericSourceId]);
 
   useEffect(() => {
-    if (loading || currentIndex < queue.length || numericSubjectId === undefined) return;
-    getAvailableNewCardsCount(numericSubjectId, numericSourceId).then(setAvailableExtra);
-  }, [loading, currentIndex, queue.length, numericSubjectId, numericSourceId]);
+    if (loading || loadError || currentIndex < queue.length) return;
+    // Gdy nie uda się sprawdzić, ile jest nowych fiszek, po prostu nie pokazujemy przycisku „Ucz się jeszcze".
+    getAvailableNewCardsCount(numericSubjectId, numericSourceId)
+      .then(setAvailableExtra)
+      .catch(() => setAvailableExtra(0));
+  }, [loading, loadError, currentIndex, queue.length, numericSubjectId, numericSourceId]);
 
   const handleFlip = useCallback(() => setShowAnswer(true), []);
 
@@ -132,14 +157,20 @@ export function StudySessionPage() {
       if (!currentCard || submitting) return;
 
       setSubmitting(true);
+      setRateError(false);
       try {
         const timeSpentSeconds = Math.max(0, (Date.now() - cardShownAt.current) / 1000);
         await submitReview(currentCard.cardId, rating, timeSpentSeconds);
 
         setHistory((prev) => [...prev, { card: currentCard, rating }]);
+        // „Nie pamiętam": karta wraca na koniec tej samej sesji, zamiast czekać do następnego dnia.
+        if (rating === 1) setQueue((prev) => [...prev, currentCard]);
         setShowAnswer(false);
         setCurrentIndex((prev) => prev + 1);
         cardShownAt.current = Date.now();
+      } catch {
+        // Karta zostaje na ekranie z odkrytą odpowiedzią: można od razu ocenić ją jeszcze raz.
+        setRateError(true);
       } finally {
         setSubmitting(false);
       }
@@ -238,21 +269,27 @@ export function StudySessionPage() {
   }, [loading, finished, viewIndex, showAnswer, handleFlip, handleRate, goBack, goForward]);
 
   async function handleStudyMore() {
-    if (numericSubjectId === undefined || !availableExtra) return;
+    if (!availableExtra) return;
 
     const batchSize = Math.min(MAX_EXTRA_BATCH, availableExtra);
     setLoading(true);
-    const extraItems = await getReviewQueue(numericSubjectId, numericSourceId, batchSize);
+    setExtraError(false);
+    try {
+      const extraItems = await getReviewQueue(numericSubjectId, numericSourceId, batchSize);
 
-    setQueue(extraItems);
-    setCurrentIndex(0);
-    setShowAnswer(false);
-    setHistory([]);
-    setViewIndex(null);
-    pausedAtRef.current = null;
-    setAvailableExtra(null);
-    setLoading(false);
-    cardShownAt.current = Date.now();
+      setQueue(extraItems);
+      setCurrentIndex(0);
+      setShowAnswer(false);
+      setHistory([]);
+      setViewIndex(null);
+      pausedAtRef.current = null;
+      setAvailableExtra(null);
+      cardShownAt.current = Date.now();
+    } catch {
+      setExtraError(true);
+    } finally {
+      setLoading(false);
+    }
   }
 
   const viewEntry = viewIndex !== null ? (history[viewIndex] ?? null) : null;
@@ -267,6 +304,17 @@ export function StudySessionPage() {
     );
   }
 
+  if (loadError) {
+    return (
+      <SessionLoadError
+        message={loadError}
+        onRetry={() => setReloadCount((c) => c + 1)}
+        backTo={ROUTES.flashcards}
+        backLabel="Wróć do Fiszek"
+      />
+    );
+  }
+
   if (finished && !viewing) {
     const extraBatch = availableExtra !== null ? Math.min(MAX_EXTRA_BATCH, availableExtra) : 0;
 
@@ -274,6 +322,12 @@ export function StudySessionPage() {
       <div className="flex h-full flex-col items-center justify-center gap-4 p-10 text-center">
         <CheckCircle2 className="text-success" size={40} aria-hidden="true" />
         <p className="text-xl font-bold">Brawo! Skończyłeś powtórki na dziś.</p>
+
+        {extraError && (
+          <p role="alert" className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
+            Nie udało się pobrać kolejnych fiszek. Spróbuj ponownie.
+          </p>
+        )}
 
         {extraBatch > 0 && (
           <button
@@ -307,6 +361,8 @@ export function StudySessionPage() {
   const shownCard = viewEntry ? viewEntry.card : queue[currentIndex];
   const flipped = viewing ? true : showAnswer;
   const shownIndex = viewIndex ?? currentIndex;
+  // Ta sama karta była już w tej sesji wcześniej (ocenione „Nie pamiętam"), więc to jej powtórka.
+  const isRepeat = !viewing && queue.findIndex((c) => c.cardId === shownCard.cardId) < currentIndex;
   const canGoBack = !submitting && (viewing ? (viewIndex ?? 0) > 0 : history.length > 0);
   const ratingMeta = viewEntry ? RATING_BUTTONS.find((b) => b.value === viewEntry.rating) : undefined;
   const progress = (currentIndex / queue.length) * 100;
@@ -324,6 +380,7 @@ export function StudySessionPage() {
               <span className="font-medium text-fg">{shownIndex + 1}</span> / {queue.length}
             </span>
             {viewing && <span className="rounded-md bg-surface-2 px-2 py-0.5 text-xs">Podgląd</span>}
+            {isRepeat && <span className="rounded-md bg-danger/10 px-2 py-0.5 text-xs text-danger">Jeszcze raz</span>}
           </p>
 
           <div className="flex items-center gap-1">
@@ -366,12 +423,12 @@ export function StudySessionPage() {
       </div>
 
       {/*
-        key = cardId → każda karta to świeży element: nowa fiszka pojawia się od razu "od przodu"
+        key = cardId + pozycja → każda karta to świeży element (także jej powtórka w tej samej sesji): nowa fiszka pojawia się od razu "od przodu"
         i NIE odwraca się z powrotem (inaczej przez chwilę byłoby widać odpowiedź następnej karty).
         W podglądzie karta od razu jest odwrócona, na odpowiedzi.
       */}
       <div
-        key={shownCard.cardId}
+        key={`${shownCard.cardId}:${shownIndex}`}
         className={cn(
           "relative w-full transition-opacity duration-200 starting:opacity-0 motion-reduce:transition-none",
           CARD_HEIGHT
@@ -452,24 +509,31 @@ export function StudySessionPage() {
           </div>
         ) : (
           showAnswer && (
-            <div className="grid grid-cols-2 gap-3 transition-opacity duration-200 starting:opacity-0 sm:grid-cols-4">
-              {RATING_BUTTONS.map((btn) => (
-                <button
-                  key={btn.value}
-                  type="button"
-                  disabled={submitting}
-                  onClick={() => handleRate(btn.value)}
-                  className={cn(
-                    "flex min-h-16 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-xl border px-3 py-2.5 text-sm font-semibold",
-                    "transition active:scale-[0.97] disabled:pointer-events-none disabled:opacity-60",
-                    "focus-visible:outline-2 focus-visible:outline-offset-2",
-                    btn.className
-                  )}
-                >
-                  <span>{btn.label}</span>
-                  <kbd className="hidden font-sans text-[11px] font-medium opacity-60 sm:block">{btn.value}</kbd>
-                </button>
-              ))}
+            <div className="flex flex-col gap-3 transition-opacity duration-200 starting:opacity-0">
+              {rateError && (
+                <p role="alert" className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
+                  Nie udało się zapisać oceny. Sprawdź połączenie i spróbuj ponownie.
+                </p>
+              )}
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {RATING_BUTTONS.map((btn) => (
+                  <button
+                    key={btn.value}
+                    type="button"
+                    disabled={submitting}
+                    onClick={() => handleRate(btn.value)}
+                    className={cn(
+                      "flex min-h-16 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-xl border px-3 py-2.5 text-sm font-semibold",
+                      "transition active:scale-[0.97] disabled:pointer-events-none disabled:opacity-60",
+                      "focus-visible:outline-2 focus-visible:outline-offset-2",
+                      btn.className
+                    )}
+                  >
+                    <span>{btn.label}</span>
+                    <kbd className="hidden font-sans text-[11px] font-medium opacity-60 sm:block">{btn.value}</kbd>
+                  </button>
+                ))}
+              </div>
             </div>
           )
         )}

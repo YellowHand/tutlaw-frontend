@@ -6,23 +6,20 @@ import { AuthLayout } from "../components/layout/AuthLayout";
 
 export function VerifyPage() {
   const [searchParams] = useSearchParams();
-  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
+  const token = searchParams.get("token");
+  // Bez tokenu w adresie nie ma czego weryfikować, więc od razu pokazujemy błąd.
+  const [status, setStatus] = useState<"loading" | "success" | "error">(token ? "loading" : "error");
   const hasRequested = useRef(false);
 
   useEffect(() => {
-    if (hasRequested.current) return;
+    if (!token || hasRequested.current) return;
     hasRequested.current = true;
 
-    const token = searchParams.get("token");
-    if (!token) {
-      setStatus("error");
-      return;
-    }
     api
-      .get(`/api/auth/verify?token=${token}`)
+      .get("/api/auth/verify", { params: { token } })
       .then(() => setStatus("success"))
       .catch(() => setStatus("error"));
-  }, [searchParams]);
+  }, [token]);
 
   return (
     <AuthLayout title="Weryfikacja konta">

@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "../../lib/cn";
 import { NAV_ITEMS, type NavItem } from "../../config/navigation";
+import { NavBadge } from "./NavBadge";
 
 interface BottomNavProps {
   className?: string;
@@ -27,8 +28,9 @@ export function BottomNav({ className }: BottomNavProps) {
           const active = isNavItemActive(item, location.pathname);
           return (
             <Link key={item.to} to={item.to} className="flex flex-1 flex-col items-center gap-1 py-2 min-h-11">
-              <span className={cn("flex h-7 w-7 items-center justify-center rounded-full transition-colors", active && "bg-accent text-accent-fg")}>
+              <span className={cn("relative flex h-7 w-7 items-center justify-center rounded-full transition-colors", active && "bg-accent text-accent-fg")}>
                 <Icon size={18} aria-hidden="true" />
+                {item.badge === "due" && <NavBadge active={active} className="absolute -right-2 -top-1.5 h-4 min-w-4 px-1 text-[10px]" />}
               </span>
               <span className={cn("text-xs font-medium", active ? "text-accent" : "text-fg-muted")}>{item.label}</span>
             </Link>

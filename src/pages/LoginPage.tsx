@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api/axiosInstance";
-import { useAuth } from "../auth/AuthContext";
+import { useAuth } from "../auth/useAuth";
+import { serverMessage } from "../lib/errors";
 import { AuthLayout } from "../components/layout/AuthLayout";
 import { ROUTES } from "../config/routes";
 
@@ -22,8 +23,8 @@ export function LoginPage() {
       const res = await api.post("/api/auth/login", { privateEmail, password });
       login(res.data.accessToken);
       navigate(from, { replace: true });
-    } catch (err: any) {
-      setError(err.response?.data?.message ?? "Logowanie nie powiodło się");
+    } catch (err) {
+      setError(serverMessage(err, "Logowanie nie powiodło się"));
     }
   }
 

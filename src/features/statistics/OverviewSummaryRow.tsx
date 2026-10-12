@@ -26,7 +26,7 @@ export function OverviewSummaryRow({ subjectId }: OverviewSummaryRowProps) {
     { label: "Wszystkie fiszki", value: data.totalCards },
     { label: "Rozpoczęte", value: data.cardsStarted },
     { label: "Opanowane", value: data.matureCards },
-    { label: "Skuteczność", value: `${Math.round(retention)}%` },
+    { label: "Skuteczność", value: retention === null ? "—" : `${Math.round(retention)}%` },
   ];
 
   return (

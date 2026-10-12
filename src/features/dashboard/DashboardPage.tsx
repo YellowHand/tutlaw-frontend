@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { DashboardModeSwitcher, type DashboardMode } from "./DashboardModeSwitcher";
 import { QuickActions } from "./QuickActions";
+import { DueReviewBanner } from "../review/DueReviewBanner";
 import { ProgressSummaryCard } from "./ProgressSummaryCard";
 import { WeeklyBarsCard } from "./WeeklyBarsCard";
 import { RetentionRingCard } from "./RetentionRingCard";
-import { TestsComingSoonCard } from "./TestsComingSoonCard";
+import { TestsStatsPanel } from "./TestsStatsPanel";
 
 export function DashboardPage() {
   const [mode, setMode] = useState<DashboardMode>("flashcards");
@@ -12,6 +13,8 @@ export function DashboardPage() {
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 p-4 sm:p-6">
       <h1 className="text-lg font-semibold">Cześć!</h1>
+
+      <DueReviewBanner />
 
       <QuickActions />
 
@@ -30,7 +33,7 @@ export function DashboardPage() {
         </div>
       ) : (
         <div aria-live="polite">
-          <TestsComingSoonCard />
+          <TestsStatsPanel />
         </div>
       )}
     </div>

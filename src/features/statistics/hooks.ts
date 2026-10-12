@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchActivity, fetchChapterMastery, fetchOverview, fetchWeakCards } from "./api";
+import { fetchActivity, fetchChapterMastery, fetchOverview, fetchTestStats, fetchWeakCards } from "./api";
 
 const STALE_TIME = 60_000;
 
@@ -32,6 +32,15 @@ export function useWeakCards(subjectId?: number, limit = 10) {
   return useQuery({
     queryKey: ["statistics", "weak-cards", subjectId ?? "all", limit],
     queryFn: () => fetchWeakCards(subjectId, limit),
+    staleTime: STALE_TIME,
+  });
+}
+
+/** Statystyki Testów. Klucz zaczyna się od „statistics", więc odświeża się razem z resztą po sesji nauki. */
+export function useTestStats() {
+  return useQuery({
+    queryKey: ["statistics", "tests"],
+    queryFn: fetchTestStats,
     staleTime: STALE_TIME,
   });
 }

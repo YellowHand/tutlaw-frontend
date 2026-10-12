@@ -1,10 +1,11 @@
 import { parseLocalDate, startOfToday, toLocalDateKey } from "../../lib/date";
 import type { ActivityItem, DailyCount } from "./types";
 
-// Backend already returns a 0-100 percentage; defensively handle a 0-1
-// fraction too in case this ever changes upstream.
-export function normalizeRetentionRate(value: number): number {
-  return value > 1 ? value : value * 100;
+// Backend zwraca procent w skali 0–100 (albo null = brak danych). Wcześniej wartości do 1 były mnożone przez 100
+// "na wszelki wypadek", przez co np. 1% pokazywało się jako 100%; backend jest jedynym źródłem, więc tego już nie robimy.
+export function normalizeRetentionRate(value: number | null): number | null {
+  if (value === null) return null;
+  return Math.max(0, Math.min(100, value));
 }
 
 // Assumes the backend forecast already folds overdue cards into "today"

@@ -3,6 +3,7 @@ import { cn } from "../../lib/cn";
 import { NAV_ITEMS, type NavItem } from "../../config/navigation";
 import { LogoutButton } from "./LogoutButton";
 import { Logo } from "./Logo";
+import { NavBadge } from "./NavBadge";
 
 interface SidebarProps {
   className?: string;
@@ -38,6 +39,7 @@ export function Sidebar({ className }: SidebarProps) {
             >
               <Icon size={18} aria-hidden="true" />
               {item.label}
+              {item.badge === "due" && <NavBadge active={active} className="ml-auto" />}
             </Link>
           );
         })}

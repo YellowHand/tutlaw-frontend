@@ -1,45 +1,38 @@
-import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { BookOpen, Layers, ChevronRight } from "lucide-react";
-import { getSourcesBySubject, getSourceProgress, type Source, type SourceProgress } from "../api/sources";
 import { Card } from "../components/ui/Card";
 import { Skeleton } from "../components/ui/Skeleton";
 import { EmptyState } from "../components/ui/EmptyState";
+import { ErrorState } from "../components/ui/ErrorState";
 import { PageHeader } from "../components/layout/PageHeader";
 import { ROUTES } from "../config/routes";
-
-interface SourceWithProgress extends Source {
-  progress?: SourceProgress;
-}
+import { parseId, useSourcesWithProgress, type SourceWithProgress } from "../features/flashcards/hooks";
+import { loadErrorMessage } from "../lib/errors";
+import { NotFoundPage } from "../features/misc/NotFoundPage";
 
 export function SourcesPage() {
   const { subjectId } = useParams();
   const navigate = useNavigate();
-  const [sources, setSources] = useState<SourceWithProgress[] | null>(null);
+  const id = parseId(subjectId);
+  const { data: sources, isError, error, refetch } = useSourcesWithProgress(id);
 
-  useEffect(() => {
-    if (!subjectId) return;
-    const id = Number(subjectId);
-
-    Promise.all([getSourcesBySubject(id), getSourceProgress(id)]).then(([sourceList, progressList]) => {
-      const progressBySourceId = new Map(progressList.map((p) => [p.sourceId, p]));
-      setSources(sourceList.map((s) => ({ ...s, progress: progressBySourceId.get(s.id) })));
-    });
-  }, [subjectId]);
-
-function handleSelect(source: SourceWithProgress) {
-  if (source.sourceType === "TEXTBOOK") {
-    navigate(ROUTES.flashcardsChapters(subjectId ?? "", source.id));
-  } else {
-    navigate(ROUTES.study(subjectId ?? "", source.id));
+  function handleSelect(source: SourceWithProgress) {
+    if (source.sourceType === "TEXTBOOK") {
+      navigate(ROUTES.flashcardsChapters(subjectId ?? "", source.id));
+    } else {
+      navigate(ROUTES.study(subjectId ?? "", source.id));
+    }
   }
-}
+
+  if (id === undefined) return <NotFoundPage />;
 
   return (
     <div>
       <PageHeader title="Źródła" />
       <div className="px-4 pb-8 sm:px-8">
-        {sources === null ? (
+        {isError ? (
+          <ErrorState message={loadErrorMessage(error, "źródeł")} onRetry={() => refetch()} />
+        ) : sources === undefined ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {[0, 1, 2].map((i) => (
               <Skeleton key={i} className="h-28 w-full" />

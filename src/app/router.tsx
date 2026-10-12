@@ -13,7 +13,9 @@ import { SourcesPage } from "../pages/SourcesPage";
 import { ChaptersPage } from "../pages/ChaptersPage";
 import { StudySessionPage } from "../pages/StudySessionPage";
 import { TestSessionPage } from "../pages/TestSessionPage";
-import { TestsComingSoonPage } from "../features/tests/TestsComingSoonPage";
+import { TestsPage } from "../features/tests/TestsPage";
+import { TestCategoryPage } from "../features/tests/TestCategoryPage";
+import { TestSubjectPage } from "../features/tests/TestSubjectPage";
 import { StatisticsPage } from "../features/statistics/StatisticsPage";
 import { NotFoundPage } from "../features/misc/NotFoundPage";
 
@@ -36,10 +38,15 @@ export function Router() {
             <Route path="flashcards/:categoryId/subjects" element={<SubjectsPage />} />
             <Route path="flashcards/:subjectId/sources" element={<SourcesPage />} />
             <Route path="flashcards/:subjectId/sources/:sourceId/chapters" element={<ChaptersPage />} />
+            {/* Bez :subjectId = sesja z całego materiału użytkownika */}
+            <Route path="study" element={<StudySessionPage />} />
             <Route path="study/:subjectId" element={<StudySessionPage />} />
+            <Route path="test" element={<TestSessionPage />} />
             <Route path="test/:subjectId" element={<TestSessionPage />} />
 
-            <Route path="tests" element={<TestsComingSoonPage />} />
+            <Route path="tests" element={<TestsPage />} />
+            <Route path="tests/:categoryId" element={<TestCategoryPage />} />
+            <Route path="tests/:categoryId/:subjectId" element={<TestSubjectPage />} />
 
             <Route path="statistics" element={<StatisticsPage />} />
 

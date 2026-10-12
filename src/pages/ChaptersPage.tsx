@@ -1,39 +1,90 @@
-import { useEffect, useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useParams, Link } from "react-router-dom";
-import { BarChart3, Check, ClipboardList, Play } from "lucide-react";
-import { getChaptersBySource, getChapterMastery, setChapterProgress, type Chapter, type ChapterMastery } from "../api/chapters";
+import { useQueryClient } from "@tanstack/react-query";
+import { BarChart3, BookOpen, Check, ClipboardList, Play } from "lucide-react";
+import { setChapterProgress } from "../api/chapters";
+import { EmptyState } from "../components/ui/EmptyState";
+import { ErrorState } from "../components/ui/ErrorState";
 import { Skeleton } from "../components/ui/Skeleton";
 import { PageHeader } from "../components/layout/PageHeader";
 import { cn } from "../lib/cn";
+import { loadErrorMessage, serverMessage } from "../lib/errors";
 import { ROUTES } from "../config/routes";
+import { chaptersKey, parseId, useChaptersWithMastery, type ChapterWithMastery } from "../features/flashcards/hooks";
+import { invalidateReviewData } from "../features/review/hooks";
+import { NotFoundPage } from "../features/misc/NotFoundPage";
 
-interface ChapterWithMastery extends Chapter {
-  mastery?: ChapterMastery;
-}
+const ACTION_BASE = "inline-flex items-center gap-2 rounded-xl px-4 min-h-11 text-sm font-medium";
+const NEEDS_READ_HINT = "Zaznacz co najmniej jeden rozdział";
 
 export function ChaptersPage() {
   const { subjectId, sourceId } = useParams();
-  const [chapters, setChapters] = useState<ChapterWithMastery[] | null>(null);
+  const id = parseId(sourceId);
+  const queryClient = useQueryClient();
+  const { data: chapters, isError, error, refetch } = useChaptersWithMastery(id);
+  // Rozdziały, których zmiana jest właśnie zapisywana, oraz ostatni błąd zapisu.
+  const [savingIds, setSavingIds] = useState<ReadonlySet<number>>(new Set());
+  const [saveError, setSaveError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!sourceId) return;
-    const id = Number(sourceId);
+  if (id === undefined) return <NotFoundPage />;
 
-    Promise.all([getChaptersBySource(id), getChapterMastery(id)]).then(([chapterList, masteryList]) => {
-      const masteryByChapterId = new Map(masteryList.map((m) => [m.chapterId, m]));
-      setChapters(chapterList.map((c) => ({ ...c, mastery: masteryByChapterId.get(c.id) })));
+  function setReadInCache(chapterId: number, isRead: boolean) {
+    queryClient.setQueryData<ChapterWithMastery[]>(chaptersKey(id), (old) =>
+      old?.map((c) => (c.id === chapterId ? { ...c, isRead } : c))
+    );
+  }
+
+  function markSaving(chapterId: number, saving: boolean) {
+    setSavingIds((prev) => {
+      const next = new Set(prev);
+      if (saving) next.add(chapterId);
+      else next.delete(chapterId);
+      return next;
     });
-  }, [sourceId]);
+  }
 
   async function toggleRead(chapter: ChapterWithMastery) {
+    if (savingIds.has(chapter.id)) return;
+
     const newValue = !chapter.isRead;
-    setChapters((prev) => prev && prev.map((c) => (c.id === chapter.id ? { ...c, isRead: newValue } : c)));
-    await setChapterProgress(chapter.id, newValue);
+    setSaveError(null);
+    markSaving(chapter.id, true);
+    // Zmiana widoczna od razu; jeśli serwer jej nie przyjmie, wracamy do poprzedniego stanu.
+    setReadInCache(chapter.id, newValue);
+    try {
+      await setChapterProgress(chapter.id, newValue);
+      // Od przeczytanych rozdziałów zależy, które fiszki trafiają do nauki: odśwież licznik powtórek i statystyki.
+      invalidateReviewData(queryClient);
+    } catch (e) {
+      setReadInCache(chapter.id, !newValue);
+      setSaveError(serverMessage(e, "Nie udało się zapisać zmiany. Sprawdź połączenie i spróbuj ponownie."));
+    } finally {
+      markSaving(chapter.id, false);
+    }
   }
 
   const hasReadChapter = chapters?.some((c) => c.isRead) ?? false;
 
-  const studyButtonClass = "inline-flex items-center gap-2 rounded-xl bg-accent px-4 min-h-11 text-sm font-medium text-accent-fg";
+  function action(to: string, label: string, icon: ReactNode, variant: "primary" | "outline") {
+    const style =
+      variant === "primary"
+        ? "bg-accent text-accent-fg"
+        : "border border-accent text-accent";
+    if (hasReadChapter) {
+      return (
+        <Link to={to} className={cn(ACTION_BASE, style, variant === "primary" ? "hover:opacity-90" : "hover:bg-accent/10")}>
+          {icon}
+          {label}
+        </Link>
+      );
+    }
+    return (
+      <button type="button" disabled title={NEEDS_READ_HINT} className={cn(ACTION_BASE, style, "cursor-not-allowed opacity-50")}>
+        {icon}
+        {label}
+      </button>
+    );
+  }
 
   return (
     <div>
@@ -41,33 +92,18 @@ export function ChaptersPage() {
         title="Rozdziały"
         actions={
           <div className="flex flex-wrap gap-2">
-  {hasReadChapter ? (
-  <Link
-    to={ROUTES.study(subjectId ?? "", sourceId ?? "")}
-    className={cn(studyButtonClass, "hover:opacity-90")}
-  >
-    <Play size={16} aria-hidden="true" />
-    Rozpocznij naukę
-  </Link>
-) : (
-  <button
-    type="button"
-    disabled
-    title="Zaznacz co najmniej jeden rozdział"
-    className={cn(studyButtonClass, "cursor-not-allowed opacity-50")}
-  >
-    <Play size={16} aria-hidden="true" />
-    Rozpocznij naukę
-  </button>
-)}
-
-            <Link
-              to={ROUTES.test(subjectId ?? "", sourceId ?? "")}
-              className="inline-flex items-center gap-2 rounded-xl border border-accent px-4 min-h-11 text-sm font-medium text-accent hover:bg-accent/10"
-            >
-              <ClipboardList size={16} aria-hidden="true" />
-              Rozpocznij test
-            </Link>
+            {action(
+              ROUTES.study(subjectId ?? "", sourceId ?? ""),
+              "Rozpocznij naukę",
+              <Play size={16} aria-hidden="true" />,
+              "primary"
+            )}
+            {action(
+              ROUTES.test(subjectId ?? "", sourceId ?? ""),
+              "Rozpocznij test",
+              <ClipboardList size={16} aria-hidden="true" />,
+              "outline"
+            )}
             <Link
               to={ROUTES.statistics}
               className="inline-flex items-center gap-2 rounded-xl border border-line px-4 min-h-11 text-sm font-medium hover:bg-surface-2"
@@ -80,33 +116,53 @@ export function ChaptersPage() {
       />
 
       <div className="flex flex-col gap-2 px-4 pb-8 sm:px-8">
-        {chapters === null
-          ? [0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full" />)
-          : chapters.map((chapter) => {
-              const started = chapter.mastery?.cardsStarted ?? 0;
-              const total = chapter.mastery?.totalCards ?? 0;
+        {saveError && (
+          <p role="alert" className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
+            {saveError}
+          </p>
+        )}
 
-              return (
-                <div key={chapter.id} className="flex flex-col gap-2 rounded-2xl border border-line bg-surface p-4">
-                  <label className="flex min-h-11 cursor-pointer items-center gap-3">
-                    <input type="checkbox" checked={chapter.isRead} onChange={() => toggleRead(chapter)} className="peer sr-only" />
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-line transition-colors peer-checked:border-accent peer-checked:bg-accent">
-                      {chapter.isRead && <Check size={14} className="text-accent-fg" aria-hidden="true" />}
-                    </span>
-                    <span className={cn("flex-1 text-sm", !chapter.isRead && "text-fg-muted")}>{chapter.title}</span>
-                  </label>
+        {isError ? (
+          <ErrorState message={loadErrorMessage(error, "rozdziałów")} onRetry={() => refetch()} />
+        ) : chapters === undefined ? (
+          [0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full" />)
+        ) : chapters.length === 0 ? (
+          <EmptyState icon={BookOpen} title="Brak rozdziałów" description="Wkrótce pojawią się tu materiały." />
+        ) : (
+          chapters.map((chapter) => {
+            const started = chapter.mastery?.cardsStarted ?? 0;
+            const total = chapter.mastery?.totalCards ?? 0;
 
-                  {total > 0 && (
-                    <div className="pl-9">
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
-                        <div className="h-full rounded-full bg-accent" style={{ width: `${(started / total) * 100}%` }} />
-                      </div>
-                      <p className="mt-1 text-xs text-fg-muted tabular-nums">{started} / {total} fiszek</p>
+            return (
+              <div key={chapter.id} className="flex flex-col gap-2 rounded-2xl border border-line bg-surface p-4">
+                <label className="flex min-h-11 cursor-pointer items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={chapter.isRead}
+                    disabled={savingIds.has(chapter.id)}
+                    onChange={() => void toggleRead(chapter)}
+                    className="peer sr-only"
+                  />
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-line transition-colors peer-checked:border-accent peer-checked:bg-accent peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent">
+                    {chapter.isRead && <Check size={14} className="text-accent-fg" aria-hidden="true" />}
+                  </span>
+                  <span className={cn("flex-1 text-sm", !chapter.isRead && "text-fg-muted")}>{chapter.title}</span>
+                </label>
+
+                {total > 0 && (
+                  <div className="pl-9">
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
+                      <div className="h-full rounded-full bg-accent" style={{ width: `${(started / total) * 100}%` }} />
                     </div>
-                  )}
-                </div>
-              );
-            })}
+                    <p className="mt-1 text-xs text-fg-muted tabular-nums">
+                      {started} / {total} fiszek
+                    </p>
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
       </div>
     </div>
   );

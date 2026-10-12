@@ -42,10 +42,8 @@ export function DueTodayCard() {
           <p className="tabular-nums text-3xl font-bold">
             {dueToday} {pluralizePl(dueToday, { one: "fiszka", few: "fiszki", many: "fiszek" })} do powtórki
           </p>
-          {/* TODO: link directly to a cross-subject study session once
-              GET /api/review/queue supports an optional subjectId. */}
           <Link
-            to={ROUTES.flashcards}
+            to={ROUTES.studyAll}
             className="mt-4 inline-flex items-center justify-center rounded-xl bg-accent px-4 min-h-11 text-sm font-medium text-accent-fg hover:opacity-90"
           >
             Zacznij powtórkę

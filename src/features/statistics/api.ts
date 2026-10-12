@@ -1,5 +1,5 @@
 import { apiFetch } from "../../lib/apiClient";
-import type { ActivityItem, ChapterMastery, OverviewResponse, WeakCard } from "./types";
+import type { ActivityItem, ChapterMastery, OverviewResponse, TestStats, WeakCard } from "./types";
 
 export function fetchOverview(subjectId?: number): Promise<OverviewResponse> {
   const query = subjectId ? `?subjectId=${subjectId}` : "";
@@ -20,4 +20,8 @@ export function fetchWeakCards(subjectId?: number, limit = 10): Promise<WeakCard
   if (subjectId) params.set("subjectId", String(subjectId));
   params.set("limit", String(limit));
   return apiFetch<WeakCard[]>(`/api/statistics/weak-cards?${params.toString()}`);
+}
+
+export function fetchTestStats(): Promise<TestStats> {
+  return apiFetch<TestStats>("/api/statistics/tests");
 }

@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api/axiosInstance";
+import { serverMessage } from "../lib/errors";
 import { AuthLayout } from "../components/layout/AuthLayout";
 
 export function RegisterPage() {
@@ -16,8 +17,8 @@ export function RegisterPage() {
     try {
       await api.post("/api/auth/register", { privateEmail, universityEmail, password });
       navigate("/check-email");
-    } catch (err: any) {
-      setError(err.response?.data?.message ?? "Rejestracja nie powiodła się");
+    } catch (err) {
+      setError(serverMessage(err, "Rejestracja nie powiodła się"));
     }
   }
 

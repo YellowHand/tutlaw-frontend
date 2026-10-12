@@ -11,6 +11,9 @@ import {
 import { Skeleton } from "../components/ui/Skeleton";
 import { cn } from "../lib/cn";
 import { ROUTES } from "../config/routes";
+import { useRefreshReviewDataOnExit } from "../features/review/hooks";
+import { SessionLoadError } from "../features/review/SessionLoadError";
+import { loadErrorMessage } from "../lib/errors";
 
 const MAX_EXTRA_BATCH = 10;
 
@@ -18,7 +21,7 @@ type OptionKey = "A" | "B" | "C";
 type OptionState = "idle" | "pending" | "correct" | "wrong" | "dimmed";
 
 /** Jedno już rozwiązane pytanie – trzymane tylko w pamięci strony, do podglądu. */
-type HistoryEntry = { question: TestQueueItem; selected: OptionKey; result: TestAnswerResult };
+type HistoryEntry = { question: TestQueueItem; selected: OptionKey; result: TestAnswerResult; guessed: boolean };
 
 /** Skróty klawiszowe: A/B/C albo 1/2/3 wybierają odpowiedź. */
 const KEY_TO_OPTION: Record<string, OptionKey> = {
@@ -89,11 +92,24 @@ interface QuestionBodyProps {
   readOnly?: boolean;
   saveError?: boolean;
   onSelect?: (option: OptionKey) => void;
+  /** „Nie jestem pewien" – widoczne tylko, zanim użytkownik odpowie. */
+  guessed?: boolean;
+  onGuessedChange?: (guessed: boolean) => void;
   footer?: ReactNode;
 }
 
 /** Pytanie + odpowiedzi + wyjaśnienie. Ten sam wygląd dla bieżącego pytania i dla podglądu. */
-function QuestionBody({ question, selected, result, readOnly = false, saveError = false, onSelect, footer }: QuestionBodyProps) {
+function QuestionBody({
+  question,
+  selected,
+  result,
+  readOnly = false,
+  saveError = false,
+  onSelect,
+  guessed = false,
+  onGuessedChange,
+  footer,
+}: QuestionBodyProps) {
   const options: { key: OptionKey; text: string }[] = [
     { key: "A", text: question.optionA },
     { key: "B", text: question.optionB },
@@ -152,6 +168,34 @@ function QuestionBody({ question, selected, result, readOnly = false, saveError 
         })}
       </div>
 
+      {/* Pewność odpowiedzi: poprawna, ale zgadywana odpowiedź wróci wcześniej niż pewna. */}
+      {!readOnly && !selected && !result && onGuessedChange && (
+        <button
+          type="button"
+          role="switch"
+          aria-checked={guessed}
+          onClick={() => onGuessedChange(!guessed)}
+          title="Nie jestem pewien (G)"
+          className="inline-flex min-h-11 cursor-pointer items-center gap-3 self-start rounded-lg pr-3 text-sm text-fg-muted transition-colors hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          <span
+            aria-hidden="true"
+            className={cn(
+              "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full border transition-colors",
+              guessed ? "border-accent bg-accent/20" : "border-line bg-surface-2"
+            )}
+          >
+            <span
+              className={cn(
+                "absolute size-3.5 rounded-full transition-all",
+                guessed ? "left-[18px] bg-accent" : "left-0.5 bg-fg-muted"
+              )}
+            />
+          </span>
+          Nie jestem pewien
+        </button>
+      )}
+
       {saveError && (
         <p role="alert" className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
           Nie udało się zapisać odpowiedzi. Spróbuj ponownie.
@@ -167,6 +211,11 @@ function QuestionBody({ question, selected, result, readOnly = false, saveError 
           <p className={cn("mb-1 text-sm font-semibold", result.correct ? "text-success" : "text-danger")}>
             {result.correct ? "Poprawnie!" : "Niepoprawnie"}
           </p>
+          <p className="mb-2 text-sm text-fg-muted">
+            {result.correct && !guessed && "Zapisano jako „Znam”."}
+            {result.correct && guessed && "Zaznaczone jako niepewne: zapisano jako „Nie pamiętam”, pytanie wróci w powtórkach."}
+            {!result.correct && "Zapisano jako „Nie pamiętam”: pytanie wróci w powtórkach."}
+          </p>
           {result.explanation && <p className="text-base leading-relaxed text-fg">{result.explanation}</p>}
         </div>
       )}
@@ -180,54 +229,77 @@ export function TestSessionPage() {
   const { subjectId } = useParams();
   const [searchParams] = useSearchParams();
   const sourceId = searchParams.get("sourceId");
+  const categoryId = searchParams.get("categoryId");
   const navigate = useNavigate();
+  useRefreshReviewDataOnExit();
 
   const [queue, setQueue] = useState<TestQueueItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selected, setSelected] = useState<OptionKey | null>(null);
   const [result, setResult] = useState<TestAnswerResult | null>(null);
+  const [guessed, setGuessed] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
   const [saveError, setSaveError] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadCount, setReloadCount] = useState(0);
+  const [extraError, setExtraError] = useState(false);
   const [availableExtra, setAvailableExtra] = useState<number | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   // null = bieżące pytanie; liczba = indeks w history (podgląd tylko do odczytu)
   const [viewIndex, setViewIndex] = useState<number | null>(null);
-  const questionShownAt = useRef<number>(Date.now());
+  // Ustawiane przy każdym wczytaniu pytania; początkowe 0 nigdy nie trafia do backendu.
+  const questionShownAt = useRef<number>(0);
   const pausedAtRef = useRef<number | null>(null);
   const fetchedKeyRef = useRef<string | null>(null);
+  // Numer ostatniego zapytania o kolejkę: spóźniona odpowiedź na starsze zapytanie jest ignorowana.
+  const requestRef = useRef(0);
 
   const numericSubjectId = subjectId ? Number(subjectId) : undefined;
   const numericSourceId = sourceId ? Number(sourceId) : undefined;
-  const finished = !loading && currentIndex >= queue.length;
+  const numericCategoryId = categoryId ? Number(categoryId) : undefined;
+  const finished = !loading && !loadError && currentIndex >= queue.length;
 
   useEffect(() => {
-    if (!subjectId) return;
-
-    const key = `${subjectId}:${sourceId ?? ""}`;
+    // Bez subjectId i categoryId (trasa /app/test) test obejmuje cały materiał użytkownika.
+    const key = `${subjectId ?? "all"}:${sourceId ?? ""}:${categoryId ?? ""}:${reloadCount}`;
     if (fetchedKeyRef.current === key) return;
     fetchedKeyRef.current = key;
 
+    const requestId = ++requestRef.current;
     setLoading(true);
-    getTestQueue(Number(subjectId), numericSourceId).then((items) => {
-      setQueue(items);
-      setCurrentIndex(0);
-      setSelected(null);
-      setResult(null);
-      setCorrectCount(0);
-      setSaveError(false);
-      setHistory([]);
-      setViewIndex(null);
-      pausedAtRef.current = null;
-      setLoading(false);
-      questionShownAt.current = Date.now();
-    });
-  }, [subjectId, sourceId]);
+    setLoadError(null);
+    getTestQueue(numericSubjectId, numericSourceId, undefined, numericCategoryId)
+      .then((items) => {
+        if (requestRef.current !== requestId) return;
+        setQueue(items);
+        setCurrentIndex(0);
+        setSelected(null);
+        setResult(null);
+        setGuessed(false);
+        setCorrectCount(0);
+        setSaveError(false);
+        setExtraError(false);
+        setHistory([]);
+        setViewIndex(null);
+        pausedAtRef.current = null;
+        setLoading(false);
+        questionShownAt.current = Date.now();
+      })
+      .catch((e: unknown) => {
+        if (requestRef.current !== requestId) return;
+        setLoadError(loadErrorMessage(e, "pytań"));
+        setLoading(false);
+      });
+  }, [subjectId, sourceId, categoryId, reloadCount, numericSubjectId, numericSourceId, numericCategoryId]);
 
   useEffect(() => {
-    if (loading || currentIndex < queue.length || numericSubjectId === undefined) return;
-    getAvailableNewCardsCount(numericSubjectId, numericSourceId).then(setAvailableExtra);
-  }, [loading, currentIndex, queue.length, numericSubjectId, numericSourceId]);
+    if (loading || loadError || currentIndex < queue.length) return;
+    // Gdy nie uda się sprawdzić, ile jest nowych pytań, po prostu nie pokazujemy przycisku „Rozwiąż jeszcze".
+    getAvailableNewCardsCount(numericSubjectId, numericSourceId, numericCategoryId)
+      .then(setAvailableExtra)
+      .catch(() => setAvailableExtra(0));
+  }, [loading, loadError, currentIndex, queue.length, numericSubjectId, numericSourceId, numericCategoryId]);
 
   const handleSelect = useCallback(
     async (option: OptionKey) => {
@@ -240,7 +312,7 @@ export function TestSessionPage() {
       const timeSpentSeconds = Math.max(0, (Date.now() - questionShownAt.current) / 1000);
 
       try {
-        const res = await submitTestAnswer(currentCard.cardId, option, timeSpentSeconds);
+        const res = await submitTestAnswer(currentCard.cardId, option, timeSpentSeconds, guessed);
         setResult(res);
         if (res.correct) setCorrectCount((prev) => prev + 1);
       } catch {
@@ -249,21 +321,22 @@ export function TestSessionPage() {
         setSaveError(true);
       }
     },
-    [queue, currentIndex, selected]
+    [queue, currentIndex, selected, guessed]
   );
 
   const handleNext = useCallback(() => {
     const answeredQuestion = queue[currentIndex];
     if (answeredQuestion && selected && result) {
-      setHistory((prev) => [...prev, { question: answeredQuestion, selected, result }]);
+      setHistory((prev) => [...prev, { question: answeredQuestion, selected, result, guessed }]);
     }
 
     setSelected(null);
     setResult(null);
+    setGuessed(false);
     setSaveError(false);
     setCurrentIndex((prev) => prev + 1);
     questionShownAt.current = Date.now();
-  }, [queue, currentIndex, selected, result]);
+  }, [queue, currentIndex, selected, result, guessed]);
 
   // --- Cofanie: tylko podgląd, niczego nie wysyła do backendu ---
 
@@ -293,7 +366,7 @@ export function TestSessionPage() {
     else setViewIndex(viewIndex + 1);
   }, [viewIndex, history.length, resumeLive]);
 
-  // Skróty: A/B/C lub 1/2/3 – wybór odpowiedzi, Enter – następne pytanie, ←/→ – poprzednie/następne. Spacja nic nie robi.
+  // Skróty: A/B/C lub 1/2/3 – wybór odpowiedzi, G – „nie jestem pewien", Enter – następne pytanie, ←/→ – poprzednie/następne. Spacja nic nie robi.
   useEffect(() => {
     if (loading) return;
     if (finished && viewIndex === null) return;
@@ -324,6 +397,12 @@ export function TestSessionPage() {
 
       if (selected) return;
 
+      if (e.key.toLowerCase() === "g") {
+        e.preventDefault();
+        setGuessed((prev) => !prev);
+        return;
+      }
+
       const option = KEY_TO_OPTION[e.key.toLowerCase()];
       if (option) {
         e.preventDefault();
@@ -336,23 +415,50 @@ export function TestSessionPage() {
   }, [loading, finished, viewIndex, selected, result, handleSelect, handleNext, goBack, goForward]);
 
   async function handleStudyMore() {
-    if (numericSubjectId === undefined || !availableExtra) return;
+    if (!availableExtra) return;
 
     const batchSize = Math.min(MAX_EXTRA_BATCH, availableExtra);
     setLoading(true);
-    const extraItems = await getTestQueue(numericSubjectId, numericSourceId, batchSize);
+    setExtraError(false);
+    try {
+      const extraItems = await getTestQueue(numericSubjectId, numericSourceId, batchSize, numericCategoryId);
 
-    setQueue(extraItems);
+      setQueue(extraItems);
+      setCurrentIndex(0);
+      setSelected(null);
+      setResult(null);
+      setGuessed(false);
+      setCorrectCount(0);
+      setSaveError(false);
+      setHistory([]);
+      setViewIndex(null);
+      pausedAtRef.current = null;
+      setAvailableExtra(null);
+      questionShownAt.current = Date.now();
+    } catch {
+      setExtraError(true);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Pytania, które wrócą w powtórkach: błędne albo oznaczone jako „Nie jestem pewien".
+  const toReview = history.filter((h) => !h.result.correct || h.guessed).map((h) => h.question);
+
+  function handleRepeatMistakes() {
+    if (toReview.length === 0) return;
+
+    setQueue(toReview);
     setCurrentIndex(0);
     setSelected(null);
     setResult(null);
+    setGuessed(false);
     setCorrectCount(0);
     setSaveError(false);
     setHistory([]);
     setViewIndex(null);
     pausedAtRef.current = null;
     setAvailableExtra(null);
-    setLoading(false);
     questionShownAt.current = Date.now();
   }
 
@@ -373,6 +479,17 @@ export function TestSessionPage() {
     );
   }
 
+  if (loadError) {
+    return (
+      <SessionLoadError
+        message={loadError}
+        onRetry={() => setReloadCount((c) => c + 1)}
+        backTo={ROUTES.tests}
+        backLabel="Wróć do Testów"
+      />
+    );
+  }
+
   if (finished && !viewing) {
     const extraBatch = availableExtra !== null ? Math.min(MAX_EXTRA_BATCH, availableExtra) : 0;
 
@@ -381,6 +498,12 @@ export function TestSessionPage() {
         <CheckCircle2 className="text-success" size={40} aria-hidden="true" />
         <p className="text-xl font-bold">Brawo! Skończyłeś test na dziś.</p>
 
+        {extraError && (
+          <p role="alert" className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
+            Nie udało się pobrać kolejnych pytań. Spróbuj ponownie.
+          </p>
+        )}
+
         {queue.length > 0 && (
           <p className="text-sm tabular-nums text-fg-muted">
             Poprawne odpowiedzi:{" "}
@@ -388,6 +511,21 @@ export function TestSessionPage() {
               {correctCount} / {queue.length}
             </span>
           </p>
+        )}
+
+        {toReview.length > 0 && (
+          <>
+            <p className="max-w-md text-sm text-fg-muted">
+              Do powtórki: <span className="font-semibold tabular-nums text-fg">{toReview.length}</span> (błędne albo
+              oznaczone jako niepewne). Wrócą w powtórkach, możesz też przejść przez nie jeszcze raz teraz.
+            </p>
+            <button
+              onClick={handleRepeatMistakes}
+              className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl border border-danger/40 px-6 text-sm font-medium text-danger hover:bg-danger/10"
+            >
+              Powtórz teraz ({toReview.length})
+            </button>
+          </>
         )}
 
         {extraBatch > 0 && (
@@ -400,10 +538,10 @@ export function TestSessionPage() {
         )}
 
         <button
-          onClick={() => navigate(ROUTES.flashcards)}
+          onClick={() => navigate(ROUTES.tests)}
           className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl bg-accent px-6 text-sm font-medium text-accent-fg hover:opacity-90"
         >
-          Wróć do Katalogu
+          Wróć do Testów
         </button>
 
         {history.length > 0 && (
@@ -483,6 +621,7 @@ export function TestSessionPage() {
           question={viewEntry.question}
           selected={viewEntry.selected}
           result={viewEntry.result}
+          guessed={viewEntry.guessed}
           readOnly
           footer={
             <div className="flex justify-end">
@@ -501,6 +640,8 @@ export function TestSessionPage() {
           result={result}
           saveError={saveError}
           onSelect={handleSelect}
+          guessed={guessed}
+          onGuessedChange={setGuessed}
           footer={
             result && (
               <div className="flex justify-end">
