@@ -1,417 +1,479 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-  type CSSProperties,
-  type ReactNode,
-} from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { getReviewQueue, submitReview, type ReviewQueueItem } from "../api/review";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { useParams, useSearchParams, useNavigate } from "react-router-dom";
+import { ArrowRight, BookOpen, CheckCircle2, ChevronLeft, ChevronRight } from "lucide-react";
+import { getReviewQueue, submitReview, getAvailableNewCardsCount, type ReviewQueueItem } from "../api/review";
+import { Skeleton } from "../components/ui/Skeleton";
+import { cn } from "../lib/cn";
+import { ROUTES } from "../config/routes";
 
-/* -------------------------------------------------------------------------- */
-/*  Static design config                                                      */
-/*  (Tailwind scans source text, so every class must appear as a full string) */
-/* -------------------------------------------------------------------------- */
+const MAX_EXTRA_BATCH = 10;
 
-const RATINGS = [
+/**
+ * Oceny 1–4 (Again / Hard / Good / Easy) w kolorach palety:
+ * danger → warning → success → accent.
+ * Pełne nazwy klas muszą zostać w stringach, żeby Tailwind v4 je wykrył.
+ */
+const RATING_BUTTONS = [
   {
     value: 1,
-    label: "Again",
-    key: "1",
-    accent: "bg-red-500",
-    button:
-      "border-red-500/20 bg-red-500/10 text-red-700 hover:border-red-500/40 hover:bg-red-500/20 hover:shadow-red-500/25 active:bg-red-500/30 focus-visible:ring-red-500/60 dark:text-red-300",
+    label: "Nie pamiętam",
+    tone: "text-danger",
+    className:
+      "border-danger/35 bg-danger/10 text-danger hover:border-danger hover:bg-danger/20 focus-visible:outline-danger",
   },
   {
     value: 2,
-    label: "Hard",
-    key: "2",
-    accent: "bg-orange-500",
-    button:
-      "border-orange-500/20 bg-orange-500/10 text-orange-700 hover:border-orange-500/40 hover:bg-orange-500/20 hover:shadow-orange-500/25 active:bg-orange-500/30 focus-visible:ring-orange-500/60 dark:text-orange-300",
+    label: "Trudne",
+    tone: "text-warning",
+    className:
+      "border-warning/35 bg-warning/10 text-warning hover:border-warning hover:bg-warning/20 focus-visible:outline-warning",
   },
   {
     value: 3,
-    label: "Good",
-    key: "3",
-    accent: "bg-green-500",
-    button:
-      "border-green-500/20 bg-green-500/10 text-green-700 hover:border-green-500/40 hover:bg-green-500/20 hover:shadow-green-500/25 active:bg-green-500/30 focus-visible:ring-green-500/60 dark:text-green-300",
+    label: "Znam",
+    tone: "text-success",
+    className:
+      "border-success/35 bg-success/10 text-success hover:border-success hover:bg-success/20 focus-visible:outline-success",
   },
   {
     value: 4,
-    label: "Easy",
-    key: "4",
-    accent: "bg-blue-500",
-    button:
-      "border-blue-500/20 bg-blue-500/10 text-blue-700 hover:border-blue-500/40 hover:bg-blue-500/20 hover:shadow-blue-500/25 active:bg-blue-500/30 focus-visible:ring-blue-500/60 dark:text-blue-300",
+    label: "Łatwe",
+    tone: "text-accent",
+    className:
+      "border-accent/35 bg-accent/10 text-accent hover:border-accent hover:bg-accent/20 focus-visible:outline-accent",
   },
-] as const;
+];
 
-// Shared by both card faces. Both faces sit in the same grid cell
-// (col-start-1 row-start-1) so the card always grows to fit the taller one.
-const FACE =
-  "relative col-start-1 row-start-1 flex flex-col overflow-hidden rounded-3xl border p-6 shadow-2xl ring-1 backface-hidden sm:p-10";
+/** Jedna już ocenioną fiszka – trzymana tylko w pamięci strony, do podglądu. */
+type HistoryEntry = { card: ReviewQueueItem; rating: number };
 
-const FACE_FRONT =
-  "border-white/70 bg-linear-to-b from-white to-slate-50/90 shadow-indigo-900/10 ring-black/5 dark:border-white/10 dark:from-slate-800/90 dark:to-slate-900/90 dark:shadow-black/50 dark:ring-white/5";
+const CARD_HEIGHT = "h-[clamp(19rem,50vh,30rem)]";
+// Ta sama kolumna i to samo zakotwiczenie co w TestSessionPage – przełączanie Testy ↔ Fiszki nic nie przeskakuje.
+const PAGE_SHELL = "mx-auto flex w-full max-w-3xl flex-col gap-6 p-4 pt-6 sm:p-6 sm:pt-[8vh]";
 
-const FACE_BACK =
-  "rotate-y-180 border-indigo-200/70 bg-linear-to-b from-indigo-50 to-white shadow-indigo-900/15 ring-indigo-500/10 dark:border-indigo-400/20 dark:from-indigo-950/80 dark:to-slate-900/95 dark:shadow-black/50 dark:ring-indigo-400/10";
+const NAV_BUTTON =
+  "inline-flex size-8 cursor-pointer items-center justify-center rounded-lg text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg disabled:pointer-events-none disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
-const BADGE =
-  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold tracking-wider uppercase";
+const PRIMARY_BUTTON =
+  "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-accent px-6 text-sm font-medium text-accent-fg hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
-const PILL =
-  "inline-flex max-w-full items-center gap-1.5 rounded-full border border-slate-900/10 bg-slate-900/5 px-3 py-1 text-xs font-medium text-slate-600 dark:border-white/10 dark:bg-white/10 dark:text-slate-300";
+const FACE_BASE: CSSProperties = {
+  backfaceVisibility: "hidden",
+  WebkitBackfaceVisibility: "hidden",
+};
 
-/* -------------------------------------------------------------------------- */
-/*  Tiny presentational helpers                                               */
-/* -------------------------------------------------------------------------- */
-
-type IconProps = { className?: string };
-
-function ArrowLeftIcon({ className }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
-      <path d="M19 12H5" />
-      <path d="m12 19-7-7 7-7" />
-    </svg>
-  );
+/** 1 fiszkę, 2–4 fiszki, 5+ fiszek (biernik) */
+function fiszkiForm(n: number) {
+  if (n === 1) return "fiszkę";
+  const lastTwo = n % 100;
+  const last = n % 10;
+  if (last >= 2 && last <= 4 && !(lastTwo >= 12 && lastTwo <= 14)) return "fiszki";
+  return "fiszek";
 }
 
-function BookIcon({ className }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
-      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-    </svg>
-  );
+function isTyping(target: EventTarget | null) {
+  const el = target as HTMLElement | null;
+  return !!el && (el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName));
 }
-
-function CheckIcon({ className }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
-      <path d="M20 6 9 17l-5-5" />
-    </svg>
-  );
-}
-
-/** Full-screen "focus mode" backdrop: soft aurora blobs + faint dot grid. */
-function Shell({ children }: { children: ReactNode }) {
-  return (
-    <div className="relative isolate grid min-h-dvh place-items-center overflow-x-clip bg-slate-100 px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-slate-900 antialiased dark:bg-[#080a14] dark:text-slate-100">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-48 left-1/2 size-[44rem] -translate-x-1/2 rounded-full bg-indigo-400/30 blur-3xl dark:bg-indigo-600/20" />
-        <div className="absolute -bottom-56 -left-40 size-[36rem] rounded-full bg-fuchsia-300/30 blur-3xl dark:bg-fuchsia-700/15" />
-        <div className="absolute top-1/3 -right-40 size-[30rem] rounded-full bg-sky-300/30 blur-3xl dark:bg-sky-600/15" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgb(15_23_42/0.07)_1px,transparent_0)] bg-size-[22px_22px] dark:bg-[radial-gradient(circle_at_1px_1px,rgb(255_255_255/0.05)_1px,transparent_0)]" />
-      </div>
-      {children}
-    </div>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/*  Page                                                                      */
-/* -------------------------------------------------------------------------- */
 
 export function StudySessionPage() {
   const { subjectId } = useParams();
+  const [searchParams] = useSearchParams();
+  const sourceId = searchParams.get("sourceId");
   const navigate = useNavigate();
 
   const [queue, setQueue] = useState<ReviewQueueItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [availableExtra, setAvailableExtra] = useState<number | null>(null);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  // null = bieżąca fiszka; liczba = indeks w history (podgląd tylko do odczytu)
+  const [viewIndex, setViewIndex] = useState<number | null>(null);
   const cardShownAt = useRef<number>(Date.now());
-  const hasFetched = useRef(false);
-  // Guards against double submits (e.g. a key held down or two quick taps).
-  const isSubmitting = useRef(false);
+  const pausedAtRef = useRef<number | null>(null);
+  const fetchedKeyRef = useRef<string | null>(null);
+
+  const numericSubjectId = subjectId ? Number(subjectId) : undefined;
+  const numericSourceId = sourceId ? Number(sourceId) : undefined;
+  const finished = !loading && currentIndex >= queue.length;
 
   useEffect(() => {
-    if (!subjectId || hasFetched.current) return;
-    hasFetched.current = true;
+    if (!subjectId) return;
 
-    getReviewQueue(Number(subjectId)).then((items) => {
+    const key = `${subjectId}:${sourceId ?? ""}`;
+    if (fetchedKeyRef.current === key) return;
+    fetchedKeyRef.current = key;
+
+    setLoading(true);
+    getReviewQueue(Number(subjectId), numericSourceId).then((items) => {
       setQueue(items);
+      setCurrentIndex(0);
+      setShowAnswer(false);
+      setHistory([]);
+      setViewIndex(null);
+      pausedAtRef.current = null;
       setLoading(false);
       cardShownAt.current = Date.now();
     });
-  }, [subjectId]);
+  }, [subjectId, sourceId]);
 
-  function handleShowAnswer() {
-    setShowAnswer(true);
-  }
-
-  async function handleRate(rating: number) {
-    if (isSubmitting.current) return;
-    isSubmitting.current = true;
-
-    const currentCard = queue[currentIndex];
-    const timeSpentSeconds = (Date.now() - cardShownAt.current) / 1000;
-
-    try {
-      await submitReview(currentCard.cardId, rating, timeSpentSeconds);
-
-      setShowAnswer(false);
-      setCurrentIndex((prev) => prev + 1);
-      cardShownAt.current = Date.now();
-    } finally {
-      isSubmitting.current = false;
-    }
-  }
-
-  // Anki-style shortcuts: Space / Enter flips, 1-4 rates (only once flipped).
-  // Must live above the early returns so hook order never changes.
   useEffect(() => {
-    if (loading || currentIndex >= queue.length) return;
+    if (loading || currentIndex < queue.length || numericSubjectId === undefined) return;
+    getAvailableNewCardsCount(numericSubjectId, numericSourceId).then(setAvailableExtra);
+  }, [loading, currentIndex, queue.length, numericSubjectId, numericSourceId]);
+
+  const handleFlip = useCallback(() => setShowAnswer(true), []);
+
+  const handleRate = useCallback(
+    async (rating: number) => {
+      const currentCard = queue[currentIndex];
+      if (!currentCard || submitting) return;
+
+      setSubmitting(true);
+      try {
+        const timeSpentSeconds = Math.max(0, (Date.now() - cardShownAt.current) / 1000);
+        await submitReview(currentCard.cardId, rating, timeSpentSeconds);
+
+        setHistory((prev) => [...prev, { card: currentCard, rating }]);
+        setShowAnswer(false);
+        setCurrentIndex((prev) => prev + 1);
+        cardShownAt.current = Date.now();
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [queue, currentIndex, submitting]
+  );
+
+  // --- Cofanie: tylko podgląd, niczego nie wysyła do backendu ---
+
+  const goBack = useCallback(() => {
+    if (submitting) return;
+
+    if (viewIndex === null) {
+      if (history.length === 0) return;
+      pausedAtRef.current = Date.now();
+      setViewIndex(history.length - 1);
+    } else if (viewIndex > 0) {
+      setViewIndex(viewIndex - 1);
+    }
+  }, [submitting, viewIndex, history.length]);
+
+  const resumeLive = useCallback(() => {
+    // Czas spędzony w podglądzie nie liczy się do czasu nauki bieżącej fiszki.
+    if (pausedAtRef.current !== null) {
+      cardShownAt.current += Date.now() - pausedAtRef.current;
+      pausedAtRef.current = null;
+    }
+    setViewIndex(null);
+  }, []);
+
+  const goForward = useCallback(() => {
+    if (viewIndex === null) return;
+
+    if (viewIndex >= history.length - 1) resumeLive();
+    else setViewIndex(viewIndex + 1);
+  }, [viewIndex, history.length, resumeLive]);
+
+  // Skróty: Spacja/Enter – odkryj odpowiedź, 1–4 – oceń, ←/→ – poprzednia/następna fiszka.
+  // Gdy widać przyciski ocen albo podgląd, Spacja jest zablokowana i nic nie robi.
+  useEffect(() => {
+    if (loading) return;
+    if (finished && viewIndex === null) return;
 
     function onKeyDown(e: KeyboardEvent) {
-      if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.metaKey || e.ctrlKey || e.altKey || isTyping(e.target)) return;
 
-      const target = e.target as HTMLElement | null;
-      if (target?.matches("input, textarea, select, [contenteditable='true']")) return;
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        goBack();
+        return;
+      }
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        goForward();
+        return;
+      }
+
+      if (viewIndex !== null) {
+        if (e.key === " ") e.preventDefault();
+        return;
+      }
+
+      if (showAnswer && e.key === " ") {
+        e.preventDefault();
+        return;
+      }
+
+      if (e.repeat) return;
 
       if (!showAnswer) {
-        const isFlipKey = e.code === "Space" || e.key === "Enter";
-        // Let focused buttons/links keep their native Space/Enter behaviour.
-        if (isFlipKey && !target?.closest("button, a")) {
+        if (e.key === " " || e.key === "Enter") {
           e.preventDefault();
-          handleShowAnswer();
+          handleFlip();
         }
         return;
       }
 
-      const rating = RATINGS.find((r) => r.key === e.key);
-      if (rating) {
+      const rating = Number(e.key);
+      if (rating >= 1 && rating <= 4) {
         e.preventDefault();
-        void handleRate(rating.value);
+        void handleRate(rating);
       }
     }
 
+    // Firefox aktywuje sfokusowany przycisk dopiero na keyup – tam też blokujemy Spację.
+    function onKeyUp(e: KeyboardEvent) {
+      if ((showAnswer || viewIndex !== null) && e.key === " " && !isTyping(e.target)) e.preventDefault();
+    }
+
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, queue, currentIndex, showAnswer]);
+    window.addEventListener("keyup", onKeyUp);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+    };
+  }, [loading, finished, viewIndex, showAnswer, handleFlip, handleRate, goBack, goForward]);
+
+  async function handleStudyMore() {
+    if (numericSubjectId === undefined || !availableExtra) return;
+
+    const batchSize = Math.min(MAX_EXTRA_BATCH, availableExtra);
+    setLoading(true);
+    const extraItems = await getReviewQueue(numericSubjectId, numericSourceId, batchSize);
+
+    setQueue(extraItems);
+    setCurrentIndex(0);
+    setShowAnswer(false);
+    setHistory([]);
+    setViewIndex(null);
+    pausedAtRef.current = null;
+    setAvailableExtra(null);
+    setLoading(false);
+    cardShownAt.current = Date.now();
+  }
+
+  const viewEntry = viewIndex !== null ? (history[viewIndex] ?? null) : null;
+  const viewing = viewEntry !== null;
 
   if (loading) {
     return (
-      <Shell>
-        <div role="status" className="flex items-center gap-3 text-slate-500 dark:text-slate-400">
-          <span className="size-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-          <span className="text-sm font-medium">Ładowanie...</span>
-        </div>
-      </Shell>
+      <div className={PAGE_SHELL}>
+        <Skeleton className="h-5 w-full" />
+        <Skeleton className={cn("w-full rounded-2xl", CARD_HEIGHT)} />
+      </div>
     );
   }
 
-  if (currentIndex >= queue.length) {
+  if (finished && !viewing) {
+    const extraBatch = availableExtra !== null ? Math.min(MAX_EXTRA_BATCH, availableExtra) : 0;
+
     return (
-      <Shell>
-        <div className="w-full max-w-md rounded-3xl border border-white/70 bg-white/70 p-8 text-center shadow-2xl shadow-indigo-900/10 ring-1 ring-black/5 backdrop-blur-xl sm:p-12 dark:border-white/10 dark:bg-white/5 dark:shadow-black/50 dark:ring-white/5">
-          <div className="mx-auto mb-6 grid size-20 place-items-center rounded-full bg-linear-to-br from-emerald-400 to-teal-500 text-white shadow-lg shadow-emerald-500/30">
-            <CheckIcon className="size-10" />
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-balance">
-            Brawo! Skończyłeś powtórki na dziś.
-          </h1>
-          {queue.length > 0 && (
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-              Liczba przejrzanych kart:{" "}
-              <span className="font-semibold text-slate-700 tabular-nums dark:text-slate-200">
-                {queue.length}
-              </span>
-            </p>
-          )}
+      <div className="flex h-full flex-col items-center justify-center gap-4 p-10 text-center">
+        <CheckCircle2 className="text-success" size={40} aria-hidden="true" />
+        <p className="text-xl font-bold">Brawo! Skończyłeś powtórki na dziś.</p>
+
+        {extraBatch > 0 && (
           <button
-            type="button"
-            onClick={() => navigate("/subjects")}
-            className="mt-8 w-full rounded-2xl bg-linear-to-r from-indigo-500 via-violet-500 to-fuchsia-500 px-6 py-3.5 font-semibold text-white shadow-lg shadow-indigo-500/30 outline-hidden transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/40 hover:brightness-110 focus-visible:ring-2 focus-visible:ring-indigo-400 active:scale-[0.985] active:brightness-95"
+            onClick={handleStudyMore}
+            className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl border border-accent px-6 text-sm font-medium text-accent hover:bg-accent/10"
           >
-            Wróć do przedmiotów
+            Ucz się jeszcze {extraBatch} {fiszkiForm(extraBatch)}
           </button>
-        </div>
-      </Shell>
+        )}
+
+        <button
+          onClick={() => navigate(ROUTES.flashcards)}
+          className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl bg-accent px-6 text-sm font-medium text-accent-fg hover:opacity-90"
+        >
+          Wróć do Fiszek
+        </button>
+
+        {history.length > 0 && (
+          <button
+            onClick={goBack}
+            className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl px-6 text-sm font-medium text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg"
+          >
+            <ChevronLeft size={16} aria-hidden="true" />
+            Przejrzyj powtórki
+          </button>
+        )}
+      </div>
     );
   }
 
-  const card = queue[currentIndex];
-  const progress = ((currentIndex + 1) / queue.length) * 100;
+  const shownCard = viewEntry ? viewEntry.card : queue[currentIndex];
+  const flipped = viewing ? true : showAnswer;
+  const shownIndex = viewIndex ?? currentIndex;
+  const canGoBack = !submitting && (viewing ? (viewIndex ?? 0) > 0 : history.length > 0);
+  const ratingMeta = viewEntry ? RATING_BUTTONS.find((b) => b.value === viewEntry.rating) : undefined;
+  const progress = (currentIndex / queue.length) * 100;
+  const sourceLabel = [shownCard.sourceName, shownCard.pageNumber ? `s. ${shownCard.pageNumber}` : null]
+    .filter(Boolean)
+    .join(", ");
 
   return (
-    <Shell>
-      <div className="flex w-full max-w-2xl flex-col gap-5 sm:gap-6">
-        {/* ── Header: exit + progress ─────────────────────────────────── */}
-        <header className="flex items-center gap-3 sm:gap-4">
-          <button
-            type="button"
-            onClick={() => navigate("/subjects")}
-            aria-label="Zakończ sesję"
-            className="grid size-10 shrink-0 place-items-center rounded-full border border-slate-900/10 bg-white/60 text-slate-600 shadow-sm outline-hidden backdrop-blur-md transition-all duration-300 hover:bg-white hover:text-slate-900 focus-visible:ring-2 focus-visible:ring-indigo-400 active:scale-90 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
-          >
-            <ArrowLeftIcon className="size-5" />
-          </button>
-
-          <div
-            role="progressbar"
-            aria-valuemin={1}
-            aria-valuemax={queue.length}
-            aria-valuenow={currentIndex + 1}
-            className="h-2 flex-1 overflow-hidden rounded-full bg-slate-900/10 dark:bg-white/10"
-          >
-            <div
-              style={{ "--progress": `${progress}%` } as CSSProperties}
-              className="h-full w-(--progress) rounded-full bg-linear-to-r from-indigo-500 via-violet-500 to-fuchsia-500 shadow-[0_0_12px_rgb(139_92_246/0.6)] transition-[width] duration-500 ease-in-out motion-reduce:transition-none"
-            />
-          </div>
-
-          <p className="shrink-0 text-sm font-semibold text-slate-700 tabular-nums dark:text-slate-200">
-            {currentIndex + 1}
-            <span className="font-medium text-slate-400 dark:text-slate-500"> / {queue.length}</span>
+    <div className={PAGE_SHELL}>
+      {/* Postęp + cofanie */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-3">
+          <p className="flex items-center gap-2 text-sm tabular-nums text-fg-muted">
+            <span>
+              <span className="font-medium text-fg">{shownIndex + 1}</span> / {queue.length}
+            </span>
+            {viewing && <span className="rounded-md bg-surface-2 px-2 py-0.5 text-xs">Podgląd</span>}
           </p>
-        </header>
 
-        {/* ── Card (remounted per card → no answer spoiler while flipping back) */}
-        <div
-          key={currentIndex}
-          className="transition-[opacity,translate,scale] duration-500 ease-out starting:translate-y-4 starting:scale-[0.97] starting:opacity-0 motion-reduce:transition-none"
-        >
-          <div
-            className={`perspective-[1400px] ${showAnswer ? "" : "cursor-pointer"}`}
-            onClick={() => {
-              if (!showAnswer) handleShowAnswer();
-            }}
-          >
-            <div
-              className={`grid min-h-[clamp(18rem,46dvh,28rem)] transform-3d transition-transform duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none ${
-                showAnswer ? "rotate-y-180" : ""
-              }`}
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={goBack}
+              disabled={!canGoBack}
+              aria-label="Poprzednia fiszka"
+              title="Poprzednia fiszka (←)"
+              className={NAV_BUTTON}
             >
-              {/* FRONT */}
-              <section aria-hidden={showAnswer} className={`${FACE} ${FACE_FRONT}`}>
-                <span aria-hidden="true" className="pointer-events-none absolute inset-x-8 top-0 h-px bg-linear-to-r from-transparent via-white to-transparent dark:via-white/30" />
-                <span aria-hidden="true" className="pointer-events-none absolute -top-24 -right-24 size-64 rounded-full bg-indigo-400/20 blur-3xl dark:bg-indigo-500/20" />
-
-                <div className="relative flex items-center justify-between gap-3">
-                  <span className={`${BADGE} border-indigo-500/20 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300`}>
-                    <span className="size-1.5 rounded-full bg-indigo-500" />
-                    Pytanie
-                  </span>
-                  <span className="text-xs text-slate-400 dark:text-slate-500">Kliknij, aby odwrócić</span>
-                </div>
-
-                <div className="relative flex min-h-0 max-h-[42dvh] flex-1 flex-col overflow-y-auto py-6">
-                  <p className="my-auto text-center text-2xl leading-snug font-semibold tracking-tight break-words text-balance text-slate-900 sm:text-3xl dark:text-white">
-                    {card.front}
-                  </p>
-                </div>
-              </section>
-
-              {/* BACK */}
-              <section aria-hidden={!showAnswer} className={`${FACE} ${FACE_BACK}`}>
-                <span aria-hidden="true" className="pointer-events-none absolute inset-x-8 top-0 h-px bg-linear-to-r from-transparent via-indigo-300 to-transparent dark:via-indigo-300/40" />
-                <span aria-hidden="true" className="pointer-events-none absolute -bottom-24 -left-24 size-64 rounded-full bg-violet-400/20 blur-3xl dark:bg-violet-500/20" />
-
-                <div className="relative flex items-center justify-between gap-3">
-                  <span className={`${BADGE} border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300`}>
-                    <span className="size-1.5 rounded-full bg-emerald-500" />
-                    Odpowiedź
-                  </span>
-                  {card.verbatimQuote && (
-                    <span className={`${BADGE} border-indigo-500/20 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300`}>
-                      Cytat
-                    </span>
-                  )}
-                </div>
-
-                {/* question recap */}
-                <p className="relative mt-4 line-clamp-2 text-center text-sm text-slate-500 dark:text-slate-400">
-                  {card.front}
-                </p>
-                <div aria-hidden="true" className="relative mt-4 h-px w-full bg-linear-to-r from-transparent via-slate-900/15 to-transparent dark:via-white/15" />
-
-                <div className="relative flex min-h-0 max-h-[34dvh] flex-1 flex-col overflow-y-auto py-5">
-                  <div className="my-auto w-full">
-                    {card.verbatimQuote ? (
-                      <blockquote className="rounded-2xl border-l-4 border-indigo-400/70 bg-indigo-500/5 py-4 pr-5 pl-6 font-serif text-lg leading-relaxed break-words text-slate-700 italic sm:text-xl dark:border-indigo-400/50 dark:bg-indigo-400/10 dark:text-slate-200">
-                        „{card.back}”
-                      </blockquote>
-                    ) : (
-                      <p className="text-center text-xl leading-relaxed break-words text-balance text-slate-800 sm:text-2xl dark:text-slate-100">
-                        {card.back}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {(card.pageNumber || card.sourceName) && (
-                  <div className="relative flex flex-wrap items-center justify-center gap-2">
-                    {card.sourceName ? (
-                      <span className={PILL}>
-                        <BookIcon className="size-3.5 shrink-0" />
-                        <span className="truncate">{card.sourceName}</span>
-                      </span>
-                    ) : null}
-                    {card.pageNumber ? <span className={`${PILL} tabular-nums`}>s. {card.pageNumber}</span> : null}
-                  </div>
-                )}
-              </section>
-            </div>
+              <ChevronLeft size={18} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              onClick={goForward}
+              disabled={!viewing}
+              aria-label="Następna fiszka"
+              title="Następna fiszka (→)"
+              className={NAV_BUTTON}
+            >
+              <ChevronRight size={18} aria-hidden="true" />
+            </button>
           </div>
         </div>
 
-        {/* ── Bottom dock: "reveal" and "rate" share one cell and cross-fade ── */}
-        <div className="rounded-3xl border border-white/70 bg-white/60 p-2 shadow-xl shadow-slate-900/5 ring-1 ring-black/5 backdrop-blur-xl dark:border-white/10 dark:bg-white/5 dark:shadow-black/40 dark:ring-white/5">
-          <div className="grid *:col-start-1 *:row-start-1">
-            {/* Reveal */}
-            <div
-              aria-hidden={showAnswer}
-              className={`transition-all duration-300 ease-in-out motion-reduce:transition-none ${
-                showAnswer ? "pointer-events-none translate-y-2 opacity-0" : "opacity-100"
-              }`}
-            >
-              <button
-                type="button"
-                onClick={handleShowAnswer}
-                disabled={showAnswer}
-                className="flex w-full items-center justify-center gap-3 rounded-2xl bg-linear-to-r from-indigo-500 via-violet-500 to-fuchsia-500 px-6 py-4 text-base font-semibold text-white shadow-lg shadow-indigo-500/30 outline-hidden transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/40 hover:brightness-110 focus-visible:ring-2 focus-visible:ring-indigo-400 active:scale-[0.985] active:brightness-95"
-              >
-                Pokaż odpowiedź
-                <kbd className="hidden rounded-md border border-white/30 bg-white/20 px-1.5 py-0.5 font-sans text-[11px] font-semibold pointer-fine:inline-flex">
-                  Spacja
-                </kbd>
-              </button>
+        <div
+          role="progressbar"
+          aria-label="Postęp sesji"
+          aria-valuemin={0}
+          aria-valuemax={queue.length}
+          aria-valuenow={currentIndex}
+          className="h-1 overflow-hidden rounded-full bg-surface-2"
+        >
+          <div
+            className="h-full rounded-full bg-accent transition-[width] duration-500 ease-out motion-reduce:transition-none"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </div>
+
+      {/*
+        key = cardId → każda karta to świeży element: nowa fiszka pojawia się od razu "od przodu"
+        i NIE odwraca się z powrotem (inaczej przez chwilę byłoby widać odpowiedź następnej karty).
+        W podglądzie karta od razu jest odwrócona, na odpowiedzi.
+      */}
+      <div
+        key={shownCard.cardId}
+        className={cn(
+          "relative w-full transition-opacity duration-200 starting:opacity-0 motion-reduce:transition-none",
+          CARD_HEIGHT
+        )}
+        style={{ perspective: "1600px" }}
+      >
+        <div
+          onClick={flipped ? undefined : handleFlip}
+          className={cn(
+            "relative h-full w-full transition-transform duration-500 ease-out motion-reduce:transition-none",
+            !flipped && "cursor-pointer"
+          )}
+          style={{
+            transformStyle: "preserve-3d",
+            transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
+          }}
+        >
+          {/* Przód – samo pytanie */}
+          <div
+            aria-hidden={flipped}
+            style={FACE_BASE}
+            className={cn(
+              "absolute inset-0 flex flex-col rounded-2xl border border-line bg-surface p-6 transition-colors sm:p-8",
+              !flipped && "hover:bg-surface-2"
+            )}
+          >
+            <div className="flex flex-1 flex-col overflow-y-auto">
+              <p className="my-auto text-pretty text-center text-xl font-semibold leading-snug text-fg sm:text-2xl">
+                {shownCard.front}
+              </p>
+            </div>
+          </div>
+
+          {/* Tył – pytanie I odpowiedź razem */}
+          <div
+            aria-hidden={!flipped}
+            style={{ ...FACE_BASE, transform: "rotateY(180deg)" }}
+            className="absolute inset-0 flex flex-col gap-4 rounded-2xl border border-accent/30 bg-surface p-6 sm:p-8"
+          >
+            <div className="shrink-0 border-b border-line pb-3">
+              <p className="line-clamp-3 text-sm text-fg-muted">{shownCard.front}</p>
             </div>
 
-            {/* Rate */}
-            <div
-              aria-hidden={!showAnswer}
-              className={`transition-all duration-300 ease-in-out motion-reduce:transition-none ${
-                showAnswer ? "opacity-100" : "pointer-events-none -translate-y-2 opacity-0"
-              }`}
-            >
-              <div className="grid grid-cols-4 gap-2">
-                {RATINGS.map((r) => (
-                  <button
-                    key={r.value}
-                    type="button"
-                    disabled={!showAnswer}
-                    onClick={() => handleRate(r.value)}
-                    className={`group flex flex-col items-center gap-1.5 rounded-2xl border px-1 py-3 outline-hidden transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg focus-visible:ring-2 active:translate-y-0 active:scale-95 sm:py-3.5 ${r.button}`}
-                  >
-                    <span className={`h-1 w-5 rounded-full opacity-70 transition-all duration-300 group-hover:w-9 group-hover:opacity-100 ${r.accent}`} />
-                    <span className="text-sm font-semibold sm:text-base">{r.label}</span>
-                    <kbd className="hidden rounded-md border border-current/20 bg-current/10 px-1.5 font-sans text-[11px] font-semibold opacity-80 pointer-fine:inline-flex">
-                      {r.key}
-                    </kbd>
-                  </button>
-                ))}
+            <div className="flex flex-1 flex-col overflow-y-auto">
+              <div className="my-auto">
+                {shownCard.verbatimQuote ? (
+                  <blockquote className="border-l-2 border-accent/60 pl-4 text-lg italic leading-relaxed text-fg sm:text-xl">
+                    „{shownCard.back}”
+                  </blockquote>
+                ) : (
+                  <p className="text-lg leading-relaxed text-fg sm:text-xl">{shownCard.back}</p>
+                )}
               </div>
             </div>
+
+            {sourceLabel && (
+              <p className="flex shrink-0 items-center gap-2 border-t border-line pt-3 text-xs text-fg-muted">
+                <BookOpen size={14} aria-hidden="true" />
+                <span>{sourceLabel}</span>
+              </p>
+            )}
           </div>
         </div>
       </div>
-    </Shell>
+
+      {/* Stała wysokość strefy pod kartą – karta nie "skacze" po odkryciu odpowiedzi */}
+      <div className="min-h-[8.75rem] sm:min-h-16">
+        {viewEntry ? (
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-fg-muted">
+              Twoja ocena:{" "}
+              <span className={cn("font-semibold", ratingMeta?.tone)}>{ratingMeta?.label}</span>
+            </p>
+            <button type="button" onClick={resumeLive} className={PRIMARY_BUTTON}>
+              {finished ? "Wróć do podsumowania" : "Kontynuuj"}
+              <ArrowRight size={16} aria-hidden="true" />
+            </button>
+          </div>
+        ) : (
+          showAnswer && (
+            <div className="grid grid-cols-2 gap-3 transition-opacity duration-200 starting:opacity-0 sm:grid-cols-4">
+              {RATING_BUTTONS.map((btn) => (
+                <button
+                  key={btn.value}
+                  type="button"
+                  disabled={submitting}
+                  onClick={() => handleRate(btn.value)}
+                  className={cn(
+                    "flex min-h-16 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-xl border px-3 py-2.5 text-sm font-semibold",
+                    "transition active:scale-[0.97] disabled:pointer-events-none disabled:opacity-60",
+                    "focus-visible:outline-2 focus-visible:outline-offset-2",
+                    btn.className
+                  )}
+                >
+                  <span>{btn.label}</span>
+                  <kbd className="hidden font-sans text-[11px] font-medium opacity-60 sm:block">{btn.value}</kbd>
+                </button>
+              ))}
+            </div>
+          )
+        )}
+      </div>
+    </div>
   );
 }
