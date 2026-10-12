@@ -6,7 +6,17 @@ export const api = axios.create({
 });
 
 /** Strony dostępne bez logowania: tu nie przekierowujemy na /login, bo użytkownik i tak już tam jest. */
-const PUBLIC_PATHS: string[] = [ROUTES.landing, ROUTES.login, ROUTES.register, ROUTES.checkEmail, ROUTES.verify];
+const PUBLIC_PATHS: string[] = [
+  ROUTES.landing,
+  ROUTES.login,
+  ROUTES.register,
+  ROUTES.checkEmail,
+  ROUTES.verify,
+  ROUTES.forgotPassword,
+  ROUTES.resetPassword,
+  ROUTES.terms,
+  ROUTES.privacy,
+];
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("accessToken");

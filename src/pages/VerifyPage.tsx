@@ -3,6 +3,7 @@ import { useSearchParams, Link } from "react-router-dom";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { api } from "../api/axiosInstance";
 import { AuthLayout } from "../components/layout/AuthLayout";
+import { ResendVerification } from "../features/auth/ResendVerification";
 
 export function VerifyPage() {
   const [searchParams] = useSearchParams();
@@ -29,6 +30,9 @@ export function VerifyPage() {
         <div className="flex flex-col items-center gap-3 text-center">
           <XCircle className="text-danger" size={32} aria-hidden="true" />
           <p className="text-sm text-fg-muted">Link nieprawidłowy lub wygasł.</p>
+          <div className="mt-3 w-full text-left">
+            <ResendVerification />
+          </div>
         </div>
       )}
 

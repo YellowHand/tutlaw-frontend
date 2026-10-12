@@ -82,6 +82,48 @@ export function TestsStatsPanel() {
           ariaLabel="Poprawność odpowiedzi w testach"
         />
       </div>
+
+      {data.answersLast30Days > 0 && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <InsightTile
+            value={data.confidentMistakesLast30Days}
+            title="Pewne błędy"
+            description="Pomyłki, przy których nie zaznaczyłeś „Nie jestem pewien”. To utrwalone błędne przekonania, warto je poprawić w pierwszej kolejności."
+            valueClassName={data.confidentMistakesLast30Days > 0 ? "text-danger" : "text-fg"}
+          />
+          <InsightTile
+            value={data.luckyGuessesLast30Days}
+            title="Trafione w ciemno"
+            description="Poprawne odpowiedzi z zaznaczonym „Nie jestem pewien”. Wynik wygląda dobrze, ale wiedza jest krucha."
+            valueClassName={data.luckyGuessesLast30Days > 0 ? "text-warning" : "text-fg"}
+          />
+        </div>
+      )}
     </div>
+  );
+}
+
+interface InsightTileProps {
+  value: number;
+  title: string;
+  description: string;
+  valueClassName: string;
+}
+
+/** Jedna liczba z ostatnich 30 dni z krótkim wyjaśnieniem, co oznacza. */
+function InsightTile({ value, title, description, valueClassName }: InsightTileProps) {
+  return (
+    <Card className="flex items-start gap-4 p-4">
+      <p className={`text-3xl font-semibold tabular-nums ${valueClassName}`} aria-hidden="true">
+        {value}
+      </p>
+      <div>
+        <h3 className="text-sm font-semibold text-fg">
+          {title}
+          <span className="sr-only">: {value} w ostatnich 30 dniach</span>
+        </h3>
+        <p className="mt-1 text-xs leading-relaxed text-fg-muted">{description}</p>
+      </div>
+    </Card>
   );
 }

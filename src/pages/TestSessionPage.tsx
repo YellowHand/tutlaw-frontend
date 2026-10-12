@@ -12,16 +12,44 @@ import { Skeleton } from "../components/ui/Skeleton";
 import { cn } from "../lib/cn";
 import { ROUTES } from "../config/routes";
 import { useRefreshReviewDataOnExit } from "../features/review/hooks";
+import { isTyping } from "../features/review/keyboard";
+import { LegalBasisLine } from "../features/review/LegalBasisLine";
+import { BacklogFinishNotice, BacklogNotice } from "../features/review/BacklogNotice";
+import { KeyboardHint } from "../features/review/KeyboardHint";
+import { EXTRA_DUE_BATCH, useBacklog } from "../features/review/useBacklog";
+import { ReportCardButton } from "../features/report/ReportCardButton";
 import { SessionLoadError } from "../features/review/SessionLoadError";
 import { loadErrorMessage } from "../lib/errors";
+import {
+  OPTION_KEYS,
+  displayKeyOf,
+  originalKeyOf,
+  pickOptionOrder,
+  type OptionKey,
+  type OptionOrder,
+} from "../features/tests/shuffle";
 
 const MAX_EXTRA_BATCH = 10;
 
-type OptionKey = "A" | "B" | "C";
+/** Pytanie z kolejnością odpowiedzi ustaloną na czas sesji (losową albo z bazy, gdy pytanie odwołuje się do innych odpowiedzi). */
+type TestQuestion = TestQueueItem & { order: OptionOrder };
+
+/** Nadaje pytaniom kolejność odpowiedzi. Przy każdym nowym ułożeniu kolejki losujemy od nowa. */
+function prepareQuestions(items: TestQueueItem[]): TestQuestion[] {
+  return items.map((item) => ({
+    ...item,
+    order: pickOptionOrder([item.optionA, item.optionB, item.optionC]),
+  }));
+}
+
+function optionText(question: TestQueueItem, originalKey: OptionKey): string {
+  return originalKey === "A" ? question.optionA : originalKey === "B" ? question.optionB : question.optionC;
+}
+
 type OptionState = "idle" | "pending" | "correct" | "wrong" | "dimmed";
 
 /** Jedno już rozwiązane pytanie – trzymane tylko w pamięci strony, do podglądu. */
-type HistoryEntry = { question: TestQueueItem; selected: OptionKey; result: TestAnswerResult; guessed: boolean };
+type HistoryEntry = { question: TestQuestion; selected: OptionKey; result: TestAnswerResult; guessed: boolean };
 
 /** Skróty klawiszowe: A/B/C albo 1/2/3 wybierają odpowiedź. */
 const KEY_TO_OPTION: Record<string, OptionKey> = {
@@ -79,13 +107,8 @@ function pytaniaForm(n: number) {
   return "pytań";
 }
 
-function isTyping(target: EventTarget | null) {
-  const el = target as HTMLElement | null;
-  return !!el && (el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName));
-}
-
 interface QuestionBodyProps {
-  question: TestQueueItem;
+  question: TestQuestion;
   selected: OptionKey | null;
   result: TestAnswerResult | null;
   /** Podgląd poprzedniego pytania – odpowiedzi są zablokowane. */
@@ -110,11 +133,9 @@ function QuestionBody({
   onGuessedChange,
   footer,
 }: QuestionBodyProps) {
-  const options: { key: OptionKey; text: string }[] = [
-    { key: "A", text: question.optionA },
-    { key: "B", text: question.optionB },
-    { key: "C", text: question.optionC },
-  ];
+  // Litery A/B/C to pozycje na ekranie. Oryginalny klucz odpowiedzi (z bazy) wraca do serwera i z serwera.
+  const options = OPTION_KEYS.map((key, index) => ({ key, text: optionText(question, question.order[index]) }));
+  const correctDisplayKey = result ? displayKeyOf(question.order, result.correctOption) : null;
 
   return (
     <div className="flex flex-col gap-4 transition-opacity duration-200 starting:opacity-0 motion-reduce:transition-none">
@@ -127,7 +148,7 @@ function QuestionBody({
       <div role="group" aria-label="Odpowiedzi" className="flex flex-col gap-3">
         {options.map((option) => {
           const isSelected = selected === option.key;
-          const isCorrectOption = result?.correctOption === option.key;
+          const isCorrectOption = correctDisplayKey === option.key;
 
           let state: OptionState = "idle";
           if (result) {
@@ -216,9 +237,16 @@ function QuestionBody({
             {result.correct && guessed && "Zaznaczone jako niepewne: zapisano jako „Nie pamiętam”, pytanie wróci w powtórkach."}
             {!result.correct && "Zapisano jako „Nie pamiętam”: pytanie wróci w powtórkach."}
           </p>
-          {result.explanation && <p className="text-base leading-relaxed text-fg">{result.explanation}</p>}
+          {result.explanation?.trim() && <p className="text-base leading-relaxed text-fg">{result.explanation}</p>}
+          <LegalBasisLine
+            legalBasis={result.legalBasis}
+            validAsOf={result.validAsOf}
+            className="mt-3 text-sm text-fg-muted"
+          />
         </div>
       )}
+
+      {result && <ReportCardButton key={question.cardId} cardId={question.cardId} className="self-start" />}
 
       {footer}
     </div>
@@ -233,7 +261,7 @@ export function TestSessionPage() {
   const navigate = useNavigate();
   useRefreshReviewDataOnExit();
 
-  const [queue, setQueue] = useState<TestQueueItem[]>([]);
+  const [queue, setQueue] = useState<TestQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selected, setSelected] = useState<OptionKey | null>(null);
   const [result, setResult] = useState<TestAnswerResult | null>(null);
@@ -246,6 +274,8 @@ export function TestSessionPage() {
   const [extraError, setExtraError] = useState(false);
   const [availableExtra, setAvailableExtra] = useState<number | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  // Po „Rozwiąż jeszcze" / „Powtórz jeszcze" / „Powtórz teraz" sesja jest dodatkową porcją: informacja o zaległościach z początku nie dotyczy.
+  const [isExtraBatch, setIsExtraBatch] = useState(false);
   // null = bieżące pytanie; liczba = indeks w history (podgląd tylko do odczytu)
   const [viewIndex, setViewIndex] = useState<number | null>(null);
   // Ustawiane przy każdym wczytaniu pytania; początkowe 0 nigdy nie trafia do backendu.
@@ -259,6 +289,13 @@ export function TestSessionPage() {
   const numericSourceId = sourceId ? Number(sourceId) : undefined;
   const numericCategoryId = categoryId ? Number(categoryId) : undefined;
   const finished = !loading && !loadError && currentIndex >= queue.length;
+  const backlog = useBacklog({
+    mode: "TEST",
+    subjectId: numericSubjectId,
+    sourceId: numericSourceId,
+    categoryId: numericCategoryId,
+  });
+  const refetchBacklog = backlog.refetch;
 
   useEffect(() => {
     // Bez subjectId i categoryId (trasa /app/test) test obejmuje cały materiał użytkownika.
@@ -272,7 +309,7 @@ export function TestSessionPage() {
     getTestQueue(numericSubjectId, numericSourceId, undefined, numericCategoryId)
       .then((items) => {
         if (requestRef.current !== requestId) return;
-        setQueue(items);
+        setQueue(prepareQuestions(items));
         setCurrentIndex(0);
         setSelected(null);
         setResult(null);
@@ -280,6 +317,7 @@ export function TestSessionPage() {
         setCorrectCount(0);
         setSaveError(false);
         setExtraError(false);
+        setIsExtraBatch(false);
         setHistory([]);
         setViewIndex(null);
         pausedAtRef.current = null;
@@ -301,6 +339,11 @@ export function TestSessionPage() {
       .catch(() => setAvailableExtra(0));
   }, [loading, loadError, currentIndex, queue.length, numericSubjectId, numericSourceId, numericCategoryId]);
 
+  // Na końcu sesji (i po każdej nowej kolejce) pytamy o zaległości jeszcze raz: ile zostało na kolejne dni.
+  useEffect(() => {
+    if (finished) void refetchBacklog();
+  }, [finished, queue, refetchBacklog]);
+
   const handleSelect = useCallback(
     async (option: OptionKey) => {
       const currentCard = queue[currentIndex];
@@ -312,7 +355,13 @@ export function TestSessionPage() {
       const timeSpentSeconds = Math.max(0, (Date.now() - questionShownAt.current) / 1000);
 
       try {
-        const res = await submitTestAnswer(currentCard.cardId, option, timeSpentSeconds, guessed);
+        // Serwer zna odpowiedzi pod oryginalnymi kluczami, więc literę z ekranu zamieniamy z powrotem.
+        const res = await submitTestAnswer(
+          currentCard.cardId,
+          originalKeyOf(currentCard.order, option),
+          timeSpentSeconds,
+          guessed
+        );
         setResult(res);
         if (res.correct) setCorrectCount((prev) => prev + 1);
       } catch {
@@ -414,16 +463,14 @@ export function TestSessionPage() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [loading, finished, viewIndex, selected, result, handleSelect, handleNext, goBack, goForward]);
 
-  async function handleStudyMore() {
-    if (!availableExtra) return;
-
-    const batchSize = Math.min(MAX_EXTRA_BATCH, availableExtra);
+  /** Wczytuje dodatkową porcję pytań (nowe albo zaległe ponad limit) i zaczyna z nią nową sesję. */
+  async function startExtraBatch(load: () => Promise<TestQueueItem[]>) {
     setLoading(true);
     setExtraError(false);
     try {
-      const extraItems = await getTestQueue(numericSubjectId, numericSourceId, batchSize, numericCategoryId);
+      const extraItems = await load();
 
-      setQueue(extraItems);
+      setQueue(prepareQuestions(extraItems));
       setCurrentIndex(0);
       setSelected(null);
       setResult(null);
@@ -434,6 +481,7 @@ export function TestSessionPage() {
       setViewIndex(null);
       pausedAtRef.current = null;
       setAvailableExtra(null);
+      setIsExtraBatch(true);
       questionShownAt.current = Date.now();
     } catch {
       setExtraError(true);
@@ -442,13 +490,25 @@ export function TestSessionPage() {
     }
   }
 
+  function handleStudyMore() {
+    if (!availableExtra) return;
+    const batchSize = Math.min(MAX_EXTRA_BATCH, availableExtra);
+    void startExtraBatch(() => getTestQueue(numericSubjectId, numericSourceId, batchSize, numericCategoryId));
+  }
+
+  /** „Powtórz jeszcze": kolejna porcja zaległych pytań ponad dzienny limit (bez nowych pytań). */
+  function handleExtraDue(batch: number) {
+    void startExtraBatch(() => getTestQueue(numericSubjectId, numericSourceId, 0, numericCategoryId, batch));
+  }
+
   // Pytania, które wrócą w powtórkach: błędne albo oznaczone jako „Nie jestem pewien".
   const toReview = history.filter((h) => !h.result.correct || h.guessed).map((h) => h.question);
 
   function handleRepeatMistakes() {
     if (toReview.length === 0) return;
 
-    setQueue(toReview);
+    setQueue(prepareQuestions(toReview));
+    setIsExtraBatch(true);
     setCurrentIndex(0);
     setSelected(null);
     setResult(null);
@@ -492,6 +552,9 @@ export function TestSessionPage() {
 
   if (finished && !viewing) {
     const extraBatch = availableExtra !== null ? Math.min(MAX_EXTRA_BATCH, availableExtra) : 0;
+    // Liczby z serwera pokazujemy dopiero po odświeżeniu na końcu sesji, żeby nie mignęły stare.
+    const backlogDeferred = backlog.data && !backlog.isFetching ? backlog.data.deferred : 0;
+    const backlogBatch = Math.min(EXTRA_DUE_BATCH, backlogDeferred);
 
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 p-10 text-center">
@@ -526,6 +589,15 @@ export function TestSessionPage() {
               Powtórz teraz ({toReview.length})
             </button>
           </>
+        )}
+
+        {backlogDeferred > 0 && (
+          <BacklogFinishNotice
+            deferred={backlogDeferred}
+            batch={backlogBatch}
+            onMore={() => handleExtraDue(backlogBatch)}
+            unit={pytaniaForm(backlogBatch)}
+          />
         )}
 
         {extraBatch > 0 && (
@@ -612,6 +684,10 @@ export function TestSessionPage() {
             style={{ width: `${progress}%` }}
           />
         </div>
+
+        {!isExtraBatch && !viewing && backlog.data && (
+          <BacklogNotice deferred={backlog.data.deferred} className="text-xs text-fg-muted" />
+        )}
       </div>
 
       {/* key = cardId → każde pytanie pojawia się świeże, bez resztek stanu poprzedniego */}
@@ -651,6 +727,23 @@ export function TestSessionPage() {
                 </button>
               </div>
             )
+          }
+        />
+      )}
+
+      {!viewing && (
+        <KeyboardHint
+          hints={
+            result
+              ? [
+                  { keys: ["Enter"], label: "dalej" },
+                  { keys: ["←", "→"], label: "poprzednie / następne" },
+                ]
+              : [
+                  { keys: ["A", "B", "C"], label: "wybierz odpowiedź" },
+                  { keys: ["G"], label: "niepewna" },
+                  { keys: ["←", "→"], label: "poprzednie / następne" },
+                ]
           }
         />
       )}

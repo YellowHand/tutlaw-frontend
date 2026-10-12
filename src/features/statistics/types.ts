@@ -40,6 +40,10 @@ export interface TestStats {
   correctLast30Days: number;
   /** Procent poprawnych odpowiedzi z 30 dni; null = brak odpowiedzi w tym czasie. */
   accuracyRate: number | null;
+  /** Błędne odpowiedzi bez „Nie jestem pewien" z 30 dni: utrwalone błędne przekonania. */
+  confidentMistakesLast30Days: number;
+  /** Poprawne odpowiedzi z „Nie jestem pewien" z 30 dni: wiedza krucha, wynik przypadkowy. */
+  luckyGuessesLast30Days: number;
   /** Odpowiedzi w testach na każdy z ostatnich 28 dni (ten sam kształt co aktywność w fiszkach). */
   activity: ActivityItem[];
 }

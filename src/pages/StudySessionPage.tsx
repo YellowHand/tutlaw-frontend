@@ -6,6 +6,12 @@ import { Skeleton } from "../components/ui/Skeleton";
 import { cn } from "../lib/cn";
 import { ROUTES } from "../config/routes";
 import { useRefreshReviewDataOnExit } from "../features/review/hooks";
+import { isTyping } from "../features/review/keyboard";
+import { LegalBasisLine } from "../features/review/LegalBasisLine";
+import { BacklogFinishNotice, BacklogNotice } from "../features/review/BacklogNotice";
+import { KeyboardHint } from "../features/review/KeyboardHint";
+import { EXTRA_DUE_BATCH, useBacklog } from "../features/review/useBacklog";
+import { ReportCardButton } from "../features/report/ReportCardButton";
 import { SessionLoadError } from "../features/review/SessionLoadError";
 import { loadErrorMessage } from "../lib/errors";
 
@@ -74,11 +80,6 @@ function fiszkiForm(n: number) {
   return "fiszek";
 }
 
-function isTyping(target: EventTarget | null) {
-  const el = target as HTMLElement | null;
-  return !!el && (el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName));
-}
-
 export function StudySessionPage() {
   const { subjectId } = useParams();
   const [searchParams] = useSearchParams();
@@ -98,6 +99,8 @@ export function StudySessionPage() {
   const [extraError, setExtraError] = useState(false);
   const [availableExtra, setAvailableExtra] = useState<number | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  // Po „Ucz się jeszcze" / „Powtórz jeszcze" sesja jest dodatkową porcją: informacja o zaległościach z początku nie dotyczy.
+  const [isExtraBatch, setIsExtraBatch] = useState(false);
   // null = bieżąca fiszka; liczba = indeks w history (podgląd tylko do odczytu)
   const [viewIndex, setViewIndex] = useState<number | null>(null);
   // Ustawiane przy każdym wczytaniu pytania; początkowe 0 nigdy nie trafia do backendu.
@@ -110,6 +113,8 @@ export function StudySessionPage() {
   const numericSubjectId = subjectId ? Number(subjectId) : undefined;
   const numericSourceId = sourceId ? Number(sourceId) : undefined;
   const finished = !loading && !loadError && currentIndex >= queue.length;
+  const backlog = useBacklog({ mode: "FLASHCARD", subjectId: numericSubjectId, sourceId: numericSourceId });
+  const refetchBacklog = backlog.refetch;
 
   useEffect(() => {
     // Bez subjectId (trasa /app/study) kolejka obejmuje cały materiał użytkownika.
@@ -130,6 +135,7 @@ export function StudySessionPage() {
         setViewIndex(null);
         setRateError(false);
         setExtraError(false);
+        setIsExtraBatch(false);
         pausedAtRef.current = null;
         setLoading(false);
         cardShownAt.current = Date.now();
@@ -148,6 +154,11 @@ export function StudySessionPage() {
       .then(setAvailableExtra)
       .catch(() => setAvailableExtra(0));
   }, [loading, loadError, currentIndex, queue.length, numericSubjectId, numericSourceId]);
+
+  // Na końcu sesji (i po każdej nowej kolejce) pytamy o zaległości jeszcze raz: ile zostało na kolejne dni.
+  useEffect(() => {
+    if (finished) void refetchBacklog();
+  }, [finished, queue, refetchBacklog]);
 
   const handleFlip = useCallback(() => setShowAnswer(true), []);
 
@@ -268,14 +279,12 @@ export function StudySessionPage() {
     };
   }, [loading, finished, viewIndex, showAnswer, handleFlip, handleRate, goBack, goForward]);
 
-  async function handleStudyMore() {
-    if (!availableExtra) return;
-
-    const batchSize = Math.min(MAX_EXTRA_BATCH, availableExtra);
+  /** Wczytuje dodatkową porcję fiszek (nowe albo zaległe ponad limit) i zaczyna z nią nową sesję. */
+  async function startExtraBatch(load: () => Promise<ReviewQueueItem[]>) {
     setLoading(true);
     setExtraError(false);
     try {
-      const extraItems = await getReviewQueue(numericSubjectId, numericSourceId, batchSize);
+      const extraItems = await load();
 
       setQueue(extraItems);
       setCurrentIndex(0);
@@ -284,12 +293,24 @@ export function StudySessionPage() {
       setViewIndex(null);
       pausedAtRef.current = null;
       setAvailableExtra(null);
+      setIsExtraBatch(true);
       cardShownAt.current = Date.now();
     } catch {
       setExtraError(true);
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleStudyMore() {
+    if (!availableExtra) return;
+    const batchSize = Math.min(MAX_EXTRA_BATCH, availableExtra);
+    void startExtraBatch(() => getReviewQueue(numericSubjectId, numericSourceId, batchSize));
+  }
+
+  /** „Powtórz jeszcze": kolejna porcja zaległych ponad dzienny limit (bez nowych fiszek). */
+  function handleExtraDue(batch: number) {
+    void startExtraBatch(() => getReviewQueue(numericSubjectId, numericSourceId, 0, undefined, batch));
   }
 
   const viewEntry = viewIndex !== null ? (history[viewIndex] ?? null) : null;
@@ -317,6 +338,9 @@ export function StudySessionPage() {
 
   if (finished && !viewing) {
     const extraBatch = availableExtra !== null ? Math.min(MAX_EXTRA_BATCH, availableExtra) : 0;
+    // Liczby z serwera pokazujemy dopiero po odświeżeniu na końcu sesji, żeby nie mignęły stare.
+    const backlogDeferred = backlog.data && !backlog.isFetching ? backlog.data.deferred : 0;
+    const backlogBatch = Math.min(EXTRA_DUE_BATCH, backlogDeferred);
 
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 p-10 text-center">
@@ -327,6 +351,15 @@ export function StudySessionPage() {
           <p role="alert" className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
             Nie udało się pobrać kolejnych fiszek. Spróbuj ponownie.
           </p>
+        )}
+
+        {backlogDeferred > 0 && (
+          <BacklogFinishNotice
+            deferred={backlogDeferred}
+            batch={backlogBatch}
+            onMore={() => handleExtraDue(backlogBatch)}
+            unit={fiszkiForm(backlogBatch)}
+          />
         )}
 
         {extraBatch > 0 && (
@@ -420,6 +453,10 @@ export function StudySessionPage() {
             style={{ width: `${progress}%` }}
           />
         </div>
+
+        {!isExtraBatch && !viewing && backlog.data && (
+          <BacklogNotice deferred={backlog.data.deferred} className="text-xs text-fg-muted" />
+        )}
       </div>
 
       {/*
@@ -484,11 +521,16 @@ export function StudySessionPage() {
               </div>
             </div>
 
-            {sourceLabel && (
-              <p className="flex shrink-0 items-center gap-2 border-t border-line pt-3 text-xs text-fg-muted">
-                <BookOpen size={14} aria-hidden="true" />
-                <span>{sourceLabel}</span>
-              </p>
+            {(sourceLabel || shownCard.legalBasis || shownCard.validAsOf) && (
+              <div className="flex shrink-0 flex-col gap-1 border-t border-line pt-3 text-xs text-fg-muted">
+                {sourceLabel && (
+                  <p className="flex items-center gap-2">
+                    <BookOpen size={14} aria-hidden="true" />
+                    <span>{sourceLabel}</span>
+                  </p>
+                )}
+                <LegalBasisLine legalBasis={shownCard.legalBasis} validAsOf={shownCard.validAsOf} />
+              </div>
             )}
           </div>
         </div>
@@ -538,6 +580,26 @@ export function StudySessionPage() {
           )
         )}
       </div>
+
+      {!viewing && (
+        <KeyboardHint
+          hints={
+            showAnswer
+              ? [
+                  { keys: ["1", "2", "3", "4"], label: "oceń" },
+                  { keys: ["←", "→"], label: "poprzednia / następna" },
+                ]
+              : [
+                  { keys: ["Spacja"], label: "odkryj odpowiedź" },
+                  { keys: ["←", "→"], label: "poprzednia / następna" },
+                ]
+          }
+        />
+      )}
+
+      {(viewing || showAnswer) && (
+        <ReportCardButton key={`report:${shownCard.cardId}:${shownIndex}`} cardId={shownCard.cardId} className="self-start" />
+      )}
     </div>
   );
 }

@@ -1,15 +1,22 @@
 import { useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { isAxiosError } from "axios";
 import { api } from "../api/axiosInstance";
 import { useAuth } from "../auth/useAuth";
 import { serverMessage } from "../lib/errors";
 import { AuthLayout } from "../components/layout/AuthLayout";
+import { AuthField } from "../features/auth/AuthField";
+import { ResendVerification } from "../features/auth/ResendVerification";
+import { AUTH_PRIMARY_BUTTON_CLASS } from "../features/auth/styles";
 import { ROUTES } from "../config/routes";
 
 export function LoginPage() {
   const [privateEmail, setPrivateEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  // Serwer odpowiada 409, gdy hasło jest dobre, ale konto nie zostało jeszcze aktywowane linkiem z maila.
+  const [needsActivation, setNeedsActivation] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -19,12 +26,16 @@ export function LoginPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    setNeedsActivation(false);
+    setSubmitting(true);
     try {
       const res = await api.post("/api/auth/login", { privateEmail, password });
       login(res.data.accessToken);
       navigate(from, { replace: true });
     } catch (err) {
+      setNeedsActivation(isAxiosError(err) && err.response?.status === 409);
       setError(serverMessage(err, "Logowanie nie powiodło się"));
+      setSubmitting(false);
     }
   }
 
@@ -34,40 +45,36 @@ export function LoginPage() {
       footer={
         <>
           Nie masz konta?{" "}
-          <Link to="/register" className="text-accent underline">
+          <Link to={ROUTES.register} className="text-accent underline">
             Zarejestruj się
           </Link>
         </>
       }
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <label htmlFor="privateEmail" className="text-sm text-fg-muted">
-            Mail prywatny
-          </label>
-          <input
-            id="privateEmail"
-            type="email"
-            value={privateEmail}
-            onChange={(e) => setPrivateEmail(e.target.value)}
-            className="min-h-11 rounded-xl border border-line bg-surface-2 px-3"
-            required
-          />
-        </div>
+        <AuthField
+          id="privateEmail"
+          label="Mail prywatny"
+          type="email"
+          autoComplete="email"
+          value={privateEmail}
+          onChange={setPrivateEmail}
+          required
+        />
 
-        <div className="flex flex-col gap-1">
-          <label htmlFor="password" className="text-sm text-fg-muted">
-            Hasło
-          </label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="min-h-11 rounded-xl border border-line bg-surface-2 px-3"
-            required
-          />
-        </div>
+        <AuthField
+          id="password"
+          label="Hasło"
+          type="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={setPassword}
+          required
+        />
+
+        <Link to={ROUTES.forgotPassword} className="-mt-2 self-end text-sm text-accent underline">
+          Nie pamiętasz hasła?
+        </Link>
 
         {error && (
           <p role="alert" className="text-sm text-danger">
@@ -75,13 +82,16 @@ export function LoginPage() {
           </p>
         )}
 
-        <button
-          type="submit"
-          className="mt-2 inline-flex items-center justify-center rounded-xl bg-accent px-4 min-h-11 text-sm font-semibold text-accent-fg hover:opacity-90"
-        >
-          Zaloguj się
+        <button type="submit" disabled={submitting} className={AUTH_PRIMARY_BUTTON_CLASS}>
+          {submitting ? "Loguję..." : "Zaloguj się"}
         </button>
       </form>
+
+      {needsActivation && (
+        <div className="mt-6">
+          <ResendVerification initialEmail={privateEmail} />
+        </div>
+      )}
     </AuthLayout>
   );
 }

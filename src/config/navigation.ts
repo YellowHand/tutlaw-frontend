@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { BarChart3, ClipboardList, LayoutDashboard, Layers } from "lucide-react";
+import { BarChart3, ClipboardList, LayoutDashboard, Layers, UserRound } from "lucide-react";
 import { ROUTES } from "./routes";
 
 export interface NavItem {
@@ -17,4 +17,5 @@ export const NAV_ITEMS: NavItem[] = [
   { to: ROUTES.tests, label: "Testy", icon: ClipboardList, activePrefixes: ["/app/test"] },
   { to: ROUTES.flashcards, label: "Fiszki", icon: Layers, activePrefixes: ["/app/study"], badge: "due" },
   { to: ROUTES.statistics, label: "Statystyki", icon: BarChart3 },
+  { to: ROUTES.account, label: "Konto", icon: UserRound },
 ];

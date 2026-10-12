@@ -4,6 +4,10 @@ export const ROUTES = {
   register: "/register",
   checkEmail: "/check-email",
   verify: "/verify",
+  forgotPassword: "/forgot-password",
+  resetPassword: "/reset-password",
+  terms: "/regulamin",
+  privacy: "/polityka-prywatnosci",
 
   app: "/app",
   dashboard: "/app/dashboard",
@@ -33,4 +37,5 @@ export const ROUTES = {
   testCategory: (categoryId: string | number) => `/app/test?categoryId=${categoryId}`,
 
   statistics: "/app/statistics",
+  account: "/app/account",
 } as const;
