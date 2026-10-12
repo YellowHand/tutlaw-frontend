@@ -19,6 +19,8 @@ import { BacklogFinishNotice, BacklogNotice } from "../features/review/BacklogNo
 import { KeyboardHint } from "../features/review/KeyboardHint";
 import { EXTRA_DUE_BATCH, useBacklog } from "../features/review/useBacklog";
 import { ReportCardButton } from "../features/report/ReportCardButton";
+import { LeechHint } from "../features/difficult/LeechHint";
+import { SuspendCardButton } from "../features/difficult/SuspendCardButton";
 import { SessionLoadError } from "../features/review/SessionLoadError";
 import { loadErrorMessage } from "../lib/errors";
 import {
@@ -122,6 +124,9 @@ interface QuestionBodyProps {
   /** „Nie jestem pewien" – widoczne tylko, zanim użytkownik odpowie. */
   guessed?: boolean;
   onGuessedChange?: (guessed: boolean) => void;
+  /** Pytania zawieszone w tej sesji (do stanu przycisku „Zawieś pytanie" także w podglądzie). */
+  suspendedIds?: ReadonlySet<number>;
+  onSuspended?: (cardId: number) => void;
   footer?: ReactNode;
 }
 
@@ -135,6 +140,8 @@ function QuestionBody({
   onSelect,
   guessed = false,
   onGuessedChange,
+  suspendedIds,
+  onSuspended,
   footer,
 }: QuestionBodyProps) {
   // Litery A/B/C to pozycje na ekranie. Oryginalny klucz odpowiedzi (z bazy) wraca do serwera i z serwera.
@@ -247,10 +254,23 @@ function QuestionBody({
             validAsOf={result.validAsOf}
             className="mt-3 text-sm text-fg-muted"
           />
+          {result.leech && <LeechHint kind="test" lapses={result.lapses} className="mt-3 text-sm text-fg-muted" />}
         </div>
       )}
 
-      {result && <ReportCardButton key={question.cardId} cardId={question.cardId} className="self-start" />}
+      {result && (
+        <div className="flex flex-wrap items-center gap-x-4 self-start">
+          <ReportCardButton key={question.cardId} cardId={question.cardId} />
+          {result.leech && (
+            <SuspendCardButton
+              key={`suspend:${question.cardId}`}
+              cardId={question.cardId}
+              alreadySuspended={suspendedIds?.has(question.cardId)}
+              onSuspended={onSuspended}
+            />
+          )}
+        </div>
+      )}
 
       {footer}
     </div>
@@ -290,6 +310,11 @@ export function TestSessionPage() {
   const requestRef = useRef(0);
   // Czy mieszać kolejność odpowiedzi (ustawienie użytkownika, domyślnie tak); wczytywane razem z pierwszą kolejką.
   const shuffleRef = useRef(true);
+  // Pytania zawieszone w tej sesji: nie wracają w „Powtórz teraz".
+  const [suspendedIds, setSuspendedIds] = useState<ReadonlySet<number>>(() => new Set());
+  const handleSuspended = useCallback((cardId: number) => {
+    setSuspendedIds((prev) => new Set(prev).add(cardId));
+  }, []);
 
   const numericSubjectId = subjectId ? Number(subjectId) : undefined;
   const numericSourceId = sourceId ? Number(sourceId) : undefined;
@@ -512,8 +537,10 @@ export function TestSessionPage() {
     void startExtraBatch(() => getTestQueue(numericSubjectId, numericSourceId, 0, numericCategoryId, batch));
   }
 
-  // Pytania, które wrócą w powtórkach: błędne albo oznaczone jako „Nie jestem pewien".
-  const toReview = history.filter((h) => !h.result.correct || h.guessed).map((h) => h.question);
+  // Pytania, które wrócą w powtórkach: błędne albo oznaczone jako „Nie jestem pewien". Zawieszone w tej sesji odpadają.
+  const toReview = history
+    .filter((h) => (!h.result.correct || h.guessed) && !suspendedIds.has(h.question.cardId))
+    .map((h) => h.question);
 
   function handleRepeatMistakes() {
     if (toReview.length === 0) return;
@@ -709,6 +736,8 @@ export function TestSessionPage() {
           selected={viewEntry.selected}
           result={viewEntry.result}
           guessed={viewEntry.guessed}
+          suspendedIds={suspendedIds}
+          onSuspended={handleSuspended}
           readOnly
           footer={
             <div className="flex justify-end">
@@ -729,6 +758,8 @@ export function TestSessionPage() {
           onSelect={handleSelect}
           guessed={guessed}
           onGuessedChange={setGuessed}
+          suspendedIds={suspendedIds}
+          onSuspended={handleSuspended}
           footer={
             result && (
               <div className="flex justify-end">

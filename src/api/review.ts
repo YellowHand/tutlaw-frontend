@@ -11,6 +11,10 @@ export interface ReviewQueueItem {
   legalBasis: string | null;
   /** Data RRRR-MM-DD, na którą sprawdzono stan prawny (opcjonalna). */
   validAsOf: string | null;
+  /** Ile razy użytkownik pomylił się w tym pytaniu / go nie pamiętał (stan sprzed tej sesji). */
+  lapses: number;
+  /** Czy pytanie jest już „trudne" (liczba błędów osiągnęła próg), czyli warto zaproponować zawieszenie. */
+  leech: boolean;
 }
 
 export interface TestQueueItem {
@@ -29,6 +33,9 @@ export interface TestAnswerResult {
   explanation: string | null;
   legalBasis: string | null;
   validAsOf: string | null;
+  /** Ile razy użytkownik pomylił się w tym pytaniu (łącznie z tą odpowiedzią). */
+  lapses: number;
+  leech: boolean;
 }
 
 /**

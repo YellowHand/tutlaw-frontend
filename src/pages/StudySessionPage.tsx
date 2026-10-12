@@ -12,6 +12,8 @@ import { BacklogFinishNotice, BacklogNotice } from "../features/review/BacklogNo
 import { KeyboardHint } from "../features/review/KeyboardHint";
 import { EXTRA_DUE_BATCH, useBacklog } from "../features/review/useBacklog";
 import { ReportCardButton } from "../features/report/ReportCardButton";
+import { LeechHint } from "../features/difficult/LeechHint";
+import { SuspendCardButton } from "../features/difficult/SuspendCardButton";
 import { SessionLoadError } from "../features/review/SessionLoadError";
 import { loadErrorMessage } from "../lib/errors";
 
@@ -99,6 +101,11 @@ export function StudySessionPage() {
   const [extraError, setExtraError] = useState(false);
   const [availableExtra, setAvailableExtra] = useState<number | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  // Fiszki zawieszone w tej sesji: nie wracają na koniec kolejki po „Nie pamiętam".
+  const [suspendedIds, setSuspendedIds] = useState<ReadonlySet<number>>(() => new Set());
+  const handleSuspended = useCallback((cardId: number) => {
+    setSuspendedIds((prev) => new Set(prev).add(cardId));
+  }, []);
   // Po „Ucz się jeszcze" / „Powtórz jeszcze" sesja jest dodatkową porcją: informacja o zaległościach z początku nie dotyczy.
   const [isExtraBatch, setIsExtraBatch] = useState(false);
   // null = bieżąca fiszka; liczba = indeks w history (podgląd tylko do odczytu)
@@ -175,7 +182,7 @@ export function StudySessionPage() {
 
         setHistory((prev) => [...prev, { card: currentCard, rating }]);
         // „Nie pamiętam": karta wraca na koniec tej samej sesji, zamiast czekać do następnego dnia.
-        if (rating === 1) setQueue((prev) => [...prev, currentCard]);
+        if (rating === 1 && !suspendedIds.has(currentCard.cardId)) setQueue((prev) => [...prev, currentCard]);
         setShowAnswer(false);
         setCurrentIndex((prev) => prev + 1);
         cardShownAt.current = Date.now();
@@ -186,7 +193,7 @@ export function StudySessionPage() {
         setSubmitting(false);
       }
     },
-    [queue, currentIndex, submitting]
+    [queue, currentIndex, submitting, suspendedIds]
   );
 
   // --- Cofanie: tylko podgląd, niczego nie wysyła do backendu ---
@@ -521,7 +528,7 @@ export function StudySessionPage() {
               </div>
             </div>
 
-            {(sourceLabel || shownCard.legalBasis || shownCard.validAsOf) && (
+            {(sourceLabel || shownCard.legalBasis || shownCard.validAsOf || shownCard.leech) && (
               <div className="flex shrink-0 flex-col gap-1 border-t border-line pt-3 text-xs text-fg-muted">
                 {sourceLabel && (
                   <p className="flex items-center gap-2">
@@ -530,6 +537,9 @@ export function StudySessionPage() {
                   </p>
                 )}
                 <LegalBasisLine legalBasis={shownCard.legalBasis} validAsOf={shownCard.validAsOf} />
+                {shownCard.leech && (
+                  <LeechHint kind="flashcard" lapses={shownCard.lapses} className="mt-1 text-xs text-fg-muted" />
+                )}
               </div>
             )}
           </div>
@@ -598,7 +608,17 @@ export function StudySessionPage() {
       )}
 
       {(viewing || showAnswer) && (
-        <ReportCardButton key={`report:${shownCard.cardId}:${shownIndex}`} cardId={shownCard.cardId} className="self-start" />
+        <div className="flex flex-wrap items-center gap-x-4 self-start">
+          <ReportCardButton key={`report:${shownCard.cardId}:${shownIndex}`} cardId={shownCard.cardId} />
+          {shownCard.leech && (
+            <SuspendCardButton
+              key={`suspend:${shownCard.cardId}:${shownIndex}`}
+              cardId={shownCard.cardId}
+              alreadySuspended={suspendedIds.has(shownCard.cardId)}
+              onSuspended={handleSuspended}
+            />
+          )}
+        </div>
       )}
     </div>
   );
