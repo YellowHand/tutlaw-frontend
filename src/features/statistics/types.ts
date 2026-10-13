@@ -1,3 +1,5 @@
+import type { QuestionOrigin } from "../../lib/origin";
+
 export interface DailyCount {
   date: string; // YYYY-MM-DD
   count: number;
@@ -46,4 +48,42 @@ export interface TestStats {
   luckyGuessesLast30Days: number;
   /** Odpowiedzi w testach na każdy z ostatnich 28 dni (ten sam kształt co aktywność w fiszkach). */
   activity: ActivityItem[];
+}
+
+/** Liczby dla jednego pochodzenia albo jednego roku egzaminu. Dotyczą pytań dostępnych teraz dla użytkownika. */
+export interface OriginMetrics {
+  totalQuestions: number;
+  /** Ile pytań rozwiązano co najmniej raz. */
+  solvedQuestions: number;
+  /** Ile jest utrwalonych (jak „Opanowane" w przeglądzie nauki). */
+  matureQuestions: number;
+  /** Ile ma już miniony termin powtórki. */
+  dueQuestions: number;
+  answers: number;
+  correctAnswers: number;
+  /** Procent poprawnych ze wszystkich odpowiedzi; null = jeszcze brak odpowiedzi. */
+  accuracyRate: number | null;
+  answersLast30Days: number;
+  /** Procent poprawnych z 30 dni; null = brak odpowiedzi w tym czasie. */
+  accuracyLast30Days: number | null;
+  /** Błędne odpowiedzi bez „Nie jestem pewien" z 30 dni. */
+  confidentMistakesLast30Days: number;
+}
+
+export interface OriginStatsYear {
+  year: number;
+  stats: OriginMetrics;
+}
+
+export interface OriginStatsEntry {
+  origin: QuestionOrigin;
+  /** Suma ze wszystkich lat. */
+  stats: OriginMetrics;
+  /** Rozbicie na lata egzaminu, od najnowszego; puste dla pytań autorskich. */
+  years: OriginStatsYear[];
+}
+
+/** Statystyki Testów według pochodzenia: zawsze wszystkie pochodzenia, bez filtra z Testów. */
+export interface OriginStats {
+  origins: OriginStatsEntry[];
 }

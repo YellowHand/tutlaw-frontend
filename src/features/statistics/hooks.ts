@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import type { SessionMode } from "../../api/review";
-import { fetchActivity, fetchChapterMastery, fetchOverview, fetchTestStats, fetchWeakCards } from "./api";
+import { fetchActivity, fetchChapterMastery, fetchOriginStats, fetchOverview, fetchTestStats, fetchWeakCards } from "./api";
 
 const STALE_TIME = 60_000;
 
@@ -43,6 +43,15 @@ export function useTestStats() {
   return useQuery({
     queryKey: ["statistics", "tests"],
     queryFn: fetchTestStats,
+    staleTime: STALE_TIME,
+  });
+}
+
+/** Statystyki Testów według aplikacji i roku. Klucz zaczyna się od „statistics", więc odświeża się po sesji nauki. */
+export function useOriginStats() {
+  return useQuery({
+    queryKey: ["statistics", "origins"],
+    queryFn: fetchOriginStats,
     staleTime: STALE_TIME,
   });
 }

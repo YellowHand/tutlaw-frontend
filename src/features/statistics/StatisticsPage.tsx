@@ -5,6 +5,7 @@ import { SubjectFilter } from "./SubjectFilter";
 import { OverviewSummaryRow } from "./OverviewSummaryRow";
 import { ChapterMasteryList } from "./ChapterMasteryList";
 import { WeakCardsTable } from "./WeakCardsTable";
+import { OriginStatsSection } from "./OriginStatsSection";
 import { getSourcesBySubject } from "../../api/sources";
 
 export function StatisticsPage() {
@@ -23,6 +24,7 @@ export function StatisticsPage() {
       <PageHeader title="Statystyki" actions={<SubjectFilter value={subjectId} onChange={setSubjectId} />} />
       <div className="flex flex-col gap-6 px-4 pb-8 sm:px-8">
         <OverviewSummaryRow subjectId={subjectId} />
+        <OriginStatsSection />
         <ChapterMasteryList sourceId={textbookSourceId} />
         <WeakCardsTable subjectId={subjectId} />
       </div>
