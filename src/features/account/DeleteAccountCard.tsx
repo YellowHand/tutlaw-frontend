@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
 import { Card } from "../../components/ui/Card";
 import { LEGAL } from "../../config/legal";
-import { clearStoredToken } from "../auth/tokenStorage";
+import { clearSession } from "../auth/session";
 import { serverMessage } from "../../lib/errors";
 import { deleteAccount } from "./api";
 import { ACCOUNT_DELETED_URL } from "./constants";
@@ -20,7 +20,7 @@ export function DeleteAccountCard() {
     mutationFn: deleteAccount,
     onSuccess: () => {
       // Pełne przeładowanie strony czyści też dane trzymane w pamięci aplikacji.
-      clearStoredToken();
+      clearSession();
       window.location.href = ACCOUNT_DELETED_URL;
     },
   });

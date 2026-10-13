@@ -1,34 +1,34 @@
-import { apiFetch } from "../../lib/apiClient";
+import { api } from "../../api/axiosInstance";
 import type { SessionMode } from "../../api/review";
 import type { ActivityItem, ChapterMastery, OverviewResponse, TestStats, WeakCard } from "./types";
 
 /** Bez trybu backend liczy fiszki i testy razem (strona Statystyki); z trybem tylko wskazany rodzaj kart. */
-export function fetchOverview(subjectId?: number, mode?: SessionMode): Promise<OverviewResponse> {
-  const params = new URLSearchParams();
-  if (subjectId) params.set("subjectId", String(subjectId));
-  if (mode) params.set("mode", mode);
-  const query = params.toString();
-  return apiFetch<OverviewResponse>(`/api/statistics/overview${query ? `?${query}` : ""}`);
+export async function fetchOverview(subjectId?: number, mode?: SessionMode): Promise<OverviewResponse> {
+  const res = await api.get<OverviewResponse>("/api/statistics/overview", {
+    params: { subjectId: subjectId || undefined, mode },
+  });
+  return res.data;
 }
 
-export function fetchActivity(days = 30, mode?: SessionMode): Promise<ActivityItem[]> {
-  const params = new URLSearchParams({ days: String(days) });
-  if (mode) params.set("mode", mode);
-  return apiFetch<ActivityItem[]>(`/api/statistics/activity?${params.toString()}`);
+export async function fetchActivity(days = 30, mode?: SessionMode): Promise<ActivityItem[]> {
+  const res = await api.get<ActivityItem[]>("/api/statistics/activity", { params: { days, mode } });
+  return res.data;
 }
 
-export function fetchChapterMastery(sourceId?: number): Promise<ChapterMastery[]> {
-  if (!sourceId) return Promise.resolve([]);
-  return apiFetch<ChapterMastery[]>(`/api/statistics/chapters?sourceId=${sourceId}`);
+export async function fetchChapterMastery(sourceId?: number): Promise<ChapterMastery[]> {
+  if (!sourceId) return [];
+  const res = await api.get<ChapterMastery[]>("/api/statistics/chapters", { params: { sourceId } });
+  return res.data;
 }
 
-export function fetchWeakCards(subjectId?: number, limit = 10): Promise<WeakCard[]> {
-  const params = new URLSearchParams();
-  if (subjectId) params.set("subjectId", String(subjectId));
-  params.set("limit", String(limit));
-  return apiFetch<WeakCard[]>(`/api/statistics/weak-cards?${params.toString()}`);
+export async function fetchWeakCards(subjectId?: number, limit = 10): Promise<WeakCard[]> {
+  const res = await api.get<WeakCard[]>("/api/statistics/weak-cards", {
+    params: { subjectId: subjectId || undefined, limit },
+  });
+  return res.data;
 }
 
-export function fetchTestStats(): Promise<TestStats> {
-  return apiFetch<TestStats>("/api/statistics/tests");
+export async function fetchTestStats(): Promise<TestStats> {
+  const res = await api.get<TestStats>("/api/statistics/tests");
+  return res.data;
 }

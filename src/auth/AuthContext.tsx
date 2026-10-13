@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { clearSession } from "../features/auth/session";
 import { AuthContext } from "./context";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -12,7 +13,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   function logout() {
-    localStorage.removeItem("accessToken");
+    clearSession();
     setToken(null);
   }
 

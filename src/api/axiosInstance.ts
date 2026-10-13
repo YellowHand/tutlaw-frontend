@@ -1,5 +1,6 @@
 import axios from "axios";
 import { ROUTES } from "../config/routes";
+import { clearStoredToken, getStoredToken } from "../features/auth/tokenStorage";
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -19,7 +20,7 @@ const PUBLIC_PATHS: string[] = [
 ];
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("accessToken");
+  const token = getStoredToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -36,7 +37,15 @@ api.interceptors.response.use(
     // 403 to „brak uprawnień do tej czynności" i nie może kasować sesji. Błędy logowania
     // i rejestracji (/api/auth/...) pokazują własny komunikat na formularzu.
     if (status === 401 && !url.startsWith("/api/auth/")) {
-      localStorage.removeItem("accessToken");
+      // Odpowiedź 401 na żądanie wysłane ze starym tokenem (np. tuż przed zmianą hasła, która dała nowy token)
+      // nie może wylogować już nowej sesji.
+      const sentAuthorization = String(error.config?.headers?.Authorization ?? "");
+      const currentToken = getStoredToken();
+      if (currentToken !== null && sentAuthorization !== `Bearer ${currentToken}`) {
+        return Promise.reject(error);
+      }
+      // Wygasła sesja: kasujemy tylko token. Szkic egzaminu zostaje na ponowne zalogowanie na to samo konto.
+      clearStoredToken();
       if (!PUBLIC_PATHS.includes(window.location.pathname)) {
         window.location.href = ROUTES.login;
       }

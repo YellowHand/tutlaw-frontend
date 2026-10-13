@@ -4,6 +4,7 @@ import { PageHeader } from "../../components/layout/PageHeader";
 import { Card } from "../../components/ui/Card";
 import { ROUTES } from "../../config/routes";
 import { fetchMe } from "./api";
+import { ChangePasswordCard } from "./ChangePasswordCard";
 import { ExportCard } from "./ExportCard";
 import { DeleteAccountCard } from "./DeleteAccountCard";
 import { DifficultCardsCard } from "../difficult/DifficultCardsCard";
@@ -14,7 +15,7 @@ export function AccountPage() {
 
   return (
     <div>
-      <PageHeader title="Konto" subtitle="Ustawienia nauki, zawieszone pytania, Twoje dane, kopia danych i usunięcie konta" />
+      <PageHeader title="Konto" subtitle="Ustawienia nauki, zawieszone pytania, zmiana hasła, kopia danych i usunięcie konta" />
       <div className="flex max-w-3xl flex-col gap-6 px-4 pb-8 sm:px-8">
         <Card>
           <h2 className="text-lg font-semibold">Zalogowano jako</h2>
@@ -26,6 +27,8 @@ export function AccountPage() {
         <LearningSettingsCard />
 
         <DifficultCardsCard />
+
+        <ChangePasswordCard />
 
         <ExportCard />
         <DeleteAccountCard />
