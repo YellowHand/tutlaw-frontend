@@ -9,7 +9,7 @@ import { deleteAccount } from "./api";
 import { ACCOUNT_DELETED_URL } from "./constants";
 
 const DANGER_BUTTON_CLASS =
-  "inline-flex items-center justify-center gap-2 rounded-full bg-danger px-4 min-h-11 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40";
+  "inline-flex items-center justify-center gap-2 rounded-full bg-danger px-4 min-h-11 text-sm font-semibold text-canvas transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40";
 
 /** Usunięcie konta (prawo do usunięcia danych). Wymaga hasła i jawnego potwierdzenia. */
 export function DeleteAccountCard() {

@@ -201,7 +201,7 @@ export function ExamRunner({ exam, persist, submitting, submitError, onSubmit, o
             <Clock size={18} aria-hidden="true" />
             {remainingMs === null ? "Bez limitu" : formatClock(remainingMs / 1000)}
           </p>
-          <Button type="button" disabled={frozen} onClick={() => setDialog("finish")}>
+          <Button type="button" className="shrink-0 whitespace-nowrap" disabled={frozen} onClick={() => setDialog("finish")}>
             Zakończ egzamin
           </Button>
         </div>
@@ -327,7 +327,7 @@ export function ExamRunner({ exam, persist, submitting, submitError, onSubmit, o
         {/* Paleta pytań */}
         <nav aria-label="Lista pytań" className="flex min-w-0 flex-col gap-3 rounded-2xl border border-line bg-surface p-4 lg:self-start">
           <h2 className="text-sm font-medium text-fg-muted">Pytania</h2>
-          <ol className="grid grid-cols-8 gap-1.5 sm:grid-cols-12 lg:max-h-[60vh] lg:grid-cols-5 lg:overflow-y-auto">
+          <ol className="grid grid-cols-6 gap-1.5 sm:grid-cols-12 lg:max-h-[60vh] lg:grid-cols-5 lg:overflow-y-auto">
             {exam.questions.map((q, i) => {
               const answered = answers[String(q.cardId)] !== undefined;
               const marked = flagged.has(q.cardId);

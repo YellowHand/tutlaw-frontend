@@ -33,8 +33,14 @@ export function WeakCardsTable({ subjectId }: WeakCardsTableProps) {
 
   return (
     <Card>
-      <h2 className="mb-4 text-sm font-semibold text-fg-muted">Do poprawy</h2>
-      <div className="overflow-x-auto">
+      <h2 id="weak-cards-heading" className="mb-4 text-sm font-semibold text-fg-muted">Do poprawy</h2>
+      {/* Na wąskim ekranie tabela przewija się w bok, więc region musi dać się przewinąć klawiaturą (tabIndex). */}
+      <div
+        role="region"
+        aria-labelledby="weak-cards-heading"
+        tabIndex={0}
+        className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      >
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-line text-left text-xs text-fg-muted">

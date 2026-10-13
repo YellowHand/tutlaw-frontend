@@ -100,8 +100,9 @@ const OPTION_STYLES: Record<OptionState, { button: string; badge: string }> = {
 // Ta sama kolumna i to samo zakotwiczenie co w StudySessionPage – przełączanie Testy ↔ Fiszki nic nie przeskakuje.
 const PAGE_SHELL = "mx-auto flex w-full max-w-3xl flex-col gap-6 p-4 pt-6 sm:p-6 sm:pt-[8vh]";
 
+// Na telefonie przyciski poprzednie/następne mają 44 px (wygodny cel dla palca), od szerokości sm wracają do 32 px.
 const NAV_BUTTON =
-  "inline-flex size-8 cursor-pointer items-center justify-center rounded-lg text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg disabled:pointer-events-none disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  "inline-flex size-11 cursor-pointer sm:size-8 items-center justify-center rounded-lg text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg disabled:pointer-events-none disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 const PRIMARY_BUTTON =
   "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-accent px-6 text-sm font-medium text-accent-fg hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
@@ -303,6 +304,8 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
   const practiceMode = mode === "practice";
   // Sesje z gotowej, zamkniętej listy pytań: nie dokładamy nowych i wracamy gdzie indziej niż zwykły test.
   const fixedListMode = mistakesMode || practiceMode;
+  // Nagłówek h1 widzi tylko czytnik ekranu: sesja nie ma widocznego tytułu, ale strona musi mieć nagłówek pierwszego poziomu.
+  const sessionTitle = mistakesMode ? "Powtórka błędów" : practiceMode ? "Powtórka pytań z egzaminu" : "Sesja testowa";
   const backTo = practiceMode ? ROUTES.exam : ROUTES.tests;
   const backLabel = practiceMode ? "Wróć do egzaminu" : "Wróć do Testów";
   const { subjectId } = useParams();
@@ -606,6 +609,7 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
   if (loading) {
     return (
       <div className={PAGE_SHELL}>
+        <h1 className="sr-only">{sessionTitle}</h1>
         <Skeleton className="h-5 w-full" />
         <Skeleton className="h-32 w-full rounded-2xl" />
         <div className="flex flex-col gap-3">
@@ -620,6 +624,7 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
   if (loadError) {
     return (
       <SessionLoadError
+        title={sessionTitle}
         message={loadError}
         onRetry={() => setReloadCount((c) => c + 1)}
         backTo={backTo}
@@ -632,9 +637,9 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 p-10 text-center">
         <CheckCircle2 className="text-success" size={40} aria-hidden="true" />
-        <p className="text-xl font-bold">
+        <h1 className="text-xl font-bold">
           {practiceMode ? "Te pytania nie są już dostępne." : "Nie masz błędów do powtórzenia."}
-        </p>
+        </h1>
         <p className="max-w-md text-sm text-fg-muted">
           {practiceMode
             ? "Zostały zawieszone, usunięte albo zablokowane, więc nie ma z czego zrobić sesji."
@@ -659,13 +664,13 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 p-10 text-center">
         <CheckCircle2 className="text-success" size={40} aria-hidden="true" />
-        <p className="text-xl font-bold">
+        <h1 className="text-xl font-bold">
           {mistakesMode
             ? "Brawo! Przerobiłeś swoje błędy."
             : practiceMode
               ? "Brawo! Przerobiłeś pytania z egzaminu."
               : "Brawo! Skończyłeś test na dziś."}
-        </p>
+        </h1>
 
         {extraError && (
           <p role="alert" className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
@@ -743,6 +748,7 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
 
   return (
     <div className={PAGE_SHELL}>
+      <h1 className="sr-only">{sessionTitle}</h1>
       {/* Postęp + cofanie */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-3">

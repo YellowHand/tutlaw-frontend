@@ -51,11 +51,18 @@ function TileBody({
     <Card
       className={cn(
         "flex h-full flex-col justify-between gap-4",
-        interactive ? "transition-colors group-hover:bg-surface-2" : "opacity-60"
+        // Pusty kafelek odróżniamy kreskowaną ramką i przygaszoną ikoną, a nie przezroczystością całej karty:
+        // przezroczystość obniżała kontrast tekstu poniżej 4,5:1.
+        interactive ? "transition-colors group-hover:bg-surface-2" : "border-dashed"
       )}
     >
       <div className="flex items-start justify-between">
-        <span className="flex size-11 items-center justify-center rounded-xl bg-accent/10 text-accent">
+        <span
+          className={cn(
+            "flex size-11 items-center justify-center rounded-xl bg-accent/10 text-accent",
+            !interactive && "opacity-60"
+          )}
+        >
           <Icon size={20} aria-hidden="true" />
         </span>
         {interactive ? (
@@ -69,7 +76,7 @@ function TileBody({
         )}
       </div>
       <div>
-        <h2 className="font-semibold">{title}</h2>
+        <h2 className={cn("font-semibold", !interactive && "text-fg-muted")}>{title}</h2>
         {subtitle && <p className="text-sm text-fg-muted">{subtitle}</p>}
       </div>
       {!empty && <ProgressLine counts={counts} />}

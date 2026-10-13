@@ -23,7 +23,7 @@ import { TestCategoryPage } from "../features/tests/TestCategoryPage";
 import { TestSubjectPage } from "../features/tests/TestSubjectPage";
 import { StatisticsPage } from "../features/statistics/StatisticsPage";
 import { AccountPage } from "../features/account/AccountPage";
-import { NotFoundPage } from "../features/misc/NotFoundPage";
+import { NotFoundPage, PublicNotFoundPage } from "../features/misc/NotFoundPage";
 
 export function Router() {
   return (
@@ -68,7 +68,7 @@ export function Router() {
           </Route>
         </Route>
 
-        <Route path="*" element={<NotFoundPage />} />
+        <Route path="*" element={<PublicNotFoundPage />} />
       </Routes>
     </BrowserRouter>
   );

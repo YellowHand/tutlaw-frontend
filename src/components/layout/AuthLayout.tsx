@@ -10,7 +10,7 @@ interface AuthLayoutProps {
 
 export function AuthLayout({ title, children, footer }: AuthLayoutProps) {
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center gap-8 bg-canvas px-4 py-10 text-fg">
+    <main className="flex min-h-dvh flex-col items-center justify-center gap-8 bg-canvas px-4 py-10 text-fg">
       <Link to="/" aria-label="Wróć do strony głównej">
         <Logo variant="wordmark" />
       </Link>
@@ -21,6 +21,6 @@ export function AuthLayout({ title, children, footer }: AuthLayoutProps) {
       </div>
 
       {footer && <div className="text-sm text-fg-muted">{footer}</div>}
-    </div>
+    </main>
   );
 }

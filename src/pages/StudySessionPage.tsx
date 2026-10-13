@@ -19,6 +19,9 @@ import { loadErrorMessage } from "../lib/errors";
 
 const MAX_EXTRA_BATCH = 10;
 
+/** Nagłówek h1 tylko dla czytnika ekranu: sesja nie ma widocznego tytułu, ale strona musi mieć nagłówek pierwszego poziomu. */
+const SESSION_TITLE = "Sesja nauki fiszek";
+
 /**
  * Oceny 1–4 (Again / Hard / Good / Easy) w kolorach palety:
  * danger → warning → success → accent.
@@ -30,7 +33,7 @@ const RATING_BUTTONS = [
     label: "Nie pamiętam",
     tone: "text-danger",
     className:
-      "border-danger/35 bg-danger/10 text-danger hover:border-danger hover:bg-danger/20 focus-visible:outline-danger",
+      "border-danger/35 bg-danger/10 text-danger hover:border-danger hover:bg-danger/15 focus-visible:outline-danger",
   },
   {
     value: 2,
@@ -62,8 +65,9 @@ const CARD_HEIGHT = "h-[clamp(19rem,50vh,30rem)]";
 // Ta sama kolumna i to samo zakotwiczenie co w TestSessionPage – przełączanie Testy ↔ Fiszki nic nie przeskakuje.
 const PAGE_SHELL = "mx-auto flex w-full max-w-3xl flex-col gap-6 p-4 pt-6 sm:p-6 sm:pt-[8vh]";
 
+// Na telefonie przyciski poprzednie/następne mają 44 px (wygodny cel dla palca), od szerokości sm wracają do 32 px.
 const NAV_BUTTON =
-  "inline-flex size-8 cursor-pointer items-center justify-center rounded-lg text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg disabled:pointer-events-none disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  "inline-flex size-11 cursor-pointer sm:size-8 items-center justify-center rounded-lg text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg disabled:pointer-events-none disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 const PRIMARY_BUTTON =
   "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-accent px-6 text-sm font-medium text-accent-fg hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
@@ -326,6 +330,7 @@ export function StudySessionPage() {
   if (loading) {
     return (
       <div className={PAGE_SHELL}>
+        <h1 className="sr-only">{SESSION_TITLE}</h1>
         <Skeleton className="h-5 w-full" />
         <Skeleton className={cn("w-full rounded-2xl", CARD_HEIGHT)} />
       </div>
@@ -335,6 +340,7 @@ export function StudySessionPage() {
   if (loadError) {
     return (
       <SessionLoadError
+        title={SESSION_TITLE}
         message={loadError}
         onRetry={() => setReloadCount((c) => c + 1)}
         backTo={ROUTES.flashcards}
@@ -352,7 +358,7 @@ export function StudySessionPage() {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 p-10 text-center">
         <CheckCircle2 className="text-success" size={40} aria-hidden="true" />
-        <p className="text-xl font-bold">Brawo! Skończyłeś powtórki na dziś.</p>
+        <h1 className="text-xl font-bold">Brawo! Skończyłeś powtórki na dziś.</h1>
 
         {extraError && (
           <p role="alert" className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
@@ -412,6 +418,7 @@ export function StudySessionPage() {
 
   return (
     <div className={PAGE_SHELL}>
+      <h1 className="sr-only">{SESSION_TITLE}</h1>
       {/* Postęp + cofanie */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-3">
