@@ -28,6 +28,8 @@ export const ROUTES = {
   testAll: "/app/test",
   // Sesja z pytań, w których ostatnia odpowiedź w teście była błędna.
   testMistakes: "/app/test/mistakes",
+  // Sesja z samych zaległych powtórek testowych (bez nowych pytań).
+  testDue: "/app/test/due",
   // Sesja testowa z podanych pytań (np. błędy z egzaminu próbnego).
   testPractice: (cardIds: readonly number[]) => `/app/test/practice?cardIds=${cardIds.join(",")}`,
   // Egzamin próbny: ustawienia, egzamin, raport i historia.

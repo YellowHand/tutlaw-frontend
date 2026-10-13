@@ -16,7 +16,6 @@ import { START_BUTTON, StartTestCard } from "./StartTestCard";
 function SourceCard({ subjectId, source }: { subjectId: number; source: TestSourceNode }) {
   const isTextbook = source.sourceType === "TEXTBOOK";
   const hasQuestions = source.questionCount > 0;
-  const nothingYet = isEmpty(source);
 
   return (
     <Card className="flex flex-col gap-3">
@@ -32,11 +31,7 @@ function SourceCard({ subjectId, source }: { subjectId: number; source: TestSour
         </div>
       </div>
 
-      {nothingYet ? (
-        <p className="text-sm text-fg-muted">W tym źródle nie ma jeszcze pytań testowych.</p>
-      ) : (
-        <ProgressLine counts={source} />
-      )}
+      <ProgressLine counts={source} />
 
       {isTextbook && source.lockedCount > 0 && !hasQuestions && (
         <p className="text-sm text-fg-muted">Zaznacz przeczytane rozdziały, żeby odblokować pytania do testu.</p>
@@ -104,6 +99,10 @@ export function TestSubjectPage() {
     );
   }
 
+  // Testy pokazują tylko źródła, w których są pytania testowe (także jeszcze zablokowane). Źródło złożone wyłącznie
+  // z fiszek (np. podręcznik bez pytań ABC) należy do Fiszek i tu tylko zaśmiecałoby ekran.
+  const sources = subject.sources.filter((source) => !isEmpty(source));
+
   return (
     <div>
       <Breadcrumbs
@@ -116,7 +115,7 @@ export function TestSubjectPage() {
       <PageHeader title={subject.name} subtitle="Wybierz źródło pytań." />
 
       <div className="flex flex-col gap-6 px-4 pb-8 sm:px-8">
-        {subject.sources.length > 1 && subject.questionCount > 0 && (
+        {sources.length > 1 && subject.questionCount > 0 && (
           <StartTestCard
             icon={ClipboardList}
             title={`Test z całego: ${subject.name}`}
@@ -125,11 +124,11 @@ export function TestSubjectPage() {
           />
         )}
 
-        {subject.sources.length === 0 ? (
-          <EmptyState icon={BookOpen} title="Wkrótce" description="Do tej pozycji nie dodano jeszcze źródeł pytań." />
+        {sources.length === 0 ? (
+          <EmptyState icon={BookOpen} title="Wkrótce" description="Do tej pozycji nie dodano jeszcze pytań testowych." />
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {subject.sources.map((source) => (
+            {sources.map((source) => (
               <SourceCard key={source.id} subjectId={subject.id} source={source} />
             ))}
           </div>

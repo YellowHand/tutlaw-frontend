@@ -11,6 +11,7 @@ import { pluralizePl } from "../../lib/plural";
 import { useDueCount } from "../review/hooks";
 import { useTestCatalog } from "./hooks";
 import { MistakesCard } from "./MistakesCard";
+import { DueReviewsCard } from "./DueReviewsCard";
 import { StartTestCard } from "./StartTestCard";
 
 /** Poziom 1: rodzaj (Student, Prawo karne i postępowanie karne, ...). */
@@ -35,6 +36,8 @@ export function TestsPage() {
       />
 
       <div className="flex flex-col gap-6 px-4 pb-8 sm:px-8">
+        <DueReviewsCard count={dueTests ?? 0} />
+
         <StartTestCard
           icon={ClipboardList}
           title="Test z całego materiału"

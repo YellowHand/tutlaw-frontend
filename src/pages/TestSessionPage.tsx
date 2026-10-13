@@ -291,8 +291,9 @@ interface TestSessionPageProps {
    * "scope" (domyślnie): test z wybranego zakresu (całość, rodzaj, przedmiot, źródło).
    * "mistakes": „Powtórz moje błędy" – pytania, w których ostatnia odpowiedź była błędna.
    * "practice": pytania wskazane w adresie (?cardIds=1,2,3), np. błędy z egzaminu próbnego.
+   * "due": „Powtórz zaległe" – z całego materiału same pytania z minionym terminem powtórki, bez nowych.
    */
-  mode?: "scope" | "mistakes" | "practice";
+  mode?: "scope" | "mistakes" | "practice" | "due";
 }
 
 /** Numery pytań z adresu (?cardIds=1,2,3): tylko dodatnie liczby całkowite, bez powtórzeń, do 200. */
@@ -308,10 +309,19 @@ function parseCardIds(raw: string | null): number[] {
 export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
   const mistakesMode = mode === "mistakes";
   const practiceMode = mode === "practice";
+  // Zaległe powtórki: zwykła sesja z całego materiału, tylko bez nowych pytań na starcie.
+  // Po jej zakończeniu można dołożyć nowe pytania albo kolejną porcję zaległych, jak w zwykłym teście.
+  const dueMode = mode === "due";
   // Sesje z gotowej, zamkniętej listy pytań: nie dokładamy nowych i wracamy gdzie indziej niż zwykły test.
   const fixedListMode = mistakesMode || practiceMode;
   // Nagłówek h1 widzi tylko czytnik ekranu: sesja nie ma widocznego tytułu, ale strona musi mieć nagłówek pierwszego poziomu.
-  const sessionTitle = mistakesMode ? "Powtórka błędów" : practiceMode ? "Powtórka pytań z egzaminu" : "Sesja testowa";
+  const sessionTitle = mistakesMode
+    ? "Powtórka błędów"
+    : practiceMode
+      ? "Powtórka pytań z egzaminu"
+      : dueMode
+        ? "Zaległe powtórki"
+        : "Sesja testowa";
   const backTo = practiceMode ? ROUTES.exam : ROUTES.tests;
   const backLabel = practiceMode ? "Wróć do egzaminu" : "Wróć do Testów";
   const { subjectId } = useParams();
@@ -386,7 +396,8 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
       const ids = parseCardIds(cardIdsParam);
       itemsRequest = ids.length === 0 ? Promise.resolve([]) : getPracticeQueue(ids);
     } else {
-      itemsRequest = getTestQueue(numericSubjectId, numericSourceId, undefined, numericCategoryId);
+      // 0 nowych pytań = same zaległe powtórki (w dziennym limicie powtórek); undefined = zwykły test z nowymi.
+      itemsRequest = getTestQueue(numericSubjectId, numericSourceId, dueMode ? 0 : undefined, numericCategoryId);
     }
     Promise.all([itemsRequest, shuffleSetting])
       .then(([items, shuffle]) => {
@@ -412,7 +423,7 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
         setLoadError(loadErrorMessage(e, "pytań"));
         setLoading(false);
       });
-  }, [mode, mistakesMode, practiceMode, cardIdsParam, subjectId, sourceId, categoryId, reloadCount, numericSubjectId, numericSourceId, numericCategoryId]);
+  }, [mode, mistakesMode, practiceMode, dueMode, cardIdsParam, subjectId, sourceId, categoryId, reloadCount, numericSubjectId, numericSourceId, numericCategoryId]);
 
   useEffect(() => {
     // Sesja z gotowej listy (błędy, egzamin) nie ma „nowych pytań do dołożenia".
@@ -639,6 +650,33 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
     );
   }
 
+  if (finished && !viewing && dueMode && queue.length === 0) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-4 p-10 text-center">
+        <CheckCircle2 className="text-success" size={40} aria-hidden="true" />
+        <h1 className="text-xl font-bold">Nie masz zaległych powtórek.</h1>
+        <p className="max-w-md text-sm text-fg-muted">
+          Pytanie wraca tu, gdy minie termin powtórki wyznaczony po Twojej odpowiedzi. Możesz w międzyczasie rozwiązać
+          nowe pytania w teście z całego materiału.
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <button
+            onClick={() => navigate(ROUTES.testAll)}
+            className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl bg-accent px-6 text-sm font-medium text-accent-fg hover:opacity-90"
+          >
+            Rozpocznij test z całego materiału
+          </button>
+          <button
+            onClick={() => navigate(backTo)}
+            className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl border border-field px-6 text-sm font-medium hover:bg-surface-2"
+          >
+            {backLabel}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (finished && !viewing && fixedListMode && queue.length === 0) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 p-10 text-center">
@@ -675,7 +713,9 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
             ? "Brawo! Przerobiłeś swoje błędy."
             : practiceMode
               ? "Brawo! Przerobiłeś pytania z egzaminu."
-              : "Brawo! Skończyłeś test na dziś."}
+              : dueMode
+                ? "Brawo! Zaległe powtórki zrobione."
+                : "Brawo! Skończyłeś test na dziś."}
         </h1>
 
         {extraError && (
@@ -764,6 +804,7 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
             </span>
             {mistakesMode && <span className="rounded-md bg-surface-2 px-2 py-0.5 text-xs">Moje błędy</span>}
             {practiceMode && <span className="rounded-md bg-surface-2 px-2 py-0.5 text-xs">Błędy z egzaminu</span>}
+            {dueMode && <span className="rounded-md bg-surface-2 px-2 py-0.5 text-xs">Zaległe powtórki</span>}
             {viewing && <span className="rounded-md bg-surface-2 px-2 py-0.5 text-xs">Podgląd</span>}
           </p>
 

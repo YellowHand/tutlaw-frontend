@@ -53,6 +53,7 @@ export function Router() {
             <Route path="study/:subjectId" element={<StudySessionPage />} />
             <Route path="test" element={<TestSessionPage />} />
             <Route path="test/mistakes" element={<TestSessionPage mode="mistakes" />} />
+            <Route path="test/due" element={<TestSessionPage mode="due" />} />
             <Route path="test/practice" element={<TestSessionPage mode="practice" />} />
             <Route path="exam" element={<ExamPage />} />
             <Route path="test/:subjectId" element={<TestSessionPage />} />
