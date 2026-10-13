@@ -24,7 +24,7 @@ function Tag({ tone, children }: { tone: "ok" | "yours"; children: string }) {
 }
 
 /**
- * Działające przykładowe pytanie ABC: jedyny "odważny" element strony. Pokazuje na żywo, co Tutlaw robi z
+ * Działające przykładowe pytanie ABC (sekcja "Wypróbuj" pod hero). Pokazuje na żywo, co Tutlaw robi z
  * odpowiedzią pewną i niepewną. Reguły w demo.ts, teksty w copy.ts.
  */
 export function DemoQuestion() {
@@ -48,7 +48,7 @@ export function DemoQuestion() {
 
   return (
     <div>
-      <p id={captionId} className="mb-3 text-[0.9375rem] font-bold text-fg-soft">
+      <p id={captionId} className="sr-only">
         {demo.caption}
       </p>
       <div

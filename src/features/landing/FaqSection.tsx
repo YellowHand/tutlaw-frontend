@@ -1,4 +1,5 @@
 import { COPY } from "./copy";
+import { OriginChips } from "./OriginChips";
 import { Section, Wrap } from "./ui";
 
 export function FaqSection() {
@@ -21,7 +22,10 @@ export function FaqSection() {
                   className="mr-1 size-2.5 flex-none rotate-45 border-r-[2.5px] border-b-[2.5px] border-accent transition-transform duration-200 group-open:rotate-[225deg]"
                 />
               </summary>
-              <p className="max-w-[62ch] pb-[22px] text-pretty text-fg-soft">{item.a}</p>
+              <div className="grid gap-3.5 pb-[22px]">
+                <p className="max-w-[62ch] text-pretty text-fg-soft">{item.a}</p>
+                {item.origins && <OriginChips />}
+              </div>
             </details>
           ))}
         </div>

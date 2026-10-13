@@ -1,3 +1,4 @@
+import type { QuestionOrigin } from "../../lib/origin";
 import { deepNbsp } from "./typography";
 import type { DemoAnswer, DemoOutcomeId } from "./demo";
 
@@ -9,6 +10,7 @@ import type { DemoAnswer, DemoOutcomeId } from "./demo";
  */
 export const COPY = deepNbsp({
   nav: [
+    { href: "#demo", label: "Wypróbuj" },
     { href: "#algorytm", label: "Jak działa nauka" },
     { href: "#funkcje", label: "Funkcje" },
     { href: "#start", label: "Start" },
@@ -29,7 +31,12 @@ export const COPY = deepNbsp({
     haveAccount: "Masz już konto?",
   },
   demo: {
-    caption: "Wypróbuj: odpowiedz na przykładowe pytanie",
+    section: {
+      title: "Wypróbuj na jednym pytaniu",
+      lead: "Wybierz odpowiedź i zobacz, co Tutlaw z nią zrobi. Potem spróbuj jeszcze raz z zaznaczonym „Nie jestem pewien”: wynik będzie inny.",
+    },
+    // Nazwa grupy dla czytników ekranu (nad kartą jest już nagłówek sekcji, więc nie pokazujemy jej drugi raz).
+    caption: "Przykładowe pytanie ABC z przełącznikiem „Nie jestem pewien”",
     subject: "Prawo cywilne",
     badge: "Pytanie przykładowe",
     question: "Od jakiej chwili człowiek ma zdolność prawną?",
@@ -113,10 +120,10 @@ export const COPY = deepNbsp({
       sampleTitle: "Skuteczność według aplikacji",
       sampleBadge: "Przykładowe dane",
       sample: [
-        { label: "Adwokacka i radcowska", value: 78 },
-        { label: "Sędziowska i prokuratorska", value: 64 },
-        { label: "Notarialna", value: 52 },
-      ],
+        { origin: "ADVOCATE_LEGAL_ADVISER", label: "Adwokacka i radcowska", value: 78 },
+        { origin: "JUDGE_PROSECUTOR", label: "Sędziowska i prokuratorska", value: 64 },
+        { origin: "NOTARY", label: "Notarialna", value: 52 },
+      ] satisfies { origin: QuestionOrigin; label: string; value: number }[],
       confidentMistakes: { label: "Pewne błędy", value: "6" },
       fragile: { label: "Krucha wiedza", value: "11" },
     },
@@ -145,7 +152,8 @@ export const COPY = deepNbsp({
       },
       {
         q: "Skąd pochodzą pytania?",
-        a: "Z egzaminów na aplikacje: adwokacką i radcowską, sędziowską i prokuratorską, notarialną, uzupełniającą sędziowską i komorniczą, oraz z pytań autorskich. Baza jest uzupełniana, a pozycje, do których pytań jeszcze nie ma, są oznaczone jako „Wkrótce”.",
+        a: "Z egzaminów na aplikacje prawnicze (lista poniżej) oraz z pytań autorskich. Baza jest uzupełniana, a pozycje, do których pytań jeszcze nie ma, są oznaczone jako „Wkrótce”.",
+        origins: true,
       },
       {
         q: "Co znaczy „Nie jestem pewien”?",

@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
 import { ACCOUNT_DELETED_PARAM, ACCOUNT_DELETED_VALUE } from "../features/account/constants";
 import { COPY } from "../features/landing/copy";
+import { DemoSection } from "../features/landing/DemoSection";
 import { FaqSection } from "../features/landing/FaqSection";
 import { FeaturesSection } from "../features/landing/FeaturesSection";
 import { FinalCta } from "../features/landing/FinalCta";
@@ -45,6 +46,7 @@ export function LandingPage() {
 
         <main id="tresc">
           <HeroSection isAuthenticated={isAuthenticated} />
+          <DemoSection />
           <SpacedRepetitionSection />
           <FeaturesSection />
           <StepsSection isAuthenticated={isAuthenticated} />

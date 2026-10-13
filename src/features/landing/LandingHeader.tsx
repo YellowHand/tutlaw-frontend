@@ -12,7 +12,7 @@ export function LandingHeader({ isAuthenticated }: { isAuthenticated: boolean })
           <Logo variant="wordmark" />
         </a>
 
-        <nav aria-label="Sekcje strony" className="hidden gap-0.5 @min-[900px]:flex">
+        <nav aria-label="Sekcje strony" className="hidden gap-0.5 @min-[1000px]:flex">
           {COPY.nav.map((link) => (
             <a
               key={link.href}
