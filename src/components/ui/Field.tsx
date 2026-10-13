@@ -18,7 +18,7 @@ export function Field({ label, hint, className, ...props }: FieldProps) {
       <input
         id={id}
         aria-describedby={hint ? hintId : undefined}
-        className={cn("min-h-11 rounded-xl border border-line bg-surface-2 px-3", className)}
+        className={cn("min-h-11 rounded-xl border border-field bg-surface-2 px-3", className)}
         {...props}
       />
       {hint && (

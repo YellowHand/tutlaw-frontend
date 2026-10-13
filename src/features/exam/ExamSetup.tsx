@@ -183,7 +183,7 @@ export function ExamSetup({ draft, onResume, onDiscard, onStarted }: ExamSetupPr
                 setScopeValue(e.target.value);
                 setError(null);
               }}
-              className="min-h-11 rounded-xl border border-line bg-surface-2 px-3"
+              className="min-h-11 rounded-xl border border-field bg-surface-2 px-3"
             >
               <option value="all">
                 {catalogKnown ? `Cały materiał (${options[0].available})` : "Cały materiał"}

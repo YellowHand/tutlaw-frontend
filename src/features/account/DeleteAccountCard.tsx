@@ -56,7 +56,7 @@ export function DeleteAccountCard() {
             maxLength={256}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="min-h-11 rounded-xl border border-line bg-surface-2 px-3"
+            className="min-h-11 rounded-xl border border-field bg-surface-2 px-3"
           />
         </div>
 

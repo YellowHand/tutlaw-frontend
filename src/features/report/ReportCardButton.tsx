@@ -99,7 +99,7 @@ export function ReportCardButton({ cardId, className }: ReportCardButtonProps) {
           maxLength={REPORT_COMMENT_MAX_LENGTH}
           rows={3}
           required={commentRequired}
-          className="rounded-xl border border-line bg-surface-2 px-3 py-2 text-sm"
+          className="rounded-xl border border-field bg-surface-2 px-3 py-2 text-sm"
         />
       </div>
 

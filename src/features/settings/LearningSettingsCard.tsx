@@ -212,7 +212,7 @@ function LearningSettingsForm({ settings }: { settings: LearningSettings }) {
             value={form.retention}
             onChange={(e) => change("retention", e.target.value)}
             aria-describedby={`${retentionId}-hint`}
-            className="min-h-11 rounded-xl border border-line bg-surface-2 px-3"
+            className="min-h-11 rounded-xl border border-field bg-surface-2 px-3"
           >
             {retentionOptions.map((choice) => (
               <option key={choice.value} value={String(choice.value)}>
@@ -237,7 +237,7 @@ function LearningSettingsForm({ settings }: { settings: LearningSettings }) {
               value={form.examDate}
               onChange={(e) => change("examDate", e.target.value)}
               aria-describedby={`${examId}-hint`}
-              className="min-h-11 rounded-xl border border-line bg-surface-2 px-3"
+              className="min-h-11 rounded-xl border border-field bg-surface-2 px-3"
             />
             {form.examDate !== "" && (
               <Button type="button" variant="ghost" onClick={() => change("examDate", "")}>

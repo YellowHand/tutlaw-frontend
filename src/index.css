@@ -5,6 +5,8 @@
   --color-surface: #1a1a1d;
   --color-surface-2: #242428;
   --color-line: #313136;
+  /* Ramka pól formularza: min. 3:1 do tła (WCAG 1.4.11). --color-line zostaje do separatorów i kart. */
+  --color-field: #74737a;
   --color-fg: #f2efe9;
   --color-fg-muted: #a6a5ab;
   --color-accent: #d8b13a;

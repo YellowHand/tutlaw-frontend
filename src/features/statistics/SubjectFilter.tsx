@@ -24,7 +24,7 @@ export function SubjectFilter({ value, onChange }: SubjectFilterProps) {
           const raw = event.target.value;
           onChange(raw === "all" ? undefined : Number(raw));
         }}
-        className="min-h-11 rounded-xl border border-line bg-surface-2 px-3 text-sm"
+        className="min-h-11 rounded-xl border border-field bg-surface-2 px-3 text-sm"
       >
         <option value="all">Wszystkie przedmioty</option>
         {subjects?.map((subject) => (
