@@ -7,6 +7,8 @@ import { ROUTES } from "../../config/routes";
 import { CatalogTile, TileGrid } from "./CatalogTile";
 import { iconForCategory } from "./categoryIcons";
 import { describeItems } from "./format";
+import { pluralizePl } from "../../lib/plural";
+import { useDueCount } from "../review/hooks";
 import { useTestCatalog } from "./hooks";
 import { MistakesCard } from "./MistakesCard";
 import { StartTestCard } from "./StartTestCard";
@@ -14,6 +16,16 @@ import { StartTestCard } from "./StartTestCard";
 /** Poziom 1: rodzaj (Student, Prawo karne i postępowanie karne, ...). */
 export function TestsPage() {
   const { data, isLoading, isError, refetch } = useTestCatalog();
+  // To samo zapytanie co odznaka „Testy" w menu, więc nie kosztuje dodatkowego żądania. Błąd po prostu nic nie dopisuje.
+  const { data: dueTests } = useDueCount("TEST");
+
+  const allTestsDescription = dueTests
+    ? `Pytania ze wszystkich rodzajów naraz. Do powtórki: ${dueTests} ${pluralizePl(dueTests, {
+        one: "pytanie",
+        few: "pytania",
+        many: "pytań",
+      })}, a do tego nowe pytania.`
+    : "Pytania ze wszystkich rodzajów naraz: zaległe powtórki i nowe pytania.";
 
   return (
     <div>
@@ -26,7 +38,7 @@ export function TestsPage() {
         <StartTestCard
           icon={ClipboardList}
           title="Test z całego materiału"
-          description="Pytania ze wszystkich rodzajów naraz: zaległe powtórki i nowe pytania."
+          description={allTestsDescription}
           to={ROUTES.testAll}
         />
 

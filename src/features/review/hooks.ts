@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
-import { getDueCount, getMistakesCount } from "../../api/review";
+import { getDueCount, getMistakesCount, type SessionMode } from "../../api/review";
 
+/** Wspólny początek kluczy liczników: unieważnienie po tym prefiksie odświeża Fiszki i Testy naraz. */
 export const DUE_COUNT_KEY = ["review", "due-count"] as const;
 export const MISTAKES_COUNT_KEY = ["review", "mistakes-count"] as const;
 
@@ -14,11 +15,14 @@ export function useMistakesCount() {
   });
 }
 
-/** Liczba fiszek z minionym terminem powtórki – dla odznaki w menu i przycisku „Powtórki na dziś". */
-export function useDueCount() {
+/**
+ * Liczba kart z minionym terminem powtórki: fiszek (domyślnie) albo pytań testowych ("TEST").
+ * Dla odznak w menu i przycisku „Powtórki na dziś".
+ */
+export function useDueCount(mode: SessionMode = "FLASHCARD") {
   return useQuery({
-    queryKey: DUE_COUNT_KEY,
-    queryFn: getDueCount,
+    queryKey: [...DUE_COUNT_KEY, mode],
+    queryFn: () => getDueCount(mode),
     staleTime: 30_000,
     refetchOnWindowFocus: true,
   });

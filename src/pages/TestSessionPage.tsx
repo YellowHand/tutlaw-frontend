@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowRight, CheckCircle2, ChevronLeft, ChevronRight, XCircle } from "lucide-react";
+import { ArrowRight, CheckCircle2, ChevronLeft, ChevronRight, Layers, XCircle } from "lucide-react";
 import { getPracticeQueue } from "../api/exam";
 import {
   getMistakesQueue,
@@ -258,6 +258,12 @@ function QuestionBody({
             className="mt-3 text-sm text-fg-muted"
           />
           {result.leech && <LeechHint kind="test" lapses={result.lapses} className="mt-3 text-sm text-fg-muted" />}
+          {result.flashcardUnlocked && (
+            <p data-testid="flashcard-unlocked" className="mt-3 flex items-start gap-2 text-sm text-fg-muted">
+              <Layers size={16} className="mt-0.5 shrink-0 text-accent" aria-hidden="true" />
+              <span>Dodałem fiszkę do tego pytania w Fiszkach.</span>
+            </p>
+          )}
         </div>
       )}
 
@@ -412,7 +418,7 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
     // Sesja z gotowej listy (błędy, egzamin) nie ma „nowych pytań do dołożenia".
     if (fixedListMode || loading || loadError || currentIndex < queue.length) return;
     // Gdy nie uda się sprawdzić, ile jest nowych pytań, po prostu nie pokazujemy przycisku „Rozwiąż jeszcze".
-    getAvailableNewCardsCount(numericSubjectId, numericSourceId, numericCategoryId)
+    getAvailableNewCardsCount(numericSubjectId, numericSourceId, numericCategoryId, "TEST")
       .then(setAvailableExtra)
       .catch(() => setAvailableExtra(0));
   }, [fixedListMode, loading, loadError, currentIndex, queue.length, numericSubjectId, numericSourceId, numericCategoryId]);

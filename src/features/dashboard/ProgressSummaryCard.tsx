@@ -5,7 +5,7 @@ import { useOverview } from "../statistics/hooks";
 import { pluralizePl } from "../../lib/plural";
 
 export function ProgressSummaryCard() {
-  const { data, isLoading, isError, refetch } = useOverview();
+  const { data, isLoading, isError, refetch } = useOverview(undefined, "FLASHCARD");
 
   if (isLoading) return <Skeleton className="h-20 w-full" />;
 

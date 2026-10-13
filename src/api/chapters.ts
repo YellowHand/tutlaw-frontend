@@ -23,8 +23,9 @@ export async function getChaptersBySource(sourceId: number): Promise<Chapter[]> 
   return res.data;
 }
 
+/** Opanowanie rozdziałów z punktu widzenia Fiszek (bez pytań testowych z tego samego rozdziału). */
 export async function getChapterMastery(sourceId: number): Promise<ChapterMastery[]> {
-  const res = await api.get<ChapterMastery[]>("/api/statistics/chapters", { params: { sourceId } });
+  const res = await api.get<ChapterMastery[]>("/api/statistics/chapters", { params: { sourceId, mode: "FLASHCARD" } });
   return res.data;
 }
 

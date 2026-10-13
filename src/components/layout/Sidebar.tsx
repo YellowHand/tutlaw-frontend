@@ -39,7 +39,7 @@ export function Sidebar({ className }: SidebarProps) {
             >
               <Icon size={18} aria-hidden="true" />
               {item.label}
-              {item.badge === "due" && <NavBadge active={active} className="ml-auto" />}
+              {item.badge && <NavBadge mode={item.badge} active={active} className="ml-auto" />}
             </Link>
           );
         })}

@@ -1,20 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
+import type { SessionMode } from "../../api/review";
 import { fetchActivity, fetchChapterMastery, fetchOverview, fetchTestStats, fetchWeakCards } from "./api";
 
 const STALE_TIME = 60_000;
 
-export function useOverview(subjectId?: number) {
+/** mode: tylko fiszki ("FLASHCARD") albo tylko testy ("TEST"); bez trybu wszystko razem. */
+export function useOverview(subjectId?: number, mode?: SessionMode) {
   return useQuery({
-    queryKey: ["statistics", "overview", subjectId ?? "all"],
-    queryFn: () => fetchOverview(subjectId),
+    queryKey: ["statistics", "overview", subjectId ?? "all", mode ?? "all"],
+    queryFn: () => fetchOverview(subjectId, mode),
     staleTime: STALE_TIME,
   });
 }
 
-export function useActivity(days = 30) {
+export function useActivity(days = 30, mode?: SessionMode) {
   return useQuery({
-    queryKey: ["statistics", "activity", days],
-    queryFn: () => fetchActivity(days),
+    queryKey: ["statistics", "activity", days, mode ?? "all"],
+    queryFn: () => fetchActivity(days, mode),
     staleTime: STALE_TIME,
   });
 }

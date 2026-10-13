@@ -36,6 +36,11 @@ export interface TestAnswerResult {
   /** Ile razy użytkownik pomylił się w tym pytaniu (łącznie z tą odpowiedzią). */
   lapses: number;
   leech: boolean;
+  /**
+   * Ta błędna odpowiedź (bez „Nie jestem pewien") odblokowała fiszkę powiązaną z tym pytaniem:
+   * od teraz czeka w Fiszkach jako nowa. Prawda tylko przy pierwszym takim błędzie.
+   */
+  flashcardUnlocked: boolean;
 }
 
 /**
@@ -117,20 +122,25 @@ export async function getMistakesQueue(): Promise<TestQueueItem[]> {
   return res.data;
 }
 
+/**
+ * Ile nowych kart można jeszcze dołożyć w danym trybie. Fiszki i Testy liczą osobno: bez trybu backend
+ * liczy fiszki, więc sesja testowa musi podać "TEST".
+ */
 export async function getAvailableNewCardsCount(
   subjectId?: number,
   sourceId?: number,
-  categoryId?: number
+  categoryId?: number,
+  mode: SessionMode = "FLASHCARD"
 ): Promise<number> {
   const res = await api.get<{ availableCount: number }>("/api/review/queue/new-cards-available", {
-    params: { categoryId, subjectId, sourceId },
+    params: { categoryId, subjectId, sourceId, mode },
   });
   return res.data.availableCount;
 }
 
-/** Ile fiszek ma już minięty termin powtórki (bez nowych kart). */
-export async function getDueCount(): Promise<number> {
-  const res = await api.get<{ dueCount: number }>("/api/review/due-count");
+/** Ile kart w danym trybie (fiszki albo pytania testowe) ma już minięty termin powtórki, bez nowych. */
+export async function getDueCount(mode: SessionMode = "FLASHCARD"): Promise<number> {
+  const res = await api.get<{ dueCount: number }>("/api/review/due-count", { params: { mode } });
   return res.data.dueCount;
 }
 

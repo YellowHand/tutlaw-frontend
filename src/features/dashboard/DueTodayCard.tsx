@@ -9,7 +9,7 @@ import { pluralizePl } from "../../lib/plural";
 import { ROUTES } from "../../config/routes";
 
 export function DueTodayCard() {
-  const { data, isLoading, isError, refetch } = useOverview();
+  const { data, isLoading, isError, refetch } = useOverview(undefined, "FLASHCARD");
 
   if (isLoading) return <Skeleton className="h-64 w-full" />;
 

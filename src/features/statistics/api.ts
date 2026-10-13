@@ -1,13 +1,20 @@
 import { apiFetch } from "../../lib/apiClient";
+import type { SessionMode } from "../../api/review";
 import type { ActivityItem, ChapterMastery, OverviewResponse, TestStats, WeakCard } from "./types";
 
-export function fetchOverview(subjectId?: number): Promise<OverviewResponse> {
-  const query = subjectId ? `?subjectId=${subjectId}` : "";
-  return apiFetch<OverviewResponse>(`/api/statistics/overview${query}`);
+/** Bez trybu backend liczy fiszki i testy razem (strona Statystyki); z trybem tylko wskazany rodzaj kart. */
+export function fetchOverview(subjectId?: number, mode?: SessionMode): Promise<OverviewResponse> {
+  const params = new URLSearchParams();
+  if (subjectId) params.set("subjectId", String(subjectId));
+  if (mode) params.set("mode", mode);
+  const query = params.toString();
+  return apiFetch<OverviewResponse>(`/api/statistics/overview${query ? `?${query}` : ""}`);
 }
 
-export function fetchActivity(days = 30): Promise<ActivityItem[]> {
-  return apiFetch<ActivityItem[]>(`/api/statistics/activity?days=${days}`);
+export function fetchActivity(days = 30, mode?: SessionMode): Promise<ActivityItem[]> {
+  const params = new URLSearchParams({ days: String(days) });
+  if (mode) params.set("mode", mode);
+  return apiFetch<ActivityItem[]>(`/api/statistics/activity?${params.toString()}`);
 }
 
 export function fetchChapterMastery(sourceId?: number): Promise<ChapterMastery[]> {

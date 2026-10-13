@@ -37,7 +37,9 @@ export function IconRail({ className }: IconRailProps) {
               )}
             >
               <Icon size={20} aria-hidden="true" />
-              {item.badge === "due" && <NavBadge active={active} className="absolute -right-1 -top-1 h-4 min-w-4 px-1 text-[10px]" />}
+              {item.badge && (
+                <NavBadge mode={item.badge} active={active} className="absolute -right-1 -top-1 h-4 min-w-4 px-1 text-[10px]" />
+              )}
               <span
                 role="tooltip"
                 className="pointer-events-none absolute left-full ml-2 whitespace-nowrap rounded-full bg-surface-2 px-3 py-1 text-xs opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"

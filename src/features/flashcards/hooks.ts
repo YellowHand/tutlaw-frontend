@@ -54,7 +54,13 @@ export function useSourcesWithProgress(subjectId: number | undefined) {
         getSourceProgress(subjectId as number),
       ]);
       const progressBySourceId = new Map(progress.map((p) => [p.sourceId, p]));
-      return sources.map((s) => ({ ...s, progress: progressBySourceId.get(s.id) }));
+      return (
+        sources
+          .map((s) => ({ ...s, progress: progressBySourceId.get(s.id) }))
+          // Pula samych pytań testowych nie ma w Fiszkach czego uczyć. Podręcznik zostaje zawsze, bo to tu
+          // oznacza się przeczytane rozdziały, od których zależą pytania testowe.
+          .filter((s) => !(s.sourceType === "FLAT_POOL" && s.progress !== undefined && s.progress.totalCards === 0))
+      );
     },
   });
 }

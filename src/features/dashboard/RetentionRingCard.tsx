@@ -6,7 +6,7 @@ import { normalizeRetentionRate } from "../statistics/selectors";
 import { AccuracyRing } from "./AccuracyRing";
 
 export function RetentionRingCard() {
-  const { data, isLoading, isError, refetch } = useOverview();
+  const { data, isLoading, isError, refetch } = useOverview(undefined, "FLASHCARD");
 
   if (isLoading) return <Skeleton className="h-60 w-full" />;
 

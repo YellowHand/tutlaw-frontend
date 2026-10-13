@@ -5,7 +5,7 @@ import { useActivity } from "../statistics/hooks";
 import { WeeklyBars } from "./WeeklyBars";
 
 export function WeeklyBarsCard() {
-  const { data, isLoading, isError, refetch } = useActivity(28);
+  const { data, isLoading, isError, refetch } = useActivity(28, "FLASHCARD");
 
   if (isLoading) return <Skeleton className="h-60 w-full" />;
 

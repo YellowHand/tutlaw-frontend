@@ -25,7 +25,8 @@ export async function getSourcesBySubject(subjectId: number): Promise<Source[]> 
   return res.data;
 }
 
+/** Postęp w źródłach z punktu widzenia Fiszek: liczą się tylko fiszki, a nie pytania testowe z tych samych źródeł. */
 export async function getSourceProgress(subjectId: number): Promise<SourceProgress[]> {
-  const res = await api.get<SourceProgress[]>("/api/statistics/sources", { params: { subjectId } });
+  const res = await api.get<SourceProgress[]>("/api/statistics/sources", { params: { subjectId, mode: "FLASHCARD" } });
   return res.data;
 }
