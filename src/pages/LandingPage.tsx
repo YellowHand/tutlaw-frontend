@@ -1,74 +1,59 @@
-import { Link, useSearchParams } from "react-router-dom";
+import "@fontsource/newsreader/500.css";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
-import { Logo } from "../components/layout/Logo";
-import { ROUTES } from "../config/routes";
 import { ACCOUNT_DELETED_PARAM, ACCOUNT_DELETED_VALUE } from "../features/account/constants";
+import { COPY } from "../features/landing/copy";
+import { FaqSection } from "../features/landing/FaqSection";
+import { FeaturesSection } from "../features/landing/FeaturesSection";
+import { FinalCta } from "../features/landing/FinalCta";
+import { HeroSection } from "../features/landing/HeroSection";
+import { LandingFooter } from "../features/landing/LandingFooter";
+import { LandingHeader } from "../features/landing/LandingHeader";
+import { SpacedRepetitionSection } from "../features/landing/SpacedRepetitionSection";
+import { StepsSection } from "../features/landing/StepsSection";
+import { Wrap } from "../features/landing/ui";
 
+/**
+ * Strona główna. Układ reaguje na szerokość kontenera (zapytania @container), a nie okna, więc wygląda tak samo
+ * w całym oknie, w podglądzie tabletu i w wąskiej kolumnie. Zalogowany użytkownik zamiast "Załóż konto" i
+ * "Zaloguj się" dostaje wszędzie "Przejdź do aplikacji".
+ */
 export function LandingPage() {
   const { isAuthenticated } = useAuth();
   const [searchParams] = useSearchParams();
   const accountDeleted = searchParams.get(ACCOUNT_DELETED_PARAM) === ACCOUNT_DELETED_VALUE;
 
   return (
-    <div className="flex min-h-dvh flex-col bg-canvas text-fg">
-      <header className="flex items-center justify-between px-6 py-4 sm:px-10">
-        <Logo variant="wordmark" />
-        {isAuthenticated ? (
-          <Link
-            to={ROUTES.dashboard}
-            className="inline-flex items-center justify-center rounded-xl bg-accent px-4 min-h-11 text-sm font-medium text-accent-fg hover:opacity-90"
-          >
-            Przejdź do aplikacji
-          </Link>
-        ) : (
-          <Link to="/login" className="text-sm font-medium text-fg-muted hover:text-fg">
-            Zaloguj się
-          </Link>
-        )}
-      </header>
-
-      {accountDeleted && (
-        <p
-          role="status"
-          className="mx-6 rounded-xl border border-success/40 bg-success/10 px-4 py-3 text-center text-sm sm:mx-10"
+    <div id="top" className="@container min-h-dvh overflow-x-clip bg-canvas font-sans text-fg antialiased">
+      <div className="[--lp-gutter:clamp(16px,4.5cqw,40px)] [--lp-section:clamp(56px,9cqw,112px)]">
+        <a
+          href="#tresc"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-4 focus:z-50 focus:rounded-[10px] focus:bg-accent focus:px-4 focus:py-3 focus:font-extrabold focus:text-accent-fg"
         >
-          Twoje konto i wszystkie powiązane z nim dane zostały usunięte. Dziękujemy za korzystanie z serwisu.
-        </p>
-      )}
+          Przejdź do treści
+        </a>
 
-      <main className="flex flex-1 flex-col items-center justify-center px-6 text-center">
-        <h1 className="max-w-2xl text-4xl font-bold sm:text-5xl">Ucz się prawa w sposób, który naprawdę działa</h1>
-        <p className="mt-4 max-w-xl text-fg-muted">
-          Fiszki z algorytmem powtórek interwałowych, testy na aplikacje prawnicze i statystyki postępów — wszystko w
-          jednym miejscu.
-        </p>
+        <LandingHeader isAuthenticated={isAuthenticated} />
 
-        {!isAuthenticated && (
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Link
-              to="/register"
-              className="inline-flex items-center justify-center rounded-xl bg-accent px-6 min-h-11 text-sm font-semibold text-accent-fg hover:opacity-90"
-            >
-              Załóż konto
-            </Link>
-            <Link
-              to="/login"
-              className="inline-flex items-center justify-center rounded-xl border border-line px-6 min-h-11 text-sm font-semibold hover:bg-surface-2"
-            >
-              Zaloguj się
-            </Link>
-          </div>
+        {accountDeleted && (
+          <Wrap className="pt-4">
+            <p role="status" className="rounded-xl border border-success/40 bg-success/10 px-4 py-3 text-center text-sm">
+              {COPY.accountDeleted}
+            </p>
+          </Wrap>
         )}
-      </main>
 
-      <footer className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 px-6 py-6 text-sm text-fg-muted">
-        <Link to={ROUTES.terms} className="hover:text-fg">
-          Regulamin
-        </Link>
-        <Link to={ROUTES.privacy} className="hover:text-fg">
-          Polityka prywatności
-        </Link>
-      </footer>
+        <main id="tresc">
+          <HeroSection isAuthenticated={isAuthenticated} />
+          <SpacedRepetitionSection />
+          <FeaturesSection />
+          <StepsSection isAuthenticated={isAuthenticated} />
+          <FaqSection />
+          <FinalCta isAuthenticated={isAuthenticated} />
+        </main>
+
+        <LandingFooter isAuthenticated={isAuthenticated} />
+      </div>
     </div>
   );
 }

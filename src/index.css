@@ -17,6 +17,66 @@
   --color-danger: #f0565e;
 
   --font-sans: "Manrope Variable", "Manrope", system-ui, sans-serif;
+
+  /* Strona główna (features/landing). Reszta aplikacji tych tokenów nie używa. */
+  --color-fg-soft: #cfcdd2;
+  --color-accent-hover: #e4c056;
+  /* "Arkusz egzaminacyjny" w demo: jasny papier na ciemnej stronie. Kolory stanów dobrane do jasnego tła (min. 4,5:1). */
+  --color-paper: #f2efe9;
+  --color-paper-2: #fbfaf6;
+  --color-paper-line: #d6d0c2;
+  --color-paper-chip: #e6e1d4;
+  --color-paper-hint: #ebe7da;
+  --color-ink: #1b1a17;
+  --color-ink-muted: #5b574f;
+  --color-paper-ok: #1f6f40;
+  --color-paper-ok-bg: #e3f1e8;
+  --color-paper-bad: #b3261e;
+  --color-paper-bad-bg: #f8e6e3;
+  --color-paper-warn-bg: #fbf0cf;
+  --color-ink-soft: #3f3b34;
+  --color-paper-dash: #b2ac9b;
+  --color-paper-ok-ink: #14391f;
+  --color-paper-warn-ink: #4a3500;
+  --color-paper-bad-ink: #5a1510;
+  --color-on-accent-soft: #3b2c06;
+  --color-band: #161618;
+
+  --font-display: "Newsreader", Georgia, "Times New Roman", serif;
+
+  /* Typografia płynna względem szerokości kontenera strony (cqw), nie okna. */
+  --text-lp-h1: clamp(2.4rem, 1.6rem + 3cqw, 4rem);
+  --text-lp-h1--line-height: 1.03;
+  --text-lp-h1--letter-spacing: -0.04em;
+  --text-lp-h1--font-weight: 800;
+  --text-lp-h2: clamp(1.75rem, 1.25rem + 2.3cqw, 2.875rem);
+  --text-lp-h2--line-height: 1.08;
+  --text-lp-h2--letter-spacing: -0.03em;
+  --text-lp-h2--font-weight: 800;
+  --text-lp-h3: clamp(1.1875rem, 1.05rem + 0.5cqw, 1.4375rem);
+  --text-lp-h3--line-height: 1.2;
+  --text-lp-h3--letter-spacing: -0.02em;
+  --text-lp-h3--font-weight: 800;
+  --text-lp-lead: clamp(1.0625rem, 1rem + 0.5cqw, 1.25rem);
+  --text-lp-lead--line-height: 1.55;
+  --text-lp-body: clamp(1rem, 0.95rem + 0.25cqw, 1.125rem);
+  --text-lp-body--line-height: 1.6;
+  --text-lp-question: clamp(1.3125rem, 1.1rem + 0.9cqw, 1.75rem);
+  --text-lp-question--line-height: 1.28;
+  --text-lp-question--letter-spacing: -0.012em;
+  --text-lp-question--font-weight: 500;
+
+  --animate-rise: rise 0.28s ease-out;
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
 }
 
 :root {
