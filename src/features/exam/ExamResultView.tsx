@@ -8,6 +8,7 @@ import { ROUTES } from "../../config/routes";
 import { cn } from "../../lib/cn";
 import { pluralizePl } from "../../lib/plural";
 import { LegalBasisLine } from "../review/LegalBasisLine";
+import { OriginLabel } from "../review/OriginLabel";
 import { ReportCardButton } from "../report/ReportCardButton";
 import { START_BUTTON } from "../tests/StartTestCard";
 import { formatDateTime, formatDuration, formatPercent, pointsNeeded } from "./format";
@@ -225,6 +226,7 @@ function ReviewItem({ number, question }: { number: number; question: ExamQuesti
         {question.sourceName && <span className="text-xs font-normal text-fg-muted">{question.sourceName}</span>}
       </p>
 
+      <OriginLabel origin={question.origin} examYear={question.examYear} className="mt-2" />
       <p className="mt-2 text-base font-semibold leading-snug">{question.front}</p>
 
       <ul className="mt-3 flex flex-col gap-2">

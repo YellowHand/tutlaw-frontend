@@ -39,7 +39,11 @@ export function SourcesPage() {
             ))}
           </div>
         ) : sources.length === 0 ? (
-          <EmptyState icon={BookOpen} title="Brak źródeł" description="Wkrótce pojawią się tu materiały." />
+          <EmptyState
+            icon={BookOpen}
+            title="Brak fiszek w tym przedmiocie"
+            description="Fiszki pojawią się tu po błędnej odpowiedzi w teście albo po dodaniu pytania przyciskiem „Dodaj do fiszek”."
+          />
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {sources.map((source) => {

@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowRight, CheckCircle2, ChevronLeft, ChevronRight, Layers, XCircle } from "lucide-react";
+import { ArrowRight, CheckCircle2, ChevronLeft, ChevronRight, XCircle } from "lucide-react";
 import { getPracticeQueue } from "../api/exam";
 import {
   getMistakesQueue,
   getTestQueue,
   submitTestAnswer,
   getAvailableNewCardsCount,
+  type FlashcardStatus,
   type TestQueueItem,
   type TestAnswerResult,
 } from "../api/review";
@@ -21,6 +22,9 @@ import { BacklogFinishNotice, BacklogNotice } from "../features/review/BacklogNo
 import { KeyboardHint } from "../features/review/KeyboardHint";
 import { EXTRA_DUE_BATCH, useBacklog } from "../features/review/useBacklog";
 import { ReportCardButton } from "../features/report/ReportCardButton";
+import { OriginLabel } from "../features/review/OriginLabel";
+import { HideCardButton } from "../features/admin/HideCardButton";
+import { FlashcardStatusNote, QuestionFlashcardActions } from "../features/flashcards/QuestionFlashcardActions";
 import { LeechHint } from "../features/difficult/LeechHint";
 import { SuspendCardButton } from "../features/difficult/SuspendCardButton";
 import { SessionLoadError } from "../features/review/SessionLoadError";
@@ -130,6 +134,12 @@ interface QuestionBodyProps {
   /** Pytania zawieszone w tej sesji (do stanu przycisku „Zawieś pytanie" także w podglądzie). */
   suspendedIds?: ReadonlySet<number>;
   onSuspended?: (cardId: number) => void;
+  /** Zmiany stanu fiszki w tej sesji (po „Dodaj do fiszek" / „Usuń z fiszek"); bez wpisu obowiązuje stan z odpowiedzi. */
+  flashcardOverrides?: Readonly<Record<number, FlashcardStatus>>;
+  onFlashcardStatus?: (cardId: number, status: FlashcardStatus) => void;
+  /** Pytania ukryte przez administratora w tej sesji. */
+  hiddenIds?: ReadonlySet<number>;
+  onHidden?: (cardId: number) => void;
   footer?: ReactNode;
 }
 
@@ -145,16 +155,26 @@ function QuestionBody({
   onGuessedChange,
   suspendedIds,
   onSuspended,
+  flashcardOverrides,
+  onFlashcardStatus,
+  hiddenIds,
+  onHidden,
   footer,
 }: QuestionBodyProps) {
   // Litery A/B/C to pozycje na ekranie. Oryginalny klucz odpowiedzi (z bazy) wraca do serwera i z serwera.
   const options = OPTION_KEYS.map((key, index) => ({ key, text: optionText(question, question.order[index]) }));
   const correctDisplayKey = result ? displayKeyOf(question.order, result.correctOption) : null;
+  // Stan fiszki: ostatnia zmiana z tej sesji, a gdy jej nie było, stan z odpowiedzi serwera.
+  // Starszy backend (sprzed Etapu 17) nie zwraca `flashcard`, tylko `flashcardUnlocked`: wtedy też pokażemy komunikat.
+  const flashcardStatus: FlashcardStatus | null = result
+    ? (flashcardOverrides?.[question.cardId] ?? result.flashcard ?? (result.flashcardUnlocked ? "ADDED_BY_MISTAKE" : "UNAVAILABLE"))
+    : null;
 
   return (
     <div className="flex flex-col gap-4 transition-opacity duration-200 starting:opacity-0 motion-reduce:transition-none">
       {/* Pytanie */}
       <div className="rounded-2xl border border-line bg-surface p-6 sm:p-8">
+        <OriginLabel origin={question.origin} examYear={question.examYear} className="mb-3" />
         <p className="text-pretty text-lg font-semibold leading-snug text-fg sm:text-xl">{question.front}</p>
       </div>
 
@@ -258,18 +278,29 @@ function QuestionBody({
             className="mt-3 text-sm text-fg-muted"
           />
           {result.leech && <LeechHint kind="test" lapses={result.lapses} className="mt-3 text-sm text-fg-muted" />}
-          {result.flashcardUnlocked && (
-            <p data-testid="flashcard-unlocked" className="mt-3 flex items-start gap-2 text-sm text-fg-muted">
-              <Layers size={16} className="mt-0.5 shrink-0 text-accent" aria-hidden="true" />
-              <span>Dodałem fiszkę do tego pytania w Fiszkach.</span>
-            </p>
+          {flashcardStatus && (
+            <FlashcardStatusNote status={flashcardStatus} justAdded={result.flashcardUnlocked} className="mt-3" />
           )}
         </div>
       )}
 
       {result && (
         <div className="flex flex-wrap items-center gap-x-4 self-start">
+          {flashcardStatus && onFlashcardStatus && (
+            <QuestionFlashcardActions
+              key={`flashcard:${question.cardId}`}
+              questionId={question.cardId}
+              status={flashcardStatus}
+              onStatusChange={onFlashcardStatus}
+            />
+          )}
           <ReportCardButton key={question.cardId} cardId={question.cardId} />
+          <HideCardButton
+            key={`hide:${question.cardId}`}
+            cardId={question.cardId}
+            alreadyHidden={hiddenIds?.has(question.cardId)}
+            onHidden={onHidden}
+          />
           {result.leech && (
             <SuspendCardButton
               key={`suspend:${question.cardId}`}
@@ -361,6 +392,16 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
   const [suspendedIds, setSuspendedIds] = useState<ReadonlySet<number>>(() => new Set());
   const handleSuspended = useCallback((cardId: number) => {
     setSuspendedIds((prev) => new Set(prev).add(cardId));
+  }, []);
+  // Zmiany fiszek w tej sesji („Dodaj do fiszek" / „Usuń z fiszek"), żeby podgląd poprzednich pytań pokazywał aktualny stan.
+  const [flashcardOverrides, setFlashcardOverrides] = useState<Readonly<Record<number, FlashcardStatus>>>({});
+  const handleFlashcardStatus = useCallback((cardId: number, status: FlashcardStatus) => {
+    setFlashcardOverrides((prev) => ({ ...prev, [cardId]: status }));
+  }, []);
+  // Pytania ukryte przez administratora w tej sesji.
+  const [hiddenIds, setHiddenIds] = useState<ReadonlySet<number>>(() => new Set());
+  const handleHidden = useCallback((cardId: number) => {
+    setHiddenIds((prev) => new Set(prev).add(cardId));
   }, []);
 
   const numericSubjectId = subjectId ? Number(subjectId) : undefined;
@@ -861,6 +902,10 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
           guessed={viewEntry.guessed}
           suspendedIds={suspendedIds}
           onSuspended={handleSuspended}
+          flashcardOverrides={flashcardOverrides}
+          onFlashcardStatus={handleFlashcardStatus}
+          hiddenIds={hiddenIds}
+          onHidden={handleHidden}
           readOnly
           footer={
             <div className="flex justify-end">
@@ -883,6 +928,10 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
           onGuessedChange={setGuessed}
           suspendedIds={suspendedIds}
           onSuspended={handleSuspended}
+          flashcardOverrides={flashcardOverrides}
+          onFlashcardStatus={handleFlashcardStatus}
+          hiddenIds={hiddenIds}
+          onHidden={handleHidden}
           footer={
             result && (
               <div className="flex justify-end">

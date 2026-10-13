@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { GraduationCap, ChevronRight } from "lucide-react";
+import { GraduationCap, ChevronRight, Layers } from "lucide-react";
 import { Card } from "../components/ui/Card";
 import { Skeleton } from "../components/ui/Skeleton";
 import { EmptyState } from "../components/ui/EmptyState";
@@ -8,20 +8,39 @@ import { PageHeader } from "../components/layout/PageHeader";
 import { ROUTES } from "../config/routes";
 import { DueReviewBanner } from "../features/review/DueReviewBanner";
 import { useNonEmptyCategories } from "../features/flashcards/hooks";
+import { useOverview } from "../features/statistics/hooks";
 import { loadErrorMessage } from "../lib/errors";
 
 export function CategoriesPage() {
   const { data: categories, isError, error, refetch } = useNonEmptyCategories();
+  // Fiszki zaczynają puste: pojawiają się po błędach w testach albo po „Dodaj do fiszek". Gdy nie ma żadnej, tłumaczymy to
+  // zamiast pokazywać kategorie, w których nic nie ma. Gdy nie uda się tego sprawdzić, pokazujemy zwykłą listę.
+  const overview = useOverview(undefined, "FLASHCARD");
+  const noFlashcardsYet = overview.data?.totalCards === 0;
 
   return (
     <div>
       <PageHeader title="Fiszki" />
       <div className="px-4 pb-8 sm:px-8">
-        <DueReviewBanner className="mb-6" />
-        <h2 className="mb-3 text-sm font-medium text-fg-muted">Materiały do nauki</h2>
-        {isError ? (
+        {!noFlashcardsYet && <DueReviewBanner className="mb-6" />}
+        {!noFlashcardsYet && <h2 className="mb-3 text-sm font-medium text-fg-muted">Materiały do nauki</h2>}
+        {noFlashcardsYet ? (
+          <EmptyState
+            icon={Layers}
+            title="Nie masz jeszcze fiszek"
+            description="Fiszki pojawiają się tu same: po błędnej odpowiedzi w teście (bez zaznaczenia „Nie jestem pewien”) albo gdy po odpowiedzi klikniesz „Dodaj do fiszek”."
+            action={
+              <Link
+                to={ROUTES.tests}
+                className="mt-1 inline-flex min-h-11 items-center justify-center rounded-xl bg-accent px-6 text-sm font-medium text-accent-fg hover:opacity-90"
+              >
+                Przejdź do Testów
+              </Link>
+            }
+          />
+        ) : isError ? (
           <ErrorState message={loadErrorMessage(error, "kategorii")} onRetry={() => refetch()} />
-        ) : categories === undefined ? (
+        ) : categories === undefined || overview.isLoading ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[0, 1, 2].map((i) => (
               <Skeleton key={i} className="h-32 w-full" />

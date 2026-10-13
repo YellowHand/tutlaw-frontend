@@ -12,6 +12,9 @@ import { BacklogFinishNotice, BacklogNotice } from "../features/review/BacklogNo
 import { KeyboardHint } from "../features/review/KeyboardHint";
 import { EXTRA_DUE_BATCH, useBacklog } from "../features/review/useBacklog";
 import { ReportCardButton } from "../features/report/ReportCardButton";
+import { OriginLabel } from "../features/review/OriginLabel";
+import { originLabel } from "../lib/origin";
+import { HideCardButton } from "../features/admin/HideCardButton";
 import { LeechHint } from "../features/difficult/LeechHint";
 import { SuspendCardButton } from "../features/difficult/SuspendCardButton";
 import { SessionLoadError } from "../features/review/SessionLoadError";
@@ -107,6 +110,11 @@ export function StudySessionPage() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   // Fiszki zawieszone w tej sesji: nie wracają na koniec kolejki po „Nie pamiętam".
   const [suspendedIds, setSuspendedIds] = useState<ReadonlySet<number>>(() => new Set());
+  // Karty ukryte przez administratora w tej sesji.
+  const [hiddenIds, setHiddenIds] = useState<ReadonlySet<number>>(() => new Set());
+  const handleHidden = useCallback((cardId: number) => {
+    setHiddenIds((prev) => new Set(prev).add(cardId));
+  }, []);
   const handleSuspended = useCallback((cardId: number) => {
     setSuspendedIds((prev) => new Set(prev).add(cardId));
   }, []);
@@ -506,6 +514,7 @@ export function StudySessionPage() {
               !flipped && "hover:bg-surface-2"
             )}
           >
+            <OriginLabel origin={shownCard.origin} examYear={shownCard.examYear} className="mb-2 shrink-0 justify-center" />
             <div className="flex flex-1 flex-col overflow-y-auto">
               <p className="my-auto text-pretty text-center text-xl font-semibold leading-snug text-fg sm:text-2xl">
                 {shownCard.front}
@@ -535,8 +544,9 @@ export function StudySessionPage() {
               </div>
             </div>
 
-            {(sourceLabel || shownCard.legalBasis || shownCard.validAsOf || shownCard.leech) && (
+            {(sourceLabel || shownCard.legalBasis || shownCard.validAsOf || shownCard.leech || originLabel(shownCard.origin, shownCard.examYear)) && (
               <div className="flex shrink-0 flex-col gap-1 border-t border-line pt-3 text-xs text-fg-muted">
+                <OriginLabel origin={shownCard.origin} examYear={shownCard.examYear} />
                 {sourceLabel && (
                   <p className="flex items-center gap-2">
                     <BookOpen size={14} aria-hidden="true" />
@@ -617,6 +627,12 @@ export function StudySessionPage() {
       {(viewing || showAnswer) && (
         <div className="flex flex-wrap items-center gap-x-4 self-start">
           <ReportCardButton key={`report:${shownCard.cardId}:${shownIndex}`} cardId={shownCard.cardId} />
+          <HideCardButton
+            key={`hide:${shownCard.cardId}:${shownIndex}`}
+            cardId={shownCard.cardId}
+            alreadyHidden={hiddenIds.has(shownCard.cardId)}
+            onHidden={handleHidden}
+          />
           {shownCard.leech && (
             <SuspendCardButton
               key={`suspend:${shownCard.cardId}:${shownIndex}`}

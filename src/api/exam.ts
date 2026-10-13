@@ -1,5 +1,6 @@
 import { api } from "./axiosInstance";
 import type { TestQueueItem } from "./review";
+import type { QuestionOrigin } from "../lib/origin";
 
 /** Zakres egzaminu od najwęższego: źródło, przedmiot, kategoria; bez żadnego cały dostępny materiał. */
 export interface ExamScope {
@@ -69,6 +70,8 @@ export interface ExamQuestionResult {
   legalBasis: string | null;
   validAsOf: string | null;
   sourceName: string | null;
+  origin: QuestionOrigin;
+  examYear: number | null;
 }
 
 export interface ExamResult {

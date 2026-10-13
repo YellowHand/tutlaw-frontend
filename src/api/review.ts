@@ -1,4 +1,5 @@
 import { api } from "./axiosInstance";
+import type { QuestionOrigin } from "../lib/origin";
 
 export interface ReviewQueueItem {
   cardId: number;
@@ -15,6 +16,9 @@ export interface ReviewQueueItem {
   lapses: number;
   /** Czy pytanie jest już „trudne" (liczba błędów osiągnęła próg), czyli warto zaproponować zawieszenie. */
   leech: boolean;
+  /** Skąd pochodzi fiszka (kopiowane z pytania); autorskie nie ma roku. */
+  origin: QuestionOrigin;
+  examYear: number | null;
 }
 
 export interface TestQueueItem {
@@ -24,7 +28,19 @@ export interface TestQueueItem {
   optionB: string;
   optionC: string;
   sourceName: string | null;
+  /** Skąd pochodzi pytanie: autorskie albo egzamin na konkretną aplikację z danego roku. */
+  origin: QuestionOrigin;
+  examYear: number | null;
 }
+
+/**
+ * Stan fiszki pytania dla użytkownika:
+ * - UNAVAILABLE: pytanie nie ma widocznej fiszki (nic nie pokazujemy),
+ * - AVAILABLE: można ją dodać przyciskiem „Dodaj do fiszek",
+ * - ADDED_MANUALLY: użytkownik sam ją dodał, może ją usunąć („Usuń z fiszek"),
+ * - ADDED_BY_MISTAKE: trafiła do Fiszek po pewnym błędzie w tym pytaniu (bez przycisku).
+ */
+export type FlashcardStatus = "UNAVAILABLE" | "AVAILABLE" | "ADDED_MANUALLY" | "ADDED_BY_MISTAKE";
 
 export interface TestAnswerResult {
   correct: boolean;
@@ -37,10 +53,12 @@ export interface TestAnswerResult {
   lapses: number;
   leech: boolean;
   /**
-   * Ta błędna odpowiedź (bez „Nie jestem pewien") odblokowała fiszkę powiązaną z tym pytaniem:
-   * od teraz czeka w Fiszkach jako nowa. Prawda tylko przy pierwszym takim błędzie.
+   * Ta błędna odpowiedź (bez „Nie jestem pewien") sama dodała fiszkę tego pytania do Fiszek:
+   * od teraz czeka tam jako nowa. Prawda tylko przy pierwszym takim błędzie.
    */
   flashcardUnlocked: boolean;
+  /** Stan fiszki tego pytania po tej odpowiedzi: czy pokazać „Dodaj do fiszek", „W fiszkach" albo nic. */
+  flashcard: FlashcardStatus;
 }
 
 /**

@@ -6,6 +6,7 @@ import { Dialog } from "../../components/ui/Dialog";
 import { cn } from "../../lib/cn";
 import { pluralizePl } from "../../lib/plural";
 import { isTyping } from "../review/keyboard";
+import { OriginLabel } from "../review/OriginLabel";
 import { formatClock } from "./format";
 import { saveDraft, type ExamDraft } from "./examStorage";
 
@@ -236,6 +237,7 @@ export function ExamRunner({ exam, persist, submitting, submitError, onSubmit, o
           </div>
 
           <div className="rounded-2xl border border-line bg-surface p-6 sm:p-8">
+            <OriginLabel origin={question.origin} examYear={question.examYear} className="mb-3" />
             <p className="text-pretty text-lg font-semibold leading-snug text-fg sm:text-xl">{question.front}</p>
           </div>
 
