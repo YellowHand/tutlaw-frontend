@@ -11,6 +11,8 @@ import { Breadcrumbs } from "./Breadcrumbs";
 import { ProgressLine, TileGrid } from "./CatalogTile";
 import { isEmpty } from "./format";
 import { useTestCatalog } from "./hooks";
+import { OriginFilterBar } from "./OriginFilterBar";
+import { isFilterActive, useOriginFilter } from "./originFilter";
 import { START_BUTTON, StartTestCard } from "./StartTestCard";
 
 function SourceCard({ subjectId, source }: { subjectId: number; source: TestSourceNode }) {
@@ -60,6 +62,7 @@ export function TestSubjectPage() {
   const { data, isLoading, isError, refetch } = useTestCatalog();
   const category = data?.categories.find((c) => String(c.id) === categoryId);
   const subject = category?.subjects.find((s) => String(s.id) === subjectId);
+  const filterActive = isFilterActive(useOriginFilter().data);
 
   if (isLoading) {
     return (
@@ -115,6 +118,8 @@ export function TestSubjectPage() {
       <PageHeader title={subject.name} subtitle="Wybierz źródło pytań." />
 
       <div className="flex flex-col gap-6 px-4 pb-8 sm:px-8">
+        <OriginFilterBar />
+
         {sources.length > 1 && subject.questionCount > 0 && (
           <StartTestCard
             icon={ClipboardList}
@@ -125,7 +130,15 @@ export function TestSubjectPage() {
         )}
 
         {sources.length === 0 ? (
-          <EmptyState icon={BookOpen} title="Wkrótce" description="Do tej pozycji nie dodano jeszcze pytań testowych." />
+          filterActive ? (
+            <EmptyState
+              icon={BookOpen}
+              title="Brak w filtrze"
+              description="W wybranych pochodzeniach nie ma pytań z tej pozycji. Zmień filtr powyżej."
+            />
+          ) : (
+            <EmptyState icon={BookOpen} title="Wkrótce" description="Do tej pozycji nie dodano jeszcze pytań testowych." />
+          )
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {sources.map((source) => (

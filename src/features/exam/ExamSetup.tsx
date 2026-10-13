@@ -8,6 +8,8 @@ import { Field } from "../../components/ui/Field";
 import { serverMessage } from "../../lib/errors";
 import { pluralizePl } from "../../lib/plural";
 import { useTestCatalog } from "../tests/hooks";
+import { OriginFilterBar } from "../tests/OriginFilterBar";
+import { isFilterActive, useOriginFilter } from "../tests/originFilter";
 import { formatClock } from "./format";
 import { loadRememberedSettings, saveRememberedSettings, type ExamDraft } from "./examStorage";
 import { ExamHistory } from "./ExamHistory";
@@ -91,6 +93,7 @@ interface ExamSetupProps {
 /** Ekran przed egzaminem: ustawienia (zakres, liczba pytań, czas, próg), wznowienie niedokończonego i historia. */
 export function ExamSetup({ draft, onResume, onDiscard, onStarted }: ExamSetupProps) {
   const catalogQuery = useTestCatalog();
+  const filterActive = isFilterActive(useOriginFilter().data);
   const options = useMemo(() => buildScopeOptions(catalogQuery.data), [catalogQuery.data]);
   const remembered = useMemo(() => loadRememberedSettings(), []);
 
@@ -171,6 +174,8 @@ export function ExamSetup({ draft, onResume, onDiscard, onStarted }: ExamSetupPr
           Egzamin nie zmienia terminów Twoich powtórek ani statystyk nauki.
         </p>
 
+        <OriginFilterBar className="mb-5 max-w-xl" />
+
         <form onSubmit={handleSubmit} noValidate className="flex max-w-xl flex-col gap-5" aria-describedby={error ? formErrorId : undefined}>
           <div className="flex flex-col gap-1">
             <label htmlFor={scopeId} className="text-sm text-fg-muted">
@@ -205,8 +210,12 @@ export function ExamSetup({ draft, onResume, onDiscard, onStarted }: ExamSetupPr
                 ? "Nie udało się pobrać listy zakresów, więc dostępny jest tylko cały materiał."
                 : catalogKnown
                   ? nothingAvailable
-                    ? "W tym zakresie nie ma teraz pytań testowych."
-                    : `Do wylosowania: ${selected.available} ${questionsWord(selected.available)} (bez zawieszonych i z nieodblokowanych rozdziałów).`
+                    ? filterActive
+                      ? "W tym zakresie nie ma pytań z wybranych pochodzeń. Zmień filtr powyżej."
+                      : "W tym zakresie nie ma teraz pytań testowych."
+                    : `Do wylosowania: ${selected.available} ${questionsWord(selected.available)} (${
+                        filterActive ? "z wybranych pochodzeń, " : ""
+                      }bez zawieszonych i z nieodblokowanych rozdziałów).`
                   : "Pobieram listę zakresów…"}
             </p>
           </div>

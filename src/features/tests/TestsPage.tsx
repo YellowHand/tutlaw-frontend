@@ -10,6 +10,8 @@ import { describeItems } from "./format";
 import { pluralizePl } from "../../lib/plural";
 import { useDueCount } from "../review/hooks";
 import { useTestCatalog } from "./hooks";
+import { OriginFilterBar } from "./OriginFilterBar";
+import { isFilterActive, useOriginFilter } from "./originFilter";
 import { MistakesCard } from "./MistakesCard";
 import { DueReviewsCard } from "./DueReviewsCard";
 import { StartTestCard } from "./StartTestCard";
@@ -19,6 +21,8 @@ export function TestsPage() {
   const { data, isLoading, isError, refetch } = useTestCatalog();
   // To samo zapytanie co odznaka „Testy" w menu, więc nie kosztuje dodatkowego żądania. Błąd po prostu nic nie dopisuje.
   const { data: dueTests } = useDueCount("TEST");
+  // Z włączonym filtrem pochodzenia pusta pozycja znaczy „nic w wybranych pochodzeniach", a nie „wkrótce".
+  const filterActive = isFilterActive(useOriginFilter().data);
 
   const allTestsDescription = dueTests
     ? `Pytania ze wszystkich rodzajów naraz. Do powtórki: ${dueTests} ${pluralizePl(dueTests, {
@@ -36,6 +40,8 @@ export function TestsPage() {
       />
 
       <div className="flex flex-col gap-6 px-4 pb-8 sm:px-8">
+        <OriginFilterBar />
+
         <DueReviewsCard count={dueTests ?? 0} />
 
         <StartTestCard
@@ -80,6 +86,7 @@ export function TestsPage() {
                   title={category.name}
                   subtitle={describeItems(category.subjects.length, category.itemsLabel)}
                   counts={category}
+                  emptyLabel={filterActive ? "Brak w filtrze" : undefined}
                 />
               ))}
             </TileGrid>
