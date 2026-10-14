@@ -322,9 +322,10 @@ interface TestSessionPageProps {
    * "scope" (domyślnie): test z wybranego zakresu (całość, rodzaj, przedmiot, źródło).
    * "mistakes": „Powtórz moje błędy" – pytania, w których ostatnia odpowiedź była błędna.
    * "practice": pytania wskazane w adresie (?cardIds=1,2,3), np. błędy z egzaminu próbnego.
+   * "custom": jak "practice", ale z ekranu „Własny test" (inne podpisy i powrót do układania testu).
    * "due": „Powtórz zaległe" – z całego materiału same pytania z minionym terminem powtórki, bez nowych.
    */
-  mode?: "scope" | "mistakes" | "practice" | "due";
+  mode?: "scope" | "mistakes" | "practice" | "custom" | "due";
 }
 
 /** Numery pytań z adresu (?cardIds=1,2,3): tylko dodatnie liczby całkowite, bez powtórzeń, do 200. */
@@ -339,7 +340,9 @@ function parseCardIds(raw: string | null): number[] {
 
 export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
   const mistakesMode = mode === "mistakes";
-  const practiceMode = mode === "practice";
+  const customMode = mode === "custom";
+  // Własny test to ta sama sesja z podanej listy pytań co powtórka błędów z egzaminu; różni się tylko podpisami.
+  const practiceMode = mode === "practice" || customMode;
   // Zaległe powtórki: zwykła sesja z całego materiału, tylko bez nowych pytań na starcie.
   // Po jej zakończeniu można dołożyć nowe pytania albo kolejną porcję zaległych, jak w zwykłym teście.
   const dueMode = mode === "due";
@@ -348,13 +351,15 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
   // Nagłówek h1 widzi tylko czytnik ekranu: sesja nie ma widocznego tytułu, ale strona musi mieć nagłówek pierwszego poziomu.
   const sessionTitle = mistakesMode
     ? "Powtórka błędów"
-    : practiceMode
-      ? "Powtórka pytań z egzaminu"
-      : dueMode
-        ? "Zaległe powtórki"
-        : "Sesja testowa";
-  const backTo = practiceMode ? ROUTES.exam : ROUTES.tests;
-  const backLabel = practiceMode ? "Wróć do egzaminu" : "Wróć do Testów";
+    : customMode
+      ? "Własny test"
+      : practiceMode
+        ? "Powtórka pytań z egzaminu"
+        : dueMode
+          ? "Zaległe powtórki"
+          : "Sesja testowa";
+  const backTo = customMode ? ROUTES.customTest : practiceMode ? ROUTES.exam : ROUTES.tests;
+  const backLabel = customMode ? "Wróć do własnego testu" : practiceMode ? "Wróć do egzaminu" : "Wróć do Testów";
   const { subjectId } = useParams();
   const [searchParams] = useSearchParams();
   const cardIdsParam = searchParams.get("cardIds");
@@ -752,11 +757,13 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
         <h1 className="text-xl font-bold">
           {mistakesMode
             ? "Brawo! Przerobiłeś swoje błędy."
-            : practiceMode
-              ? "Brawo! Przerobiłeś pytania z egzaminu."
-              : dueMode
-                ? "Brawo! Zaległe powtórki zrobione."
-                : "Brawo! Skończyłeś test na dziś."}
+            : customMode
+              ? "Brawo! Własny test zakończony."
+              : practiceMode
+                ? "Brawo! Przerobiłeś pytania z egzaminu."
+                : dueMode
+                  ? "Brawo! Zaległe powtórki zrobione."
+                  : "Brawo! Skończyłeś test na dziś."}
         </h1>
 
         {extraError && (
@@ -844,7 +851,11 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
               <span className="font-medium text-fg">{shownIndex + 1}</span> / {queue.length}
             </span>
             {mistakesMode && <span className="rounded-md bg-surface-2 px-2 py-0.5 text-xs">Moje błędy</span>}
-            {practiceMode && <span className="rounded-md bg-surface-2 px-2 py-0.5 text-xs">Błędy z egzaminu</span>}
+            {practiceMode && (
+              <span className="rounded-md bg-surface-2 px-2 py-0.5 text-xs">
+                {customMode ? "Własny test" : "Błędy z egzaminu"}
+              </span>
+            )}
             {dueMode && <span className="rounded-md bg-surface-2 px-2 py-0.5 text-xs">Zaległe powtórki</span>}
             {viewing && <span className="rounded-md bg-surface-2 px-2 py-0.5 text-xs">Podgląd</span>}
           </p>

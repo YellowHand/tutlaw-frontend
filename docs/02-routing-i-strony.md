@@ -71,16 +71,18 @@ aplikacji](#menu-aplikacji)).
 | `/app/test/mistakes` | `TestSessionPage` (tryb `mistakes`) | „Powtórz moje błędy” |
 | `/app/test/due` | `TestSessionPage` (tryb `due`) | „Zaległe powtórki”: same zaległe pytania, bez nowych |
 | `/app/test/practice` | `TestSessionPage` (tryb `practice`) | Sesja z podanych pytań (`?cardIds=1,2,3`), np. błędy z egzaminu próbnego |
+| `/app/test/custom` | `TestSessionPage` (tryb `custom`) | Sesja „Własnego testu”: pytania wylosowane na ekranie układania (`?cardIds=1,2,3`) |
 | `/app/test/:subjectId` | `TestSessionPage` | Sesja testowa z jednego przedmiotu; `?sourceId=` zawęża do źródła |
 | `/app/exam` | `ExamPage` (`features/exam/ExamPage.tsx`) | Egzamin próbny: ustawienia, przebieg z zegarem, raport i historia |
-| `/app/tests` | `TestsPage` (`features/tests/TestsPage.tsx`) | Testy, poziom 1: znacznik filtra pochodzenia, pasek zaległych powtórek, „Szybki start” (cały materiał, moje błędy, egzamin), rodzaje |
+| `/app/custom-test` | `CustomTestPage` (`features/customTest/CustomTestPage.tsx`) | Własny test: wybór rodzajów i aktów prawnych, rodzaju pytań, lat egzaminu i liczby pytań. To ekran układania, nie sesja, więc menu zostaje |
+| `/app/tests` | `TestsPage` (`features/tests/TestsPage.tsx`) | Testy, poziom 1: znacznik filtra pochodzenia, pasek zaległych powtórek, „Szybki start” (cały materiał, własny test, moje błędy, egzamin), rodzaje |
 | `/app/tests/:categoryId` | `TestCategoryPage` (`features/tests/TestCategoryPage.tsx`) | Testy, poziom 2: przedmioty lub akty prawne rodzaju, przycisk „Test z całego rodzaju” przy tytule |
 | `/app/tests/:categoryId/:subjectId` | `TestSubjectPage` (`features/tests/TestSubjectPage.tsx`) | Testy, poziom 3: źródła przedmiotu w wierszach, przycisk „Test ze wszystkich źródeł” przy tytule i „Rozpocznij test” przy źródle |
 | `/app/statistics` | `StatisticsPage` (`features/statistics/StatisticsPage.tsx`) | Statystyki: przegląd, według aplikacji i roku, opanowanie działów, najsłabsze karty |
 | `/app/account` | `AccountPage` (`features/account/AccountPage.tsx`) | Konto: ustawienia nauki, trudne i zawieszone pytania, zmiana hasła, pobranie danych, usunięcie konta |
 | `/app/*` | `NotFoundPage` (`features/misc/NotFoundPage.tsx`) | Strona 404 w ramce aplikacji |
 
-Kolejność tras w `router.tsx` ma znaczenie dla czytelności: trasy stałe (`test/mistakes`, `test/due`, `test/practice`)
+Kolejność tras w `router.tsx` ma znaczenie dla czytelności: trasy stałe (`test/mistakes`, `test/due`, `test/practice`, `test/custom`)
 stoją przed `test/:subjectId`, żeby ich nazwy nie były brane za numer przedmiotu.
 
 ### Jak ekrany prowadzą jeden do drugiego
@@ -118,7 +120,7 @@ Pozycje menu są zdefiniowane w `config/navigation.ts` (`NAV_ITEMS`) i jest ich 
 | Pozycja | Adres | Dodatkowo aktywna na | Odznaka |
 |---------|-------|----------------------|---------|
 | Pulpit | `/app/dashboard` | tylko dokładny adres | brak |
-| Testy | `/app/tests` | `/app/exam` (egzamin próbny jest częścią Testów) | liczba pytań testowych do powtórki (`TEST`) |
+| Testy | `/app/tests` | `/app/exam` i `/app/custom-test` (egzamin próbny i układanie własnego testu są częścią Testów) | liczba pytań testowych do powtórki (`TEST`) |
 | Fiszki | `/app/flashcards` | | liczba fiszek do powtórki (`FLASHCARD`) |
 | Statystyki | `/app/statistics` | | brak |
 | Konto | `/app/account` | | brak |
@@ -137,8 +139,9 @@ Odznaka (`NavBadge`) pokazuje liczbę do powtórki z `GET /api/review/due-count`
 ### Sesje nauki: bez menu
 
 Na adresach sesji (`/app/study`, `/app/study/:subjectId`, `/app/test`, `/app/test/mistakes`, `/app/test/due`,
-`/app/test/practice`, `/app/test/:subjectId`) menu znika, żeby nic nie odciągało od pytania. U góry jest wtedy przycisk
-„Zakończ sesję”: z sesji fiszek prowadzi do Fiszek, z sesji testu do Testów. Regułę zapisuje funkcja `sessionExitRoute` w
+`/app/test/practice`, `/app/test/custom`, `/app/test/:subjectId`) menu znika, żeby nic nie odciągało od pytania. U góry jest wtedy przycisk
+„Zakończ sesję”: z sesji fiszek prowadzi do Fiszek, z sesji testu do Testów, a z sesji własnego testu z powrotem do ekranu
+układania (`/app/custom-test`) z zapamiętanym wyborem. Regułę zapisuje funkcja `sessionExitRoute` w
 `config/navigation.ts`; porównuje ona całe segmenty adresu, więc listy `/app/tests` i `/app/flashcards` zostają z menu.
 Egzamin próbny (`/app/exam`) menu zachowuje, także w trakcie egzaminu.
 
@@ -152,8 +155,9 @@ Pełna lista wywołań serwera z nazwami funkcji jest w [05](05-warstwa-api-i-da
 | Fiszki (poziomy 1–3) | Kategorie, przedmioty rodzaju, źródła przedmiotu z postępem |
 | Rozdziały | Rozdziały źródła, opanowanie rozdziałów, zapis „przeczytany” |
 | Sesja fiszek | Kolejka fiszek, zapis oceny, liczba nowych kart do dołożenia, zaległości |
-| Sesja testowa | Kolejka pytań (zakres, błędy, ćwiczenia), zapis odpowiedzi, ustawienia (tasowanie), zaległości, „Dodaj do fiszek” |
+| Sesja testowa | Kolejka pytań (zakres, błędy, ćwiczenia, własny test), zapis odpowiedzi, ustawienia (tasowanie), zaległości, „Dodaj do fiszek” |
 | Testy (poziomy 1–3) | Katalog Testów, filtr pochodzenia, liczba błędów i zaległych |
+| Własny test | Katalog Testów (drzewo wyboru), liczniki „Dostępnych: N” (`custom-test/counts`), statystyki według pochodzenia (lista lat), losowanie pytań (`custom-test`) |
 | Egzamin | Katalog Testów, start i zakończenie egzaminu, historia |
 | Statystyki | Przegląd, statystyki według pochodzenia, opanowanie rozdziałów, najsłabsze karty, lista przedmiotów |
 | Konto | Adres konta, ustawienia nauki, trudne i zawieszone pytania, zmiana hasła, eksport i usunięcie konta |
@@ -190,11 +194,35 @@ przeczytaniu rozdziałów”). Na każdym z trzech poziomów przy tytule jest zn
 Strona ma **jedną główną akcję** (złoty przycisk), a resztę przycisków ciszej (ramka, bez złota):
 
 - Poziom 1: pasek „N pytań do powtórki” ze złotym przyciskiem „Powtórz” (jest tylko wtedy, gdy coś zalega), potem rząd
-  „Szybki start” z trzema cichymi przyciskami: „Cały materiał”, „Moje błędy” (z liczbą, tylko gdy są błędy) i
-  „Egzamin próbny”, a pod nim rodzaje („Wybierz rodzaj”). Dzięki temu rodzaje zaczynają się wysoko, także na telefonie.
+  „Szybki start” z czterema cichymi przyciskami: „Cały materiał”, „Własny test”, „Moje błędy” (z liczbą, tylko gdy są
+  błędy) i „Egzamin próbny” (na telefonie układają się w 2×2), a pod nim rodzaje („Wybierz rodzaj”). Dzięki temu rodzaje zaczynają się wysoko, także na telefonie.
 - Poziom 2: złoty „Test z całego rodzaju” przy tytule.
 - Poziom 3: źródła w wierszach (nazwa, postęp, przycisk). Złoty jest „Test ze wszystkich źródeł” przy tytule, a gdy
   źródło jest jedno, złoty jest jego przycisk „Rozpocznij test”. Pozostałe przyciski w wierszach są ciche.
+
+### Własny test (`features/customTest`)
+
+Ekran układania sesji nauki na adresie `/app/custom-test`; wchodzi się do niego z „Szybkiego startu” na ekranie Testy
+(przycisk „Własny test”). To **nauka, nie egzamin**: nie ma progu zaliczenia ani wyniku „zdał / nie zdał”. Użytkownik
+składa test w czterech krokach na jednym ekranie:
+
+1. **Co** — drzewo rodzajów i aktów prawnych z polami wyboru (rodzaj zaznaczony w całości, częściowo albo wcale;
+   domyślnie zaznaczone jest wszystko). Pokazuje tylko działy, w których jest teraz co rozwiązywać (według katalogu
+   Testów, czyli z filtrem pochodzenia).
+2. **Które pytania** — wszystkie, nowe, „Moje błędy” albo zaległe, każde z liczbą dostępnych pytań w wybranym zakresie.
+3. **Ile pytań** — 10, 20, 50, 100, 200 albo „Inna liczba” (1–200). Gdy dostępnych jest mniej, test ma tyle, ile jest.
+4. **Lata egzaminu** (opcjonalnie) — „Od roku” i „Do roku” z listy lat, z których są pytania. Pytania autorskie nie mają
+   roku, więc przy wybranych latach nie wchodzą do testu.
+
+Liczby „Dostępnych: N” przychodzą z serwera po każdej zmianie zakresu (z opóźnieniem 250 ms, żeby szybkie klikanie
+nie dawało serii zapytań). Przycisk „Rozpocznij test” jest nieaktywny, dopóki liczby nie są policzone albo gdy nic nie
+spełnia warunków. Na komputerze podsumowanie z przyciskiem stoi w prawej kolumnie, na telefonie w pasku przyklejonym
+do dołu ekranu.
+
+Start robi dwa kroki: `POST /api/review/custom-test` losuje numery pytań, a ekran otwiera sesję `/app/test/custom?cardIds=…`,
+która pobiera te pytania zwykłą kolejką ćwiczeń (`GET /api/review/practice-queue`). Odpowiedzi w sesji idą tak jak w
+zwykłym teście: dostają ocenę pamięci (FSRS), a błędne trafiają do „Moich błędów”. Ostatni wybór jest zapamiętany w
+przeglądarce (`tutlaw.customTest.v1`, patrz [03](03-logowanie-i-sesja.md)).
 
 ### Statystyki (`features/statistics`)
 

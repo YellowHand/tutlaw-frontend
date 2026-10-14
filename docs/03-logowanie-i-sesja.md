@@ -74,7 +74,7 @@ Dlaczego tak:
 | Funkcja | Co kasuje | Kiedy jest używana |
 |---------|-----------|--------------------|
 | `clearStoredToken()` | Tylko token `accessToken` | Wygasła sesja (401) |
-| `clearSession()` | Token oraz **wszystkie klucze zaczynające się od `tutlaw.`** (szkic egzaminu, zapamiętane ustawienia egzaminu, wybór zwiniętego panelu) | Przycisk „Wyloguj się” i usunięcie konta |
+| `clearSession()` | Token oraz **wszystkie klucze zaczynające się od `tutlaw.`** (szkic egzaminu, zapamiętane ustawienia egzaminu, ostatni własny test, wybór zwiniętego panelu) | Przycisk „Wyloguj się” i usunięcie konta |
 
 Przycisk „Wyloguj się” (`LogoutButton`; w panelu bocznym, a na telefonie na ekranie Konto) wywołuje `logout()` z kontekstu (`clearSession()` i token w stanie na `null`),
 a potem przenosi na stronę główną przez `window.location.href`, czyli również z pełnym przeładowaniem. Efekt: na
@@ -87,6 +87,7 @@ wspólnym komputerze nie zostają ślady po poprzednim użytkowniku (w szkicu eg
 | `localStorage` | `accessToken` | Token sesji (JWT) | `AuthProvider.login` | Wylogowanie lub błąd 401 |
 | `localStorage` | `tutlaw.exam.draft.v1` | Niedokończony egzamin próbny: pytania, odpowiedzi, termin końca, adres konta właściciela | `features/exam/examStorage.ts` | Po wysłaniu egzaminu, po porzuceniu, po wylogowaniu |
 | `localStorage` | `tutlaw.exam.settings.v1` | Ostatnio użyte ustawienia egzaminu (zakres, liczba pytań, czas, próg) | `features/exam/examStorage.ts` | Po wylogowaniu |
+| `localStorage` | `tutlaw.customTest.v1` | Ostatnio ułożony własny test: zaznaczone akty prawne (albo „wszystko”), rodzaj pytań, liczba pytań, lata egzaminu | `features/customTest/customTestStorage.ts` | Po wylogowaniu |
 | `localStorage` | `tutlaw.nav.collapsed.v1` | Czy panel boczny jest zwinięty (`1`) czy rozwinięty (`0`) | `components/layout/useNavCollapsed.ts` | Po wylogowaniu |
 
 Aplikacja nie używa `sessionStorage`, plików cookie ani IndexedDB. Każdy odczyt i zapis jest w `try/catch`: gdy

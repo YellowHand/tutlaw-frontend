@@ -32,6 +32,10 @@ export const ROUTES = {
   testDue: "/app/test/due",
   // Sesja testowa z podanych pytań (np. błędy z egzaminu próbnego).
   testPractice: (cardIds: readonly number[]) => `/app/test/practice?cardIds=${cardIds.join(",")}`,
+  // Własny test: ekran układania (to NIE sesja, więc zostaje z menu) i sesja z wylosowanych pytań.
+  customTest: "/app/custom-test",
+  testCustomBase: "/app/test/custom",
+  testCustom: (cardIds: readonly number[]) => `/app/test/custom?cardIds=${cardIds.join(",")}`,
   // Egzamin próbny: ustawienia, egzamin, raport i historia.
   exam: "/app/exam",
 

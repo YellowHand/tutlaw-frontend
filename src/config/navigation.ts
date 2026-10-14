@@ -16,8 +16,9 @@ export interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
   { to: ROUTES.dashboard, label: "Pulpit", icon: LayoutDashboard, end: true },
-  // Egzamin próbny jest częścią Testów (wchodzi się do niego z ekranu Testy), więc też zapala tę pozycję.
-  { to: ROUTES.tests, label: "Testy", icon: ClipboardList, activePrefixes: [ROUTES.exam], badge: "TEST" },
+  // Egzamin próbny i ekran układania własnego testu są częścią Testów (wchodzi się do nich z ekranu Testy),
+  // więc też zapalają tę pozycję.
+  { to: ROUTES.tests, label: "Testy", icon: ClipboardList, activePrefixes: [ROUTES.exam, ROUTES.customTest], badge: "TEST" },
   { to: ROUTES.flashcards, label: "Fiszki", icon: Layers, badge: "FLASHCARD" },
   { to: ROUTES.statistics, label: "Statystyki", icon: BarChart3 },
   { to: ROUTES.account, label: "Konto", icon: UserRound },
@@ -46,6 +47,8 @@ export function isNavItemActive(item: NavItem, pathname: string): boolean {
  */
 export function sessionExitRoute(pathname: string): string | null {
   if (matchesPrefix(pathname, ROUTES.studyAll)) return ROUTES.flashcards;
+  // Sesja własnego testu wraca do ekranu układania (z zapamiętanym wyborem), nie na listę Testów.
+  if (matchesPrefix(pathname, ROUTES.testCustomBase)) return ROUTES.customTest;
   if (matchesPrefix(pathname, ROUTES.testAll)) return ROUTES.tests;
   return null;
 }

@@ -41,13 +41,14 @@ dla użytkownika (albo pojęcie techniczne), w drugiej wyjaśnienie, w trzeciej 
 | **Sesja** | Jedno podejście do nauki: kolejka kart pobrana z serwera i przerobiona po kolei | `StudySessionPage`, `TestSessionPage` |
 | **Sesja dodatkowa** | Dokładanie kart po zakończeniu głównej sesji: „Powtórz jeszcze” (zaległe) albo „Rozwiąż jeszcze” (nowe, 10) | [04](04-nauka-w-aplikacji.md) |
 | **Stan prawny** (`validAsOf`) | Data, na którą sprawdzono zgodność pytania z przepisami | `legalDate.ts` w `features/review` |
-| **Szybki start** | Rząd trzech cichych przycisków na ekranie Testy: „Cały materiał”, „Moje błędy” (tylko gdy są błędy) i „Egzamin próbny” | `features/tests/QuickStart.tsx`, [02](02-routing-i-strony.md) |
+| **Szybki start** | Rząd cichych przycisków na ekranie Testy: „Cały materiał”, „Własny test”, „Moje błędy” (tylko gdy są błędy) i „Egzamin próbny” | `features/tests/QuickStart.tsx`, [02](02-routing-i-strony.md) |
 | **Szkic egzaminu** | Zapis trwającego egzaminu w przeglądarce (pytania, odpowiedzi, termin końca). Dzięki niemu odświeżenie strony nie kasuje egzaminu | `tutlaw.exam.draft.v1`, `features/exam/examStorage.ts` |
 | **Testy** (z wielkiej litery) | Dział aplikacji z pytaniami ABC | `/app/tests`, [02](02-routing-i-strony.md) |
 | **Trudne pytanie** (`leech`) | Pytanie, w którym liczba błędów osiągnęła próg ustalony przez serwer. Aplikacja proponuje je zawiesić | `DifficultCards.leechThreshold` |
 | **Tryb sesji** (`SessionMode`) | `FLASHCARD` albo `TEST`: Fiszki i Testy mają osobne liczniki i kolejki | `api/review.ts` |
 | **Tryb skupienia** | Sesja fiszek albo testu bez menu, z przyciskiem „Zakończ sesję” u góry. Włącza się sam po adresie | `sessionExitRoute` w `config/navigation.ts`, [02](02-routing-i-strony.md) |
 | **Ukryta karta** | Karta schowana przez administratora przed wszystkimi użytkownikami | `HideCardButton.tsx` |
+| **Własny test** | Sesja nauki ułożona przez użytkownika: wybrane rodzaje i akty prawne, rodzaj pytań (wszystkie, nowe, błędy, zaległe), lata egzaminu i liczba pytań. To nauka, a nie egzamin: bez progu i wyniku „zdał / nie zdał” | `features/customTest`, [04](04-nauka-w-aplikacji.md) |
 | **Zaległości** (`backlog`) | Karty po terminie powtórki: ile jest teraz (`dueNow`) i ile nie zmieści się dziś w limicie (`deferred`) | `Backlog` w `api/review.ts` |
 | **Zawieszone pytanie** | Pytanie, które użytkownik wyłączył z nauki. Postęp zostaje, można je przywrócić w Koncie | `suspendCard`, `unsuspendCard` |
 | **Zgłoszenie błędu** | Przycisk, którym użytkownik zgłasza błąd w pytaniu (powody: błędna odpowiedź, nieaktualny przepis, literówka lub niejasne sformułowanie, coś innego) | `ReportCardButton.tsx`, `ReportReason` |

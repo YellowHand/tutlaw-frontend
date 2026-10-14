@@ -5,6 +5,8 @@ import { getDueCount, getMistakesCount, type SessionMode } from "../../api/revie
 /** Wspólny początek kluczy liczników: unieważnienie po tym prefiksie odświeża Fiszki i Testy naraz. */
 export const DUE_COUNT_KEY = ["review", "due-count"] as const;
 export const MISTAKES_COUNT_KEY = ["review", "mistakes-count"] as const;
+/** Liczniki „Dostępnych: N" w ekranie Własny test (zależą od zakresu, więc klucz ma jeszcze zakres na końcu). */
+export const CUSTOM_TEST_COUNTS_KEY = ["review", "custom-test-counts"] as const;
 
 /** Ile pytań czeka w „Powtórz moje błędy". Błąd nie blokuje ekranu Testy: karta po prostu się nie pokazuje. */
 export function useMistakesCount() {
@@ -32,6 +34,7 @@ export function useDueCount(mode: SessionMode = "FLASHCARD") {
 export function invalidateReviewData(queryClient: QueryClient) {
   void queryClient.invalidateQueries({ queryKey: DUE_COUNT_KEY });
   void queryClient.invalidateQueries({ queryKey: MISTAKES_COUNT_KEY });
+  void queryClient.invalidateQueries({ queryKey: CUSTOM_TEST_COUNTS_KEY });
   void queryClient.invalidateQueries({ queryKey: ["statistics"] });
 }
 

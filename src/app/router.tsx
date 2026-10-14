@@ -18,6 +18,7 @@ import { ChaptersPage } from "../pages/ChaptersPage";
 import { StudySessionPage } from "../pages/StudySessionPage";
 import { TestSessionPage } from "../pages/TestSessionPage";
 import { ExamPage } from "../features/exam/ExamPage";
+import { CustomTestPage } from "../features/customTest/CustomTestPage";
 import { TestsPage } from "../features/tests/TestsPage";
 import { TestCategoryPage } from "../features/tests/TestCategoryPage";
 import { TestSubjectPage } from "../features/tests/TestSubjectPage";
@@ -55,6 +56,8 @@ export function Router() {
             <Route path="test/mistakes" element={<TestSessionPage mode="mistakes" />} />
             <Route path="test/due" element={<TestSessionPage mode="due" />} />
             <Route path="test/practice" element={<TestSessionPage mode="practice" />} />
+            <Route path="test/custom" element={<TestSessionPage mode="custom" />} />
+            <Route path="custom-test" element={<CustomTestPage />} />
             <Route path="exam" element={<ExamPage />} />
             <Route path="test/:subjectId" element={<TestSessionPage />} />
 

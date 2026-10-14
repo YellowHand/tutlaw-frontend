@@ -40,7 +40,7 @@ prośba o reset hasła i ustawienie nowego hasła) jest wpisanych bezpośrednio 
 
 ## Wszystkie wywołania serwera
 
-Frontend używa **48 z 58** endpointów backendu (łącznie 49 wywołań w kodzie, bo `GET /api/statistics/chapters` jest
+Frontend używa **50 z 60** endpointów backendu (łącznie 51 wywołań w kodzie, bo `GET /api/statistics/chapters` jest
 wołany z dwóch miejsc). Endpointów, których frontend nie używa, jest 10; lista jest [niżej](#endpointy-których-frontend-nie-używa).
 Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć wyszukiwarką.
 
@@ -82,9 +82,11 @@ Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć w
 |-----------|----------------|---------------|
 | `GET /api/review/queue` | `getReviewQueue` | Sesja Fiszek (`StudySessionPage`) |
 | `GET /api/review/test-queue` | `getTestQueue` | Sesja Testów w trybach zakres i powtórki (`TestSessionPage`) |
-| `GET /api/review/practice-queue` | `getPracticeQueue` (`api/exam.ts`) | Sesja „Przećwicz błędy z egzaminu” (`?cardIds=`) |
+| `GET /api/review/practice-queue` | `getPracticeQueue` (`api/exam.ts`) | Sesja „Przećwicz błędy z egzaminu” i sesja Własnego testu (`?cardIds=`) |
 | `GET /api/review/mistakes-queue` | `getMistakesQueue` | Sesja „Powtórz moje błędy” |
 | `GET /api/review/mistakes-count` | `getMistakesCount` | Przycisk „Moje błędy” (z liczbą) w „Szybkim starcie” na ekranie Testy |
+| `GET /api/review/custom-test/counts` | `getCustomTestCounts` (`api/customTest.ts`) | Własny test: „Dostępnych: N” przy każdym rodzaju pytań w wybranym zakresie |
+| `POST /api/review/custom-test` | `drawCustomTest` (`api/customTest.ts`) | Własny test: losowanie numerów pytań po „Rozpocznij test” |
 | `GET /api/review/queue/new-cards-available` | `getAvailableNewCardsCount` | Przycisk „Dołóż nowe” na końcu sesji |
 | `GET /api/review/queue/backlog` | `getBacklog` | Informacja o zaległościach i przycisk „Powtórz jeszcze” |
 | `GET /api/review/due-count` | `getDueCount` | Odznaki w menu, „Powtórki na dziś”, ekran Testy |
@@ -187,6 +189,7 @@ dane po powrocie do karty przeglądarki. Pamięć żyje tylko w otwartej karcie;
 | `["tests","origin-filter"]` | Filtr pochodzenia pytań | 30 s | `features/tests/originFilter.ts` |
 | `["review","due-count",mode]` | Liczba powtórek do zrobienia | 30 s | `features/review/hooks.ts` |
 | `["review","mistakes-count"]` | Liczba błędów do powtórzenia | 30 s | j.w. |
+| `["review","custom-test-counts",zakres]` | Liczby pytań w zakresie Własnego testu (poprzednia odpowiedź zostaje na ekranie, dopóki nie przyjdzie nowa) | **0** | `features/customTest/hooks.ts` |
 | `["review","backlog",mode,subjectId,sourceId,categoryId]` | Zaległości w zakresie sesji | **0**, brak przechowywania po zamknięciu ekranu (`gcTime: 0`), bez ponawiania i bez odświeżania po powrocie do karty przeglądarki | `features/review/useBacklog.ts` |
 | `["statistics","overview",subjectId,mode]` | Podsumowanie nauki | 60 s | `features/statistics/hooks.ts` |
 | `["statistics","activity",days,mode]` | Aktywność dzień po dniu | 60 s | j.w. |
@@ -215,10 +218,10 @@ przy następnym użyciu (aktywne od razu).
 
 | Czynność | Co jest unieważniane lub podmieniane |
 |----------|--------------------------------------|
-| Wyjście z sesji Fiszek lub Testów (`useRefreshReviewDataOnExit`) | Liczniki powtórek (`["review","due-count"]`), licznik błędów, wszystkie `["statistics",…]`. Dopiero przy wyjściu, nie po każdej odpowiedzi, żeby nie wysyłać zapytania co pytanie |
+| Wyjście z sesji Fiszek lub Testów (`useRefreshReviewDataOnExit`) | Liczniki powtórek (`["review","due-count"]`), licznik błędów, liczniki Własnego testu, wszystkie `["statistics",…]`. Dopiero przy wyjściu, nie po każdej odpowiedzi, żeby nie wysyłać zapytania co pytanie |
 | „Dodaj do fiszek” / „Usuń z fiszek” | Jak wyżej (`invalidateReviewData`), od razu |
 | Zapis ustawień nauki | Podmiana `["settings","learning"]` odpowiedzią serwera + `invalidateReviewData` |
-| Zapis filtra pochodzenia | Podmiana `["tests","origin-filter"]` + unieważnienie: katalog Testów, liczniki powtórek, licznik błędów, ustawienia nauki (plan do egzaminu). Statystyk i Fiszek nie dotyka, bo filtr ich nie dotyczy |
+| Zapis filtra pochodzenia | Podmiana `["tests","origin-filter"]` + unieważnienie: katalog Testów, liczniki powtórek, licznik błędów, liczniki Własnego testu, ustawienia nauki (plan do egzaminu). Statystyk i Fiszek nie dotyka, bo filtr ich nie dotyczy |
 | Zawieszenie pytania (w sesji nauki) albo zawieszenie i przywrócenie na liście w Koncie | `["difficult-cards"]` |
 | „Ukryj” (administrator) | `invalidateReviewData` + wszystkie `["catalog",…]` |
 | Zakończenie egzaminu | `["exam","history"]` |

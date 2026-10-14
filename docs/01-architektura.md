@@ -63,6 +63,7 @@ port-fe/
 | `account` | 8 | Ekran Konto: zmiana hasła, pobranie danych, usunięcie konta, wywołania serwera, dane zalogowanego konta (`useMe`) |
 | `admin` | 1 | Przycisk „Ukryj” (tylko dla administratora) |
 | `auth` | 6 | Pola formularzy logowania, „wyślij link ponownie”, odczyt roli z tokenu, czyszczenie sesji |
+| `customTest` | 5 | Własny test: wybór rodzajów i aktów prawnych, rodzaju pytań, lat i liczby pytań; pamięć ostatniego wyboru |
 | `dashboard` | 12 | Pulpit: odliczanie do egzaminu, powtórki na dziś, wykresy aktywności i skuteczności |
 | `difficult` | 4 | Trudne i zawieszone pytania: podpowiedź, zawieszanie, lista w Koncie |
 | `exam` | 8 | Egzamin próbny: ustawienia, przebieg z zegarem, raport, historia, zapis w przeglądarce |
@@ -76,7 +77,7 @@ port-fe/
 | `statistics` | 11 | Ekran Statystyki i dane statystyk |
 | `tests` | 14 | Ekrany Testów (rodzaj, przedmiot, źródło), filtr pochodzenia, tasowanie odpowiedzi |
 
-W repozytorium jest łącznie 162 pliki w `src/`.
+W repozytorium jest łącznie 168 plików w `src/`.
 
 ### Dlaczego strony są w dwóch miejscach
 

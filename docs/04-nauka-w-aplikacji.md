@@ -22,9 +22,9 @@ Fiszki **zaczynają puste**: każde pytanie testowe ma w bazie własną fiszkę,
 
 ## Sesja testowa (`TestSessionPage`)
 
-### Cztery tryby tej samej strony
+### Pięć trybów tej samej strony
 
-Ta sama strona obsługuje cztery tryby (parametr `mode`, ustawiany w `app/router.tsx`):
+Ta sama strona obsługuje pięć trybów (parametr `mode`, ustawiany w `app/router.tsx`):
 
 | Tryb | Adres | Skąd pytania | Co jeszcze |
 |------|-------|--------------|------------|
@@ -32,9 +32,10 @@ Ta sama strona obsługuje cztery tryby (parametr `mode`, ustawiany w `app/router
 | `due` | `/app/test/due` | To samo, ale z `extraNewCards=0`: same zaległe, bez nowych | Jak wyżej; gdy nic nie zalega, ekran „Nie masz zaległych powtórek” |
 | `mistakes` | `/app/test/mistakes` | `GET /api/review/mistakes-queue` | Zamknięta lista, bez dokładania nowych |
 | `practice` | `/app/test/practice?cardIds=1,2,3` | `GET /api/review/practice-queue` | Zamknięta lista (np. błędy z egzaminu); numery z adresu: tylko dodatnie liczby całkowite, bez powtórzeń, do 200 |
+| `custom` | `/app/test/custom?cardIds=1,2,3` | `GET /api/review/practice-queue` | To samo co `practice`, ale numery pochodzą z ekranu „Własny test”; własne podpisy („Własny test”, „Brawo! Własny test zakończony.”), a przycisk powrotu prowadzi do ekranu układania |
 
-W trybach `mistakes` i `practice` (lista zamknięta) nie ma informacji o zaległościach ani przycisku „Rozwiąż jeszcze”, a
-przycisk powrotu prowadzi do Testów (dla `practice` do Egzaminu).
+W trybach `mistakes`, `practice` i `custom` (lista zamknięta) nie ma informacji o zaległościach ani przycisku „Rozwiąż
+jeszcze”, a przycisk powrotu prowadzi do Testów (dla `practice` do Egzaminu, dla `custom` do ekranu „Własny test”).
 
 ### Przebieg jednego pytania
 
@@ -216,16 +217,16 @@ historia zostaje. Przywrócenie jest tylko w bazie (nie ma przycisku).
 
 ## Filtr pochodzenia pytań
 
-Znacznik „Pochodzenie pytań” (`features/tests/OriginFilterChip.tsx`) stoi przy tytule na wszystkich ekranach Testów i w
-ustawieniach egzaminu. Pokazuje, co jest wybrane („wszystkie”, jedna lub dwie nazwy albo „3 z 6 pochodzeń”). Gdy filtr
+Znacznik „Pochodzenie pytań” (`features/tests/OriginFilterChip.tsx`) stoi przy tytule na wszystkich ekranach Testów, w
+ustawieniach egzaminu i na ekranie „Własny test”. Pokazuje, co jest wybrane („wszystkie”, jedna lub dwie nazwy albo „3 z 6 pochodzeń”). Gdy filtr
 coś zawęża, znacznik ma złotą ramkę i kropkę, a podpowiedź (atrybut `title` i tekst dla czytnika ekranu) podaje łączną
 liczbę pytań. Kliknięcie otwiera okno z sześcioma polami wyboru (pięć aplikacji prawniczych i pytania autorskie, każde
 z liczbą pytań).
 
 - Trzeba zaznaczyć co najmniej jedno pochodzenie; „Zaznacz wszystkie” przywraca stan domyślny.
 - Zapis: `PUT /api/me/origin-filter`. Filtr jest na koncie, więc działa też na innym urządzeniu.
-- **Filtr stosuje serwer**: katalog Testów, kolejki, powtórki, błędy i egzamin. Frontend niczego nie filtruje u siebie, a
-  po zapisie unieważnia tylko dane Testów (katalog, liczniki powtórek i błędów, ustawienia/plan). **Fiszek i statystyk
+- **Filtr stosuje serwer**: katalog Testów, kolejki, powtórki, błędy, własny test i egzamin. Frontend niczego nie filtruje u siebie, a
+  po zapisie unieważnia tylko dane Testów (katalog, liczniki powtórek, błędów i własnego testu, ustawienia/plan). **Fiszek i statystyk
   filtr nie dotyczy.**
 - Gdy filtr zawęża, puste pozycje katalogu mają napis „Brak w filtrze” zamiast „Wkrótce”.
 - Gdy filtru nie uda się pobrać, znacznika po prostu nie ma, a Testy działają normalnie.
@@ -250,6 +251,21 @@ z liczbą pytań).
 - Ostatnie 7 dni przed egzaminem serwer zostawia na same powtórki; to stąd bierze się `planningDays`.
 - Po zapisie unieważniane są liczniki powtórek i statystyki, bo limity zmieniają liczbę powtórek na dziś.
 - Przycisk „Wstaw wartości domyślne” tylko wypełnia formularz; zapis wymaga „Zapisz ustawienia”.
+
+## Własny test (`features/customTest`)
+
+Sesja nauki ułożona przez użytkownika: wybiera rodzaje i akty prawne, które pytania (wszystkie, nowe, „Moje błędy”,
+zaległe), opcjonalnie lata egzaminu i liczbę pytań (1–200). Opis ekranu jest w [02](02-routing-i-strony.md). Zasady:
+
+- **To nauka, nie egzamin.** Nie ma progu, wyniku „zdał / nie zdał” ani zegara. Sesja kończy się zwykłym ekranem
+  „Brawo! Własny test zakończony.”.
+- **Odpowiedzi liczą się jak w zwykłym teście.** Idą przez `POST /api/review/test-answer`, dostają ocenę pamięci (FSRS), a
+  błędne trafiają do „Moich błędów”.
+- **Dwa kroki.** Ekran pyta serwer o liczby pytań (`GET /api/review/custom-test/counts`), a po „Rozpocznij test”
+  losuje numery (`POST /api/review/custom-test`). Sesja `/app/test/custom?cardIds=…` pobiera te pytania kolejką ćwiczeń.
+- **Filtr pochodzenia obowiązuje automatycznie** (serwer), a drzewo wyboru pokazuje tylko działy, w których po filtrze
+  jest co rozwiązywać. Zawieszone, ukryte i niedostępne pytania nie wchodzą do testu.
+- **Dzienny limit nowych pytań go nie dotyczy.** Użytkownik sam wybiera, ile pytań chce rozwiązać.
 
 ## Egzamin próbny (`features/exam`)
 

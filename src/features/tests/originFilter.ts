@@ -3,7 +3,7 @@ import { getOriginFilter, saveOriginFilter, type OriginFilter } from "../../api/
 import { ORIGIN_LABELS, ORIGIN_ORDER, type QuestionOrigin } from "../../lib/origin";
 import { pluralizePl } from "../../lib/plural";
 import { LEARNING_SETTINGS_KEY } from "../settings/hooks";
-import { DUE_COUNT_KEY, MISTAKES_COUNT_KEY } from "../review/hooks";
+import { CUSTOM_TEST_COUNTS_KEY, DUE_COUNT_KEY, MISTAKES_COUNT_KEY } from "../review/hooks";
 import { TEST_CATALOG_KEY } from "./hooks";
 
 export const ORIGIN_FILTER_KEY = ["tests", "origin-filter"] as const;
@@ -18,7 +18,7 @@ export function useOriginFilter() {
 
 /**
  * Zapis filtra. Zmienia się wszystko, co liczy pytania testowe, więc unieważniamy katalog Testów, odznakę i licznik
- * powtórek, licznik błędów oraz plan do egzaminu. Statystyk i Fiszek NIE ruszamy, bo filtr ich nie dotyczy.
+ * powtórek, licznik błędów i liczniki własnego testu. Statystyk i Fiszek NIE ruszamy, bo filtr ich nie dotyczy.
  */
 export function useSaveOriginFilter() {
   const queryClient = useQueryClient();
@@ -29,6 +29,7 @@ export function useSaveOriginFilter() {
       void queryClient.invalidateQueries({ queryKey: TEST_CATALOG_KEY });
       void queryClient.invalidateQueries({ queryKey: DUE_COUNT_KEY });
       void queryClient.invalidateQueries({ queryKey: MISTAKES_COUNT_KEY });
+      void queryClient.invalidateQueries({ queryKey: CUSTOM_TEST_COUNTS_KEY });
       void queryClient.invalidateQueries({ queryKey: LEARNING_SETTINGS_KEY });
     },
   });

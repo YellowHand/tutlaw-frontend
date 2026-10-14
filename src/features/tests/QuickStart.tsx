@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ClipboardList, RotateCcw, Timer } from "lucide-react";
+import { ClipboardList, RotateCcw, SlidersHorizontal, Timer } from "lucide-react";
 import { Skeleton } from "../../components/ui/Skeleton";
 import { ROUTES } from "../../config/routes";
 import { cn } from "../../lib/cn";
@@ -11,8 +11,9 @@ const TILE =
 const ICON = "shrink-0 text-fg-muted";
 
 /**
- * „Szybki start": trzy ciche przyciski w jednym rzędzie zamiast trzech dużych kart. „Moje błędy" jest tylko wtedy, gdy
- * są błędy do powtórki; gdy nie uda się pobrać liczby, po prostu go nie ma (to dodatek, nie powód do komunikatu).
+ * „Szybki start": ciche przyciski w jednym rzędzie zamiast dużych kart: „Cały materiał", „Własny test", „Moje błędy"
+ * i „Egzamin próbny". „Moje błędy" jest tylko wtedy, gdy są błędy do powtórki; gdy nie uda się pobrać liczby,
+ * po prostu go nie ma (to dodatek, nie powód do komunikatu).
  * Opisy, np. że egzamin nie zmienia powtórek, są na ekranach, które się po kliknięciu otwierają.
  */
 export function QuickStart() {
@@ -25,7 +26,8 @@ export function QuickStart() {
         mistakes > data.sessionSize ? ` Jedna sesja to ${data.sessionSize} najświeższych.` : ""
       }`
     : "";
-  const columns = isLoading || showMistakes ? "grid-cols-3" : "grid-cols-2";
+  // Na telefonie cztery przyciski układają się w 2×2, a trzy (bez „Moich błędów") w jednym rzędzie.
+  const columns = isLoading || showMistakes ? "grid-cols-2" : "grid-cols-3";
 
   return (
     <section aria-labelledby="quick-start" className="flex flex-col gap-3">
@@ -37,6 +39,11 @@ export function QuickStart() {
         <Link to={ROUTES.testAll} className={TILE}>
           <ClipboardList size={18} aria-hidden="true" className={ICON} />
           Cały materiał
+        </Link>
+
+        <Link to={ROUTES.customTest} className={TILE}>
+          <SlidersHorizontal size={18} aria-hidden="true" className={ICON} />
+          Własny test
         </Link>
 
         {isLoading ? (
