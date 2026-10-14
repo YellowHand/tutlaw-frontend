@@ -54,7 +54,9 @@ flowchart TD
 
 ## Ekrany aplikacji (po zalogowaniu)
 
-Wszystkie poniższe adresy mają przedrostek `/app` i są wyświetlane wewnątrz `AppShell` (menu + treść).
+Wszystkie poniższe adresy mają przedrostek `/app` i są wyświetlane wewnątrz `AppShell` (menu + treść). Wyjątek to sesje fiszek
+i testów (`/app/study...` oraz `/app/test...`): tam `AppShell` chowa menu i pokazuje przycisk „Zakończ sesję” (patrz [Menu
+aplikacji](#menu-aplikacji)).
 
 | Adres | Ekran (plik) | Co robi |
 |-------|--------------|---------|
@@ -111,25 +113,34 @@ Dwie sprawy wynikają z tego układu:
 
 ## Menu aplikacji
 
-Menu jest zdefiniowane w `config/navigation.ts` (`NAV_ITEMS`) i pokazuje pięć pozycji:
+Pozycje menu są zdefiniowane w `config/navigation.ts` (`NAV_ITEMS`) i jest ich pięć:
 
 | Pozycja | Adres | Dodatkowo aktywna na | Odznaka |
 |---------|-------|----------------------|---------|
 | Pulpit | `/app/dashboard` | tylko dokładny adres | brak |
-| Testy | `/app/tests` | `/app/test...` (sesje testowe) | liczba pytań testowych do powtórki (`TEST`) |
-| Fiszki | `/app/flashcards` | `/app/study...` (sesje fiszek) | liczba fiszek do powtórki (`FLASHCARD`) |
+| Testy | `/app/tests` | `/app/exam` (egzamin próbny jest częścią Testów) | liczba pytań testowych do powtórki (`TEST`) |
+| Fiszki | `/app/flashcards` | | liczba fiszek do powtórki (`FLASHCARD`) |
 | Statystyki | `/app/statistics` | | brak |
 | Konto | `/app/account` | | brak |
 
-Menu rysuje `AppShell` (`components/layout/AppShell.tsx`) w dwóch postaciach, zależnie od szerokości okna:
+Menu rysuje `AppShell` (`components/layout/AppShell.tsx`) w trzech postaciach, zależnie od szerokości okna:
 
 | Szerokość okna | Menu | Plik |
 |----------------|------|------|
-| od 1280 px (`xl`) | Szeroki pasek po lewej (256 px) z logo, nazwami pozycji i przyciskiem „Wyloguj się” | `components/layout/Sidebar.tsx` |
-| poniżej 1280 px | Wąski pasek ikon (72 px) z podpowiedzią po najechaniu; na telefonie też jest po lewej | `components/layout/IconRail.tsx` |
+| od 1280 px (`xl`) | Panel po lewej (248 px): logo, przycisk zwijania, cztery pozycje (bez Konta) z odznakami, a na dole blok konta (litera, adres e-mail, „Konto i ustawienia”) i ikona wylogowania. Panel można zwinąć do wąskiego paska; wybór jest zapamiętany w przeglądarce | `components/layout/SideNav.tsx` (odmiana `full`) |
+| od 768 px (`md`) do 1279 px | Wąski pasek po lewej (84 px): ikona z krótkim podpisem pod spodem, na dole kółko konta i wylogowanie | `components/layout/SideNav.tsx` (odmiana `rail`) |
+| poniżej 768 px | Dolna belka z pięcioma pozycjami (łącznie z Kontem) | `components/layout/BottomNav.tsx` |
 
 Odznaka (`NavBadge`) pokazuje liczbę do powtórki z `GET /api/review/due-count`; gdy nic nie zalega, nie pojawia się. Powyżej
-99 pokazuje „99+”.
+99 pokazuje „99+”. Wylogowanie jest w panelu bocznym (ikona), a na telefonie, gdzie panelu nie ma, na ekranie Konto.
+
+### Sesje nauki: bez menu
+
+Na adresach sesji (`/app/study`, `/app/study/:subjectId`, `/app/test`, `/app/test/mistakes`, `/app/test/due`,
+`/app/test/practice`, `/app/test/:subjectId`) menu znika, żeby nic nie odciągało od pytania. U góry jest wtedy przycisk
+„Zakończ sesję”: z sesji fiszek prowadzi do Fiszek, z sesji testu do Testów. Regułę zapisuje funkcja `sessionExitRoute` w
+`config/navigation.ts`; porównuje ona całe segmenty adresu, więc listy `/app/tests` i `/app/flashcards` zostają z menu.
+Egzamin próbny (`/app/exam`) menu zachowuje, także w trakcie egzaminu.
 
 ## Co każdy ekran pobiera z serwera
 

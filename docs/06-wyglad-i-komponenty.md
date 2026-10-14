@@ -73,27 +73,43 @@ Szkielet zdefiniowany jest w `components/layout/AppShell.tsx`:
 
 ```mermaid
 flowchart LR
-    subgraph "Ekran ≥ 1280 px (xl)"
-        A["Sidebar<br/>256 px, ikony i napisy"] --- B["main<br/>przewijana treść"]
+    subgraph "Sesja nauki, każda szerokość"
+        G["Zakończ sesję<br/>(pasek u góry)"] --- H["main<br/>przewijana treść"]
     end
-    subgraph "Ekran < 1280 px"
-        C["IconRail<br/>72 px, same ikony"] --- D["main<br/>przewijana treść"]
+    subgraph "Ekran < 768 px"
+        E["main<br/>przewijana treść"] --- F["BottomNav<br/>5 pozycji, przyklejona do dołu"]
+    end
+    subgraph "Ekran 768 – 1279 px (md)"
+        C["SideNav rail<br/>84 px, ikona i podpis"] --- D["main<br/>przewijana treść"]
+    end
+    subgraph "Ekran ≥ 1280 px (xl)"
+        A["SideNav full<br/>248 px, ikony i napisy<br/>(można zwinąć)"] --- B["main<br/>przewijana treść"]
     end
 ```
 
-- Cały szkielet ma wysokość okna (`h-dvh`); przewija się tylko `<main>`, menu stoi w miejscu.
-- Poniżej 1280 px menu zwija się do wąskiego paska z samymi ikonami (`IconRail`, 72 px); po najechaniu lub
-  ustawieniu fokusu pokazuje się podpowiedź z nazwą. Na telefonie pasek jest więc po lewej stronie, nie na dole.
+- Cały szkielet ma wysokość okna (`h-dvh`); przewija się tylko `<main>`, menu stoi w miejscu. Na telefonie `<main>` ma
+  na dole dopełnienie wysokości dolnej belki (`pb-[calc(4.25rem+env(safe-area-inset-bottom))]`), żeby belka nie
+  zasłaniała końca ekranu.
+- Postać menu wybierają klasy w `AppShell`: `hidden xl:flex` (panel), `hidden md:flex xl:hidden` (wąski pasek) i
+  `md:hidden` (dolna belka). Panel można zwinąć do wąskiego paska przyciskiem u góry; wybór pamięta `useNavCollapsed`
+  (klucz `tutlaw.nav.collapsed.v1`, patrz [03](03-logowanie-i-sesja.md)).
 - Menu jest zdefiniowane raz w `config/navigation.ts` (`NAV_ITEMS`): Pulpit, Testy, Fiszki, Statystyki, Konto.
-  `Sidebar` i `IconRail` czytają tę samą listę. Obie mają taką samą funkcję `isNavItemActive` (powtórzona, patrz
-  [10](10-znane-ograniczenia.md)). Pozycja jest aktywna, gdy adres jest jej adresem lub podadresem, albo zaczyna się od
-  jednego z `activePrefixes` (np. sesja testu `/app/test/...` zapala „Testy”).
+  `BottomNav` pokazuje całą listę, a `SideNav` listę `SIDE_NAV_ITEMS` (te same pozycje bez Konta, bo Konto jest w bloku
+  użytkownika na dole panelu). Reguła aktywnej pozycji (`isNavItemActive`) leży w tym samym pliku i jest wspólna dla obu
+  menu: pozycja jest aktywna, gdy adres jest jej adresem lub podadresem, albo zaczyna się od jednego z `activePrefixes`
+  (np. egzamin próbny `/app/exam` zapala „Testy”). Aktywny link ma `aria-current="page"`.
+- Wygląd aktywnej pozycji: ciemna płytka (`surface-2`) ze złotą kreską przy krawędzi i złotą ikoną, w dolnej belce jasna
+  pastylka za ikoną. Złote wypełnienie zostaje dla przycisków na ekranach, żeby menu z nimi nie konkurowało.
 - `NavBadge`: złota odznaka z liczbą powtórek przy „Testy” i „Fiszki”. Nic nie rysuje, gdy liczba wynosi 0, a od 100
-  pokazuje „99+”. Ma `role="status"` i opis dla czytników ekranu („5 powtórek do zrobienia”).
-- `LogoutButton` na dole menu: wylogowuje i przenosi na stronę główną (pełne przeładowanie).
+  pokazuje „99+”. Ma `role="status"` i opis dla czytników ekranu („5 powtórek do zrobienia”). Nałożona na ikonę (wąski
+  pasek, dolna belka) ma pełne złote tło (`solid`), w szerokim panelu jest półprzezroczysta.
+- `LogoutButton`: odmiana `icon` (panel boczny) i `text` (ekran Konto, widoczna tylko poniżej 768 px). Wylogowuje i przenosi
+  na stronę główną (pełne przeładowanie).
+- Sesje fiszek i testów (adresy z `sessionExitRoute`) nie mają menu: `AppShell` pokazuje zamiast niego pasek z przyciskiem
+  „Zakończ sesję” (patrz [02](02-routing-i-strony.md)).
 
 Szerokości progów (Tailwind): `sm` 640 px, `md` 768 px, `lg` 1024 px, `xl` 1280 px. W kodzie najczęściej występuje
-`sm:` (odstępy `px-4 sm:px-8`, układy kolumnowe), a `xl:` służy tylko do przełączenia menu.
+`sm:` (odstępy `px-4 sm:px-8`, układy kolumnowe), a `md:` i `xl:` służą m.in. do przełączania postaci menu.
 
 Nagłówek strony (`PageHeader`): tytuł `h1` (24 px, pogrubiony), opcjonalny podtytuł i miejsce na akcje po prawej (na
 wąskim ekranie pod tytułem). Ekrany logowania i rejestracji używają `AuthLayout`: wyśrodkowana karta o szerokości
@@ -113,9 +129,9 @@ najwyżej 24 rem z logo nad nią.
 
 ### Komponenty układu (`components/layout/`)
 
-`AppShell` (szkielet z menu), `Sidebar`, `IconRail`, `NavBadge`, `LogoutButton` (odmiany `full` i `compact`), `PageHeader`,
-`AuthLayout`, `Logo` (odmiany `wordmark` z napisem i `monogram` z literą T w złotym kwadracie). Plik `TopBar.tsx`
-istnieje, ale **nie jest nigdzie używany** (patrz [10](10-znane-ograniczenia.md)).
+`AppShell` (szkielet z menu), `SideNav` (panel boczny i wąski pasek), `BottomNav` (dolna belka na telefonie),
+`useNavCollapsed` (zapamiętane zwinięcie panelu), `NavBadge`, `LogoutButton` (odmiany `icon` i `text`), `PageHeader`,
+`AuthLayout`, `Logo` (odmiany `wordmark` z napisem i `monogram` z literą T w złotym kwadracie).
 
 ### Ikony
 
@@ -135,10 +151,10 @@ Przyjęte w całej aplikacji zasady, które warto zachować przy zmianach:
 | Zasada | Jak jest zrobiona |
 |--------|-------------------|
 | Widoczny fokus z klawiatury | Globalna zasada `:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px }` w `index.css` |
-| Duże cele dotykowe | Przyciski, pola i pozycje menu mają minimum 44 px (`min-h-11`, `size-11`, `h-11 w-11`) |
+| Duże cele dotykowe | Przyciski, pola i pozycje menu mają minimum 44 px (`min-h-11`, `size-11`, `h-11 w-11`; w dolnej belce `min-h-16`) |
 | Kontrast | Teksty i obramowania pól dobrane pod ciemne tło (m.in. `field` ma osobny jaśniejszy odcień dla ramek pól) |
 | Ograniczenie ruchu | Globalna zasada `@media (prefers-reduced-motion: reduce)` skraca animacje i przejścia do ~0 ms; `Skeleton` wyłącza pulsowanie |
-| Czytniki ekranu | Ikony ozdobne `aria-hidden`; odznaki i komunikaty stanu `role="status"`; pola formularzy mają etykiety i `aria-describedby`; okna to natywne `<dialog>` z `aria-labelledby` |
+| Czytniki ekranu | Ikony ozdobne `aria-hidden`; aktywna pozycja menu `aria-current="page"`; odznaki i komunikaty stanu `role="status"`; pola formularzy mają etykiety i `aria-describedby`; okna to natywne `<dialog>` z `aria-labelledby` |
 | Ogłoszenia na żywo | Zegar egzaminu ogłasza czas tylko przy progach 10, 5 i 1 minuta (żeby nie czytać każdej sekundy), patrz [04](04-nauka-w-aplikacji.md) |
 | Skróty klawiszowe nie przeszkadzają | Wyłączają się, gdy fokus jest w polu tekstowym (`isTyping`) albo na elemencie z `data-no-shortcuts` |
 | Język strony | `<html lang="pl">` w `index.html` |
@@ -164,7 +180,7 @@ są w plikach `selectors.ts` i `*.tsx` w `features/statistics` i `features/dashb
 | Czcionkę całej aplikacji | `--font-sans` w `index.css` i import w `main.tsx` |
 | Napis w menu albo kolejność pozycji | `src/config/navigation.ts` |
 | Wygląd przycisków | `components/ui/Button.tsx` (`VARIANT_CLASSES`). Uwaga: część ekranów ma własne klasy przycisków wpisane w miejscu użycia |
-| Szerokość, od której menu się rozwija | `AppShell.tsx` (`xl:flex` i `xl:hidden`) |
+| Szerokości, przy których zmienia się postać menu | `AppShell.tsx` (`xl:flex`, `md:flex`, `xl:hidden`, `md:hidden`) |
 | Logo | `components/layout/Logo.tsx` |
 | Ikonę karty w przeglądarce | `public/favicon.svg`, `favicon.ico`, `apple-touch-icon.png` |
 | Tytuł i opis strony (karta przeglądarki, podgląd w komunikatorach) | `index.html` |

@@ -60,7 +60,7 @@ port-fe/
 
 | Katalog | Pliki | Za co odpowiada |
 |---------|-------|-----------------|
-| `account` | 7 | Ekran Konto: zmiana hasła, pobranie danych, usunięcie konta, wywołania serwera |
+| `account` | 8 | Ekran Konto: zmiana hasła, pobranie danych, usunięcie konta, wywołania serwera, dane zalogowanego konta (`useMe`) |
 | `admin` | 1 | Przycisk „Ukryj” (tylko dla administratora) |
 | `auth` | 6 | Pola formularzy logowania, „wyślij link ponownie”, odczyt roli z tokenu, czyszczenie sesji |
 | `dashboard` | 12 | Pulpit: odliczanie do egzaminu, powtórki na dziś, wykresy aktywności i skuteczności |
@@ -76,7 +76,7 @@ port-fe/
 | `statistics` | 11 | Ekran Statystyki i dane statystyk |
 | `tests` | 14 | Ekrany Testów (rodzaj, przedmiot, źródło), filtr pochodzenia, tasowanie odpowiedzi |
 
-W repozytorium jest łącznie 161 plików w `src/`.
+W repozytorium jest łącznie 162 pliki w `src/`.
 
 ### Dlaczego strony są w dwóch miejscach
 
@@ -151,8 +151,8 @@ Zasady, które to upraszczają:
 
 | Zasada | Gdzie widać |
 |--------|-------------|
-| Prawie jedno źródło adresów aplikacji | `config/routes.ts` (obiekt `ROUTES`); linki i przekierowania w ekranach biorą adresy stąd. Wyjątki (adresy wpisane osobno): definicje tras w `app/router.tsx`, `ProtectedRoute`, `VerifyPage`, `AuthLayout` i `activePrefixes` w menu (patrz [10](10-znane-ograniczenia.md)) |
-| Jedno źródło menu | `config/navigation.ts` (`NAV_ITEMS`) |
+| Prawie jedno źródło adresów aplikacji | `config/routes.ts` (obiekt `ROUTES`); linki i przekierowania w ekranach biorą adresy stąd. Wyjątki (adresy wpisane osobno): definicje tras w `app/router.tsx`, `ProtectedRoute`, `VerifyPage` i `AuthLayout` (patrz [10](10-znane-ograniczenia.md)) |
+| Jedno źródło menu | `config/navigation.ts`: lista pozycji (`NAV_ITEMS`, `SIDE_NAV_ITEMS`), reguła aktywnej pozycji (`isNavItemActive`) i reguła „tu menu znika” (`sessionExitRoute`) |
 | Jedno źródło tekstów strony głównej | `features/landing/copy.ts` |
 | Jedno źródło kolorów i rozmiarów tekstu | `src/index.css` (blok `@theme`) |
 | Odmiana liczebników po polsku | `lib/plural.ts` (`pluralizePl`) |

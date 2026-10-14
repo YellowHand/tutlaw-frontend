@@ -34,7 +34,7 @@ dokleja do każdego żądania token JWT.
 
 ## Jak szybko znaleźć odpowiedź
 
-- **„Gdzie zmienię napis w menu?”** → [06](06-wyglad-i-komponenty.md) (menu boczne) i `src/config/navigation.ts`.
+- **„Gdzie zmienię napis w menu?”** → [06](06-wyglad-i-komponenty.md) (menu) i `src/config/navigation.ts`.
 - **„Gdzie zmienię hasło z głównej strony („Testy, które pamiętają…”)?”** → [07](07-strona-glowna.md), plik `copy.ts`.
 - **„Skąd ekran wie, że sesja wygasła?”** → [03](03-logowanie-i-sesja.md), część o błędzie 401.
 - **„Co robi klawisz G w teście?”** → [04](04-nauka-w-aplikacji.md), tabela skrótów.

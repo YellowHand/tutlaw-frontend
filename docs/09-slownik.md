@@ -45,6 +45,7 @@ dla użytkownika (albo pojęcie techniczne), w drugiej wyjaśnienie, w trzeciej 
 | **Testy** (z wielkiej litery) | Dział aplikacji z pytaniami ABC | `/app/tests`, [02](02-routing-i-strony.md) |
 | **Trudne pytanie** (`leech`) | Pytanie, w którym liczba błędów osiągnęła próg ustalony przez serwer. Aplikacja proponuje je zawiesić | `DifficultCards.leechThreshold` |
 | **Tryb sesji** (`SessionMode`) | `FLASHCARD` albo `TEST`: Fiszki i Testy mają osobne liczniki i kolejki | `api/review.ts` |
+| **Tryb skupienia** | Sesja fiszek albo testu bez menu, z przyciskiem „Zakończ sesję” u góry. Włącza się sam po adresie | `sessionExitRoute` w `config/navigation.ts`, [02](02-routing-i-strony.md) |
 | **Ukryta karta** | Karta schowana przez administratora przed wszystkimi użytkownikami | `HideCardButton.tsx` |
 | **Zaległości** (`backlog`) | Karty po terminie powtórki: ile jest teraz (`dueNow`) i ile nie zmieści się dziś w limicie (`deferred`) | `Backlog` w `api/review.ts` |
 | **Zawieszone pytanie** | Pytanie, które użytkownik wyłączył z nauki. Postęp zostaje, można je przywrócić w Koncie | `suspendCard`, `unsuspendCard` |
@@ -57,6 +58,7 @@ dla użytkownika (albo pojęcie techniczne), w drugiej wyjaśnienie, w trzeciej 
 |---------|-----------|---------------------------|
 | **Aplikacja jednostronicowa (SPA)** | Strona, która ładuje się raz, a potem sama podmienia ekrany bez przeładowania | [01](01-architektura.md) |
 | **axios** | Biblioteka do wysyłania żądań HTTP do serwera | `api/axiosInstance.ts`, [05](05-warstwa-api-i-dane.md) |
+| **Dolna belka** (`BottomNav`) | Menu na telefonie: pięć pozycji przyklejonych do dołu ekranu, w zasięgu kciuka | `components/layout/BottomNav.tsx`, [06](06-wyglad-i-komponenty.md) |
 | **Dostawca** (`provider`) | Komponent otaczający aplikację, który udostępnia coś wszystkim ekranom (dane, sesję) | `app/providers.tsx` |
 | **Hook** | Funkcja Reacta zaczynająca się od `use`, np. `useQuery`, `useDueCount` | `features/*/hooks.ts` |
 | **Interceptor** | Funkcja axiosa, która „przechwytuje” każde żądanie lub odpowiedź: dokłada token albo wylogowuje po 401 | [03](03-logowanie-i-sesja.md) |
@@ -64,6 +66,7 @@ dla użytkownika (albo pojęcie techniczne), w drugiej wyjaśnienie, w trzeciej 
 | **Klucz zapytania** (`queryKey`) | Nazwa, pod którą React Query trzyma dane w pamięci, np. `["review","due-count","TEST"]` | [05](05-warstwa-api-i-dane.md) |
 | **Mermaid** | Zapis diagramów tekstem w plikach Markdown | Diagramy w tej dokumentacji |
 | **Mutacja** (`useMutation`) | Zapis danych na serwerze (w odróżnieniu od odczytu) | [05](05-warstwa-api-i-dane.md) |
+| **Pasek boczny** (`SideNav`) | Menu po lewej na komputerze i tablecie: szeroki panel (`full`) albo wąski pasek z podpisami (`rail`) | `components/layout/SideNav.tsx`, [06](06-wyglad-i-komponenty.md) |
 | **Portal** | Sposób na wyrysowanie elementu poza miejscem w drzewie komponentów (okno `Dialog` trafia do `<body>`) | `components/ui/Dialog.tsx` |
 | **React Query** | Biblioteka do pobierania danych, trzymania ich w pamięci i odświeżania | [05](05-warstwa-api-i-dane.md) |
 | **Router** | Mechanizm wybierający ekran według adresu | `app/router.tsx`, [02](02-routing-i-strony.md) |

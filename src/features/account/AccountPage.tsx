@@ -1,9 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
+import { LogoutButton } from "../../components/layout/LogoutButton";
 import { PageHeader } from "../../components/layout/PageHeader";
 import { Card } from "../../components/ui/Card";
 import { ROUTES } from "../../config/routes";
-import { fetchMe } from "./api";
+import { useMe } from "./hooks";
 import { ChangePasswordCard } from "./ChangePasswordCard";
 import { ExportCard } from "./ExportCard";
 import { DeleteAccountCard } from "./DeleteAccountCard";
@@ -11,7 +11,7 @@ import { DifficultCardsCard } from "../difficult/DifficultCardsCard";
 import { LearningSettingsCard } from "../settings/LearningSettingsCard";
 
 export function AccountPage() {
-  const { data: me } = useQuery({ queryKey: ["me"], queryFn: fetchMe, staleTime: 5 * 60_000 });
+  const { data: me } = useMe();
 
   return (
     <div>
@@ -22,6 +22,8 @@ export function AccountPage() {
           <p className="mt-1 break-all text-sm text-fg-muted" data-testid="account-email">
             {me?.email ?? "..."}
           </p>
+          {/* Na telefonie dolna belka nie ma wylogowania (jest w pasku bocznym od szerokości md), więc ten przycisk jest tu. */}
+          <LogoutButton variant="text" className="mt-4 md:hidden" />
         </Card>
 
         <LearningSettingsCard />

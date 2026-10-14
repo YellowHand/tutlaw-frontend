@@ -490,8 +490,8 @@ check("paleta kolorów (index.css ↔ 06-wyglad-i-komponenty.md)", () => {
 check("liczby plików w src/ (01-architektura.md)", () => {
   const errors = [];
   const t01 = doc("01-architektura.md");
-  const total = /łącznie (\d+) plików w `src\/`/.exec(t01);
-  if (!total) errors.push("01: nie znaleziono zdania „łącznie N plików w `src/`”.");
+  const total = /łącznie (\d+) (?:plik|pliki|plików) w `src\/`/.exec(t01);
+  if (!total) errors.push("01: nie znaleziono zdania „łącznie N plików (albo plik, pliki) w `src/`”.");
   else if (Number(total[1]) !== srcFiles.length) errors.push(`01 mówi o ${total[1]} plikach w src/, jest ich ${srcFiles.length}.`);
   const featuresDir = path.join(SRC, "features");
   const dirs = fs.readdirSync(featuresDir, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name);

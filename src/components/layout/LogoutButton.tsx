@@ -4,11 +4,13 @@ import { ROUTES } from "../../config/routes";
 import { cn } from "../../lib/cn";
 
 interface LogoutButtonProps {
-  variant?: "full" | "compact";
+  /** `icon`: sama ikona (pasek boczny). `text`: ikona z napisem (ekran Konto, tam gdzie nie ma paska bocznego). */
+  variant?: "icon" | "text";
   className?: string;
 }
 
-export function LogoutButton({ variant = "full", className }: LogoutButtonProps) {
+/** Wylogowuje i przeładowuje stronę główną (pełne przeładowanie czyści pamięć podręczną zapytań). */
+export function LogoutButton({ variant = "icon", className }: LogoutButtonProps) {
   const { logout } = useAuth();
 
   function handleLogout() {
@@ -16,18 +18,18 @@ export function LogoutButton({ variant = "full", className }: LogoutButtonProps)
     window.location.href = ROUTES.landing;
   }
 
-  if (variant === "compact") {
+  if (variant === "text") {
     return (
       <button
         type="button"
         onClick={handleLogout}
-        title="Wyloguj się"
         className={cn(
-          "flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg",
+          "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-line px-5 text-sm font-medium transition-colors hover:bg-surface-2",
           className
         )}
       >
         <LogOut size={18} aria-hidden="true" />
+        Wyloguj się
       </button>
     );
   }
@@ -36,13 +38,14 @@ export function LogoutButton({ variant = "full", className }: LogoutButtonProps)
     <button
       type="button"
       onClick={handleLogout}
+      title="Wyloguj się"
+      aria-label="Wyloguj się"
       className={cn(
-        "flex w-full cursor-pointer items-center gap-2 rounded-full px-3 min-h-11 text-sm font-medium text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg",
+        "flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-xl text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg",
         className
       )}
     >
       <LogOut size={18} aria-hidden="true" />
-      Wyloguj się
     </button>
   );
 }

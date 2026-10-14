@@ -41,20 +41,18 @@ Drobne rzeczy znalezione podczas czytania kodu. Żadna nie psuje zwykłego dzia�
 | 1 | `auth/AuthContext.tsx` | Odczyt i zapis tokenu idą **bezpośrednio** do `localStorage`, bez `try/catch`, choć reszta aplikacji używa bezpiecznych funkcji z `features/auth/tokenStorage.ts` | Gdy przeglądarka blokuje dostęp do pamięci (zależnie od ustawień prywatności), start aplikacji mógłby się wywrócić. Nie sprawdzono tego w przeglądarce z zablokowaną pamięcią |
 | 2 | Cała aplikacja | Brak „granicy błędów” (`ErrorBoundary`) | Nieobsłużony błąd przy rysowaniu ekranu zostawia pustą stronę zamiast komunikatu |
 | 3 | `api/axiosInstance.ts` | Brak limitu czasu (`timeout`) żądań | Serwer, który przyjął połączenie i nie odpowiada, zostawia ekran w ładowaniu bez końca |
-| 4 | `components/layout/TopBar.tsx` | Komponent nie jest nigdzie używany | Martwy kod |
-| 5 | `Sidebar.tsx` i `IconRail.tsx` | Funkcja `isNavItemActive` jest skopiowana w obu plikach | Zmianę reguły aktywnej pozycji menu trzeba zrobić dwa razy |
-| 6 | `features/statistics/api.ts` i `api/chapters.ts` | `fetchChapterMastery` i `getChapterMastery` wołają ten sam endpoint (`/api/statistics/chapters`); różnią się tylko parametrem `mode` | Dwie funkcje do jednego endpointu |
-| 7 | `app/router.tsx`, `ProtectedRoute.tsx`, `VerifyPage.tsx`, `AuthLayout.tsx`, `config/navigation.ts` | Adresy (`/login`, `/`, `/app/test`, `/app/study`) wpisane na sztywno obok obiektu `ROUTES` | Zmiana adresu wymaga poprawek w kilku miejscach, kompilator ich nie wskaże |
-| 8 | `package.json` | Nazwa projektu `temp-frontend`, wersja `0.0.0`; w `devDependencies` jest `@tailwindcss/postcss`, którego nic nie używa (nie ma konfiguracji PostCSS, Tailwind działa przez wtyczkę Vite) | Kosmetyka i zbędna zależność |
-| 9 | `public/icons.svg` | Plik nie jest nigdzie przywoływany, a trafia do `dist/` | Zbędny plik w paczce |
-| 10 | `pages/TestSessionPage.tsx` (966 linii), `pages/StudySessionPage.tsx` (648 linii) | Bardzo duże pliki: kolejka, odpowiedzi, podgląd, skróty, ekran końca w jednym komponencie | Trudniejsze czytanie i zmiany; zaletą jest to, że cała logika sesji jest w jednym miejscu |
-| 11 | `pages/LoginPage.tsx` | Po zalogowaniu wraca się na zapamiętaną **ścieżkę bez parametrów po `?`** | Adres w rodzaju `/app/test/practice?cardIds=1,2,3`, który przerwało wylogowanie, wraca bez `cardIds` |
-| 12 | `LoginPage`, `RegisterPage` | Zalogowany użytkownik, który wejdzie na `/login` lub `/register`, widzi formularz zamiast przekierowania do aplikacji | Niewielka niedogodność |
-| 13 | `features/legal/PrivacyPage.tsx` | Polityka prywatności wspomina o tokenie w `localStorage`, ale nie wymienia szkicu egzaminu ani zapamiętanych ustawień egzaminu (`tutlaw.exam.*`) | Do uzupełnienia razem z przeglądem prawnika |
-| 14 | `components/ui/Button.tsx` | Nie ustawia domyślnego `type="button"` | Przycisk w formularzu bez jawnego `type` wyśle formularz |
-| 15 | `api/*.ts` | Typy odpowiedzi są pisane ręcznie, nie generowane z opisu API | Zmiana pola w backendzie nie zostanie wykryta przez kompilator |
-| 16 | Komentarze w kodzie | Komentarze są po polsku, a część (np. `tokenStorage.ts`, `SubjectFilter.tsx`, `plural.ts`) po angielsku, niektóre z odwołaniami do numerów etapów | Kosmetyka |
-| 17 | `components/icons/togaTrim.ts` | Kolory togi notariusza i komornika dobrane przez autora, bo w sprawdzonych źródłach nie znaleziono ich koloru | Do potwierdzenia, jeśli ma to być wierne |
+| 4 | `features/statistics/api.ts` i `api/chapters.ts` | `fetchChapterMastery` i `getChapterMastery` wołają ten sam endpoint (`/api/statistics/chapters`); różnią się tylko parametrem `mode` | Dwie funkcje do jednego endpointu |
+| 5 | `app/router.tsx`, `ProtectedRoute.tsx`, `VerifyPage.tsx`, `AuthLayout.tsx` | Adresy (`/login`, `/`) wpisane na sztywno obok obiektu `ROUTES` | Zmiana adresu wymaga poprawek w kilku miejscach, kompilator ich nie wskaże |
+| 6 | `package.json` | Nazwa projektu `temp-frontend`, wersja `0.0.0`; w `devDependencies` jest `@tailwindcss/postcss`, którego nic nie używa (nie ma konfiguracji PostCSS, Tailwind działa przez wtyczkę Vite) | Kosmetyka i zbędna zależność |
+| 7 | `public/icons.svg` | Plik nie jest nigdzie przywoływany, a trafia do `dist/` | Zbędny plik w paczce |
+| 8 | `pages/TestSessionPage.tsx` (966 linii), `pages/StudySessionPage.tsx` (648 linii) | Bardzo duże pliki: kolejka, odpowiedzi, podgląd, skróty, ekran końca w jednym komponencie | Trudniejsze czytanie i zmiany; zaletą jest to, że cała logika sesji jest w jednym miejscu |
+| 9 | `pages/LoginPage.tsx` | Po zalogowaniu wraca się na zapamiętaną **ścieżkę bez parametrów po `?`** | Adres w rodzaju `/app/test/practice?cardIds=1,2,3`, który przerwało wylogowanie, wraca bez `cardIds` |
+| 10 | `LoginPage`, `RegisterPage` | Zalogowany użytkownik, który wejdzie na `/login` lub `/register`, widzi formularz zamiast przekierowania do aplikacji | Niewielka niedogodność |
+| 11 | `features/legal/PrivacyPage.tsx` | Polityka prywatności wspomina o tokenie w `localStorage`, ale nie wymienia szkicu egzaminu, zapamiętanych ustawień egzaminu (`tutlaw.exam.*`) ani wyboru zwiniętego panelu menu (`tutlaw.nav.*`) | Do uzupełnienia razem z przeglądem prawnika |
+| 12 | `components/ui/Button.tsx` | Nie ustawia domyślnego `type="button"` | Przycisk w formularzu bez jawnego `type` wyśle formularz |
+| 13 | `api/*.ts` | Typy odpowiedzi są pisane ręcznie, nie generowane z opisu API | Zmiana pola w backendzie nie zostanie wykryta przez kompilator |
+| 14 | Komentarze w kodzie | Komentarze są po polsku, a część (np. `tokenStorage.ts`, `SubjectFilter.tsx`, `plural.ts`) po angielsku, niektóre z odwołaniami do numerów etapów | Kosmetyka |
+| 15 | `components/icons/togaTrim.ts` | Kolory togi notariusza i komornika dobrane przez autora, bo w sprawdzonych źródłach nie znaleziono ich koloru | Do potwierdzenia, jeśli ma to być wierne |
 
 ---
 
@@ -68,7 +66,8 @@ Drobne rzeczy znalezione podczas czytania kodu. Żadna nie psuje zwykłego dzia�
 | Praca offline | Brak. Aplikacja nie ma service workera ani trybu offline; bez połączenia z serwerem nie pobierze ani nie zapisze niczego (przy trwającym egzaminie odpowiedzi zostają w przeglądarce, więc po powrocie połączenia można wysłać egzamin ponownie) |
 | Dłuższa sesja | Token ma ważność ustaloną w backendzie (domyślnie 24 godziny); po jej upływie pierwsze żądanie kończy się wylogowaniem. Aplikacja nie odnawia tokenu w tle (nie ma tokenu odświeżającego) |
 | Wyszukiwarki i podglądy w komunikatorach | Aplikacja jest SPA z jednym `index.html`: wszystkie adresy mają ten sam tytuł i opis, a `og:image` nie ma. Strona główna nie jest prerenderowana (zawartość pojawia się po uruchomieniu JavaScriptu). Brak elementu `<noscript>` |
-| Menu na telefonie | Poniżej 1280 px menu to pasek 72 px po lewej, który zabiera część szerokości małych ekranów. Dolnego paska nawigacji nie ma |
+| Menu w sesjach i w egzaminie | Sesje fiszek i testów nie mają menu (celowo, tryb skupienia): wyjście to „Zakończ sesję” u góry albo przycisk „wstecz” przeglądarki. Egzamin próbny (`/app/exam`) menu zachowuje, także podczas egzaminu na czas |
+| Wylogowanie na telefonie | Dolna belka ma pięć pozycji i nie ma wylogowania: na telefonie jest ono na ekranie Konto (poniżej 768 px) |
 | Przeglądarki | Cel budowania to współczesne przeglądarki (Chrome i Edge 111, Firefox 114, Safari 16.4 i nowsze), starsze nie są wspierane |
 | Dane przykładowe na stronie głównej | Przykładowe statystyki w sekcji funkcji są oznaczone jako przykład; prawdziwych liczb o użytkownikach i pytaniach nie ma celowo (patrz [07](07-strona-glowna.md)) |
 
@@ -84,7 +83,8 @@ potwierdzone:
   (mock API), nie na prawdziwym backendzie. Opisy kształtu odpowiedzi pochodzą z typów w kodzie i z dokumentacji
   backendu.
 - **Tylko jedna przeglądarka.** Testowe przebiegi szły w Chromium. Firefox, Safari i prawdziwe telefony nie były
-  sprawdzane.
+  sprawdzane. Dotyczy to też dolnej belki: dopełnienie `env(safe-area-inset-bottom)` (pasek gestów w iPhone'ach) nie było
+  oglądane na prawdziwym urządzeniu.
 - **Czytniki ekranu.** Dostępność opisana w [06](06-wyglad-i-komponenty.md) wynika z przyjętych reguł w kodzie
   (etykiety, role, fokus, kontrasty), a nie z testu z prawdziwym czytnikiem ekranu.
 - **Wdrożenie.** Budowanie `npm run build` było sprawdzane, ale wdrożenie na prawdziwy hosting nie. Przykład dla nginx
