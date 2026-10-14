@@ -163,7 +163,7 @@ export function ExamSetup({ draft, onResume, onDiscard, onStarted }: ExamSetupPr
                   setUnlimited(e.target.checked);
                   setError(null);
                 }}
-                className="size-5 accent-accent"
+                className="size-5 accent-accent-ink"
               />
               <label htmlFor={unlimitedId} className="text-sm text-fg-muted">
                 Bez limitu czasu
@@ -210,7 +210,7 @@ function ResumeCard({ draft, onResume, onDiscard }: { draft: ExamDraft; onResume
   const timeUp = remainingSeconds !== null && remainingSeconds <= 0;
 
   return (
-    <Card className="flex flex-col gap-4 border-accent/40 p-5 sm:flex-row sm:items-center sm:justify-between">
+    <Card className="flex flex-col gap-4 border-accent-ink/40 p-5 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <h2 className="font-semibold">Masz niedokończony egzamin</h2>
         <p className="text-sm text-fg-muted">

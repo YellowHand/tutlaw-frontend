@@ -28,23 +28,34 @@ Do składania klas służy funkcja `cn(...)` z `lib/cn.ts` (opakowanie `clsx`): 
 
 ## Paleta kolorów (aplikacja)
 
-Aplikacja jest **tylko ciemna**: `color-scheme: dark` jest ustawione na stałe, nie ma przełącznika jasny/ciemny.
+Aplikacja ma **dwa wyglądy: ciemny (domyślny) i jasny**. Wybiera go użytkownik w oknie startowym i potem w Koncie
+(karta „Wygląd”), a zapisuje się on **na koncie w backendzie** (`PUT /api/me/theme`), więc działa tak samo na każdym
+urządzeniu. Jasny wygląd to atrybut `data-theme="light"` na `<html>`, który nadpisuje tokeny kolorów (blok
+`:root[data-theme="light"]` w `index.css`, kolory „papieru” jak w dokumentacji). Ustawia go tylko `ThemeSync` (w `AppShell`),
+więc **tylko wewnątrz `/app`**: strona główna, logowanie, rejestracja i strony prawne są zawsze ciemne. Od pierwszej klatki
+atrybut ustawia skrypt w `index.html` z kopii w przeglądarce (klucz `tutlaw.theme.v1`, opis w [03](03-logowanie-i-sesja.md)),
+a gdy ustawienia z serwera dotrą, wygrywa konto. Tabela niżej podaje wartości ciemnego wyglądu; jasny zmienia tylko te,
+które są podane w kolumnie „Jasny”.
 
-| Zmienna | Kolor | Do czego |
-|---------|-------|----------|
-| `canvas` | `#121214` | Tło całej strony |
-| `surface` | `#1a1a1d` | Karty, menu boczne, okna |
-| `surface-2` | `#242428` | Wyższy poziom: pola, przyciski drugorzędne, szkielety ładowania |
-| `line` | `#313136` | Cienkie obramowania kart i separatory |
-| `field` | `#74737a` | Obramowanie pól formularza (jaśniejsze niż `line`, żeby spełnić kontrast 3:1 dla elementów interfejsu) |
-| `fg` | `#f2efe9` | Główny tekst |
-| `fg-muted` | `#a6a5ab` | Tekst pomocniczy, podpisy, nieaktywne menu |
-| `accent` | `#d8b13a` | Złoty akcent: główne przyciski, aktywna pozycja menu, odznaki |
-| `accent-fg` | `#211804` | Tekst na złotym tle |
-| `accent-2` | `#e8649f` | Różowy akcent drugorzędny (słupki na wykresie powtórek) |
-| `success` | `#4fd68a` | Poprawna odpowiedź, potwierdzenia |
-| `warning` | `#f08c3c` | Ostrzeżenia, pytania oznaczone „do sprawdzenia” w egzaminie, średni poziom opanowania na paskach |
-| `danger` | `#f0565e` | Błędy, błędna odpowiedź, usuwanie |
+| Zmienna | Kolor (ciemny) | Jasny | Do czego |
+|---------|----------------|-------|----------|
+| `canvas` | `#121214` | `#fbfaf6` | Tło całej strony |
+| `surface` | `#1a1a1d` | `#f2efe9` | Karty, menu boczne, okna |
+| `surface-2` | `#242428` | `#e9e4d8` | Wyższy poziom: pola, przyciski drugorzędne, szkielety ładowania |
+| `line` | `#313136` | `#d6d0c2` | Cienkie obramowania kart i separatory |
+| `field` | `#74737a` | `#807b6c` | Obramowanie pól formularza (jaśniejsze niż `line`, żeby spełnić kontrast 3:1 dla elementów interfejsu) |
+| `fg` | `#f2efe9` | `#1b1a17` | Główny tekst |
+| `fg-muted` | `#a6a5ab` | `#5b574f` | Tekst pomocniczy, podpisy, nieaktywne menu |
+| `accent` | `#d8b13a` | bez zmiany | Złote **wypełnienia**: główne przyciski, paski postępu, odznaki |
+| `accent-fg` | `#211804` | bez zmiany | Tekst na złotym tle |
+| `accent-ink` | `#d8b13a` | `#7a5c00` | Złoty **tekst, obwódki, fokus i znaczniki wyboru**: w jasnym wyglądzie ciemny brąz, bo złoto na papierze ma kontrast poniżej 2:1 |
+| `accent-2` | `#e8649f` | bez zmiany | Różowy akcent drugorzędny (słupki na wykresie powtórek) |
+| `success` | `#4fd68a` | `#17703d` | Poprawna odpowiedź, potwierdzenia |
+| `warning` | `#f08c3c` | `#9a4d00` | Ostrzeżenia, pytania oznaczone „do sprawdzenia” w egzaminie, średni poziom opanowania na paskach |
+| `danger` | `#f0565e` | `#b3261e` | Błędy, błędna odpowiedź, usuwanie |
+
+Zasada doboru: wypełnienie złotem (`bg-accent` z `text-accent-fg`) zostaje w obu wyglądach, a **tekst, ramka i fokus w kolorze
+akcentu używają `accent-ink`** (`text-accent-ink`, `border-accent-ink`, `outline-accent-ink`, `accent-accent-ink` dla pól wyboru).
 
 Reguła: **kolor nigdy nie jest jedyną informacją**. Poprawna i błędna odpowiedź mają też ikonę i opis słowny, a stan
 aktywny w menu ma inne tło, nie tylko inny odcień.
@@ -121,7 +132,7 @@ najwyżej 24 rem z logo nad nią.
 |-----------|------|-----------------|
 | **`Button`** | Przycisk w czterech odmianach (`variant`): `primary` (złoty), `secondary` (szary), `ghost` (przezroczysty), `danger` (czerwony) | Zaokrąglony do końca, minimalna wysokość 44 px (`min-h-11`), przyjmuje wszystkie atrybuty `<button>`. **Domyślnie `variant="primary"`, ale typ przycisku (`type`) nie jest ustawiany**, więc w formularzu trzeba podać `type="button"`, jeśli przycisk nie ma wysyłać formularza |
 | **`Card`** | Ramka z zaokrąglonymi rogami i tłem `surface` | Zwykły `div` z klasami; dodatkowe klasy przez `className` |
-| **`Dialog`** | Okno modalne | Oparte na natywnym elemencie `<dialog>` i `showModal()`: przeglądarka sama pilnuje fokusu, Esc i zasłania resztę strony przed czytnikami. Trafia do `<body>` przez portal (fiszka ma obrót 3D, który psułby położenie okna). Zamyka się na Esc, kliknięcie tła i przycisk „Zamknij okno”; po zamknięciu fokus wraca na element, który je otworzył. Montowane tylko, gdy ma być widoczne, więc zawsze zaczyna od czystego stanu |
+| **`Dialog`** | Okno modalne | Oparte na natywnym elemencie `<dialog>` i `showModal()`: przeglądarka sama pilnuje fokusu, Esc i zasłania resztę strony przed czytnikami. Trafia do `<body>` przez portal (fiszka ma obrót 3D, który psułby położenie okna). Domyślnie zamyka się na Esc, kliknięcie tła i przycisk „Zamknij okno”; po zamknięciu fokus wraca na element, który je otworzył. Dwie właściwości zmieniają to zachowanie: `closeOnBackdrop={false}` (okno zgłoszenia z wpisanym komentarzem nie ginie od przypadkowego kliknięcia w tło) i `dismissible={false}` (okno startowe: Esc nic nie robi, okno nie ma przycisku zamknięcia ani zamykania tłem; gdyby przeglądarka mimo to je zamknęła, otwiera się z powrotem). Okno ma `data-no-shortcuts`, więc skróty klawiszowe sesji (odpowiedzi, Enter, strzałki) nie działają, gdy jest otwarte Montowane tylko, gdy ma być widoczne, więc zawsze zaczyna od czystego stanu |
 | **`Field`** | Pole tekstowe z etykietą | Etykieta jest powiązana z polem (`useId`), opcjonalna podpowiedź (`hint`) jest podpięta jako `aria-describedby`. Wysokość min. 44 px |
 | **`EmptyState`** | Pusty widok: ikona, tytuł, opis, przycisk | Dla list bez wyników i dla sytuacji „nie ma jeszcze czego pokazać” |
 | **`ErrorState`** | Błąd ładowania: ikona ostrzeżenia, komunikat, „Spróbuj ponownie” | Przycisk pojawia się, gdy podano `onRetry`. Komunikat domyślny: „Coś poszło nie tak.” |

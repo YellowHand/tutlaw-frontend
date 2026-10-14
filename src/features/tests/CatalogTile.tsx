@@ -59,7 +59,7 @@ function TileBody({
       <div className="flex items-start justify-between">
         <span
           className={cn(
-            "flex size-11 items-center justify-center rounded-xl bg-accent/10 text-accent",
+            "flex size-11 items-center justify-center rounded-xl bg-accent/10 text-accent-ink",
             !interactive && "opacity-60"
           )}
         >

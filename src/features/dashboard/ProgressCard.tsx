@@ -9,7 +9,7 @@ import { InlineError } from "./InlineError";
 import { percentOf } from "./selectors";
 
 const TEXT_LINK =
-  "-my-3 inline-flex min-h-11 items-center text-sm text-fg-muted underline underline-offset-2 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  "-my-3 inline-flex min-h-11 items-center text-sm text-fg-muted underline underline-offset-2 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink";
 
 /**
  * „Postęp": jeden pasek „Przerobione" (ile pytań zobaczyłeś co najmniej raz) i pod nim rodzaje z postępem, każdy
@@ -86,7 +86,7 @@ export function ProgressCard({ className }: { className?: string }) {
             <li key={category.id}>
               <Link
                 to={ROUTES.testsCategory(category.id)}
-                className="-mx-2 flex min-h-11 flex-col justify-center gap-1.5 rounded-lg px-2 py-2.5 transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                className="-mx-2 flex min-h-11 flex-col justify-center gap-1.5 rounded-lg px-2 py-2.5 transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink"
               >
                 <span className="flex items-baseline justify-between gap-3">
                   <span className="min-w-0 truncate text-sm font-medium">{category.name}</span>

@@ -15,7 +15,7 @@ interface QuestionFlashcardActionsProps {
 }
 
 const BUTTON_CLASS =
-  "inline-flex min-h-11 cursor-pointer items-center gap-2 whitespace-nowrap rounded-lg px-1 text-sm text-fg-muted transition-colors hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-default disabled:opacity-60";
+  "inline-flex min-h-11 cursor-pointer items-center gap-2 whitespace-nowrap rounded-lg px-1 text-sm text-fg-muted transition-colors hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink disabled:cursor-default disabled:opacity-60";
 
 /**
  * Przycisk fiszki pod odpowiedzią w teście:
@@ -95,7 +95,7 @@ export function FlashcardStatusNote({ status, justAdded, className }: FlashcardS
       data-testid={justAdded ? "flashcard-unlocked" : "flashcard-present"}
       className={cn("flex items-start gap-2 text-sm text-fg-muted", className)}
     >
-      <Layers size={16} className="mt-0.5 shrink-0 text-accent" aria-hidden="true" />
+      <Layers size={16} className="mt-0.5 shrink-0 text-accent-ink" aria-hidden="true" />
       <span>{justAdded ? "Dodałem fiszkę do tego pytania w Fiszkach." : "Fiszka tego pytania jest w Fiszkach."}</span>
     </p>
   );

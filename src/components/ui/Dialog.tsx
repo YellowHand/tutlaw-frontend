@@ -8,6 +8,14 @@ interface DialogProps {
   onClose: () => void;
   /** Element, na który wraca fokus po zamknięciu (zwykle przycisk otwierający okno). */
   returnFocusTo?: RefObject<HTMLElement | null>;
+  /** Czy kliknięcie w tło zamyka okno (domyślnie tak). Wyłącz przy oknach z wypełnianym formularzem albo ważnym wyborem. */
+  closeOnBackdrop?: boolean;
+  /**
+   * Czy okno można zamknąć bez wyboru (domyślnie tak). Przy `false` nie ma przycisku „Zamknij okno", Esc i tło nie działają,
+   * a okno znika dopiero, gdy rodzic je odmontuje (np. po zapisaniu obowiązkowego wyboru). Rodzic musi dać w środku wyjście,
+   * np. wylogowanie.
+   */
+  dismissible?: boolean;
   children: ReactNode;
 }
 
@@ -16,8 +24,9 @@ interface DialogProps {
  * ukrywa resztę strony przed czytnikami ekranu i po zamknięciu przywraca fokus na przycisk, który je otworzył.
  * Okno jest montowane tylko wtedy, gdy ma być widoczne, więc jego stan zawsze zaczyna się od zera.
  * Trafia do <body> przez portal, żeby przekształcenia 3D fiszki nie zaburzały jego położenia.
+ * Ma `data-no-shortcuts`: skróty klawiszowe sesji nauki (A/B/C, Enter, strzałki) nie działają, gdy okno jest otwarte.
  */
-export function Dialog({ title, onClose, returnFocusTo, children }: DialogProps) {
+export function Dialog({ title, onClose, returnFocusTo, closeOnBackdrop = true, dismissible = true, children }: DialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
 
@@ -36,10 +45,23 @@ export function Dialog({ title, onClose, returnFocusTo, children }: DialogProps)
     <dialog
       ref={ref}
       aria-labelledby={titleId}
-      onClose={onClose}
+      data-no-shortcuts
+      // Esc: przy oknie obowiązkowym blokujemy zamknięcie.
+      onCancel={(e) => {
+        if (!dismissible) e.preventDefault();
+      }}
+      onClose={() => {
+        if (dismissible) {
+          onClose();
+          return;
+        }
+        // Część przeglądarek zamyka okno przy drugim Esc mimo preventDefault: otwieramy je z powrotem.
+        const el = ref.current;
+        if (el?.isConnected && !el.open) el.showModal();
+      }}
       onClick={(e) => {
         // Kliknięcie w półprzezroczyste tło trafia w sam element <dialog>, a nie w jego zawartość.
-        if (e.target === e.currentTarget) e.currentTarget.close();
+        if (dismissible && closeOnBackdrop && e.target === e.currentTarget) e.currentTarget.close();
       }}
       className="m-auto w-[min(34rem,calc(100%-2rem))] rounded-2xl border border-line bg-surface p-0 text-fg shadow-xl backdrop:bg-black/60"
     >
@@ -48,14 +70,16 @@ export function Dialog({ title, onClose, returnFocusTo, children }: DialogProps)
           <h2 id={titleId} className="text-lg font-semibold text-fg">
             {title}
           </h2>
-          <button
-            type="button"
-            onClick={() => ref.current?.close()}
-            aria-label="Zamknij okno"
-            className="-m-2 inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-          >
-            <X size={18} aria-hidden="true" />
-          </button>
+          {dismissible && (
+            <button
+              type="button"
+              onClick={() => ref.current?.close()}
+              aria-label="Zamknij okno"
+              className="-m-2 inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink"
+            >
+              <X size={18} aria-hidden="true" />
+            </button>
+          )}
         </div>
         {children}
       </div>

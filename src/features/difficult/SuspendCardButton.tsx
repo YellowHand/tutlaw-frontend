@@ -46,7 +46,7 @@ export function SuspendCardButton({ cardId, alreadySuspended = false, onSuspende
           if (!inactive) mutation.mutate();
         }}
         className={cn(
-          "inline-flex min-h-11 items-center gap-2 whitespace-nowrap rounded-lg px-1 text-sm text-fg-muted transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+          "inline-flex min-h-11 items-center gap-2 whitespace-nowrap rounded-lg px-1 text-sm text-fg-muted transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink",
           inactive ? "cursor-default" : "cursor-pointer hover:text-fg"
         )}
       >

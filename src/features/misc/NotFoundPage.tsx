@@ -11,7 +11,7 @@ export function NotFoundPage() {
       <h1 className="text-fg-muted">
         <span className="sr-only">Błąd 404. </span>Nie znaleziono takiej strony.
       </h1>
-      <Link to={ROUTES.dashboard} className="text-accent underline">
+      <Link to={ROUTES.dashboard} className="text-accent-ink underline">
         Wróć do Pulpitu
       </Link>
     </div>

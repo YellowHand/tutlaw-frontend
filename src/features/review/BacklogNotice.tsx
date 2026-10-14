@@ -42,7 +42,7 @@ export function BacklogFinishNotice({ deferred, batch, onMore, unit }: BacklogFi
       <button
         type="button"
         onClick={onMore}
-        className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl border border-accent px-6 text-sm font-medium text-accent hover:bg-accent/10"
+        className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl border border-accent-ink px-6 text-sm font-medium text-accent-ink hover:bg-accent/10"
       >
         Powtórz jeszcze {batch} {unit}
       </button>

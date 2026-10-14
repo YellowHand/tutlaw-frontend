@@ -55,9 +55,9 @@ const RATING_BUTTONS = [
   {
     value: 4,
     label: "Łatwe",
-    tone: "text-accent",
+    tone: "text-accent-ink",
     className:
-      "border-accent/35 bg-accent/10 text-accent hover:border-accent hover:bg-accent/20 focus-visible:outline-accent",
+      "border-accent-ink/35 bg-accent/10 text-accent-ink hover:border-accent-ink hover:bg-accent/20 focus-visible:outline-accent-ink",
   },
 ];
 
@@ -70,10 +70,10 @@ const PAGE_SHELL = "mx-auto flex w-full max-w-3xl flex-col gap-6 p-4 pt-6 sm:p-6
 
 // Na telefonie przyciski poprzednie/następne mają 44 px (wygodny cel dla palca), od szerokości sm wracają do 32 px.
 const NAV_BUTTON =
-  "inline-flex size-11 cursor-pointer sm:size-8 items-center justify-center rounded-lg text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg disabled:pointer-events-none disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  "inline-flex size-11 cursor-pointer sm:size-8 items-center justify-center rounded-lg text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg disabled:pointer-events-none disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink";
 
 const PRIMARY_BUTTON =
-  "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-accent px-6 text-sm font-medium text-accent-fg hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-accent px-6 text-sm font-medium text-accent-fg hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink";
 
 const FACE_BASE: CSSProperties = {
   backfaceVisibility: "hidden",
@@ -386,7 +386,7 @@ export function StudySessionPage() {
         {extraBatch > 0 && (
           <button
             onClick={handleStudyMore}
-            className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl border border-accent px-6 text-sm font-medium text-accent hover:bg-accent/10"
+            className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl border border-accent-ink px-6 text-sm font-medium text-accent-ink hover:bg-accent/10"
           >
             Ucz się jeszcze {extraBatch} {fiszkiForm(extraBatch)}
           </button>
@@ -526,7 +526,7 @@ export function StudySessionPage() {
           <div
             aria-hidden={!flipped}
             style={{ ...FACE_BASE, transform: "rotateY(180deg)" }}
-            className="absolute inset-0 flex flex-col gap-4 rounded-2xl border border-accent/30 bg-surface p-6 sm:p-8"
+            className="absolute inset-0 flex flex-col gap-4 rounded-2xl border border-accent-ink/30 bg-surface p-6 sm:p-8"
           >
             <div className="shrink-0 border-b border-line pb-3">
               <p className="line-clamp-3 text-sm text-fg-muted">{shownCard.front}</p>
@@ -535,7 +535,7 @@ export function StudySessionPage() {
             <div className="flex flex-1 flex-col overflow-y-auto">
               <div className="my-auto">
                 {shownCard.verbatimQuote ? (
-                  <blockquote className="border-l-2 border-accent/60 pl-4 text-lg italic leading-relaxed text-fg sm:text-xl">
+                  <blockquote className="border-l-2 border-accent-ink/60 pl-4 text-lg italic leading-relaxed text-fg sm:text-xl">
                     „{shownCard.back}”
                   </blockquote>
                 ) : (

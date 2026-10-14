@@ -6,6 +6,19 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#121214" />
+    <!--
+      Jasny wygląd od pierwszej klatki: aplikacja (/app) bierze ostatni znany wygląd z tej przeglądarki, zanim serwer odpowie
+      (wygląd z konta i tak wygrywa, zob. features/settings/ThemeSync). Klucz i kolory jak w src/lib/theme.ts.
+    -->
+    <script>
+      try {
+        if (/^\/app(\/|$)/.test(location.pathname) && localStorage.getItem("tutlaw.theme.v1") === "LIGHT") {
+          document.documentElement.setAttribute("data-theme", "light");
+          document.querySelector('meta[name="theme-color"]').setAttribute("content", "#fbfaf6");
+        }
+      } catch (e) {}
+    </script>
     <title>Tutlaw: testy na aplikację prawniczą z powtórkami</title>
     <meta name="description" content="Testy ABC z egzaminów na aplikacje prawnicze i fiszki z powtórkami (FSRS-6). „Nie jestem pewien” odróżnia wiedzę od zgadywania. Teraz za darmo." />
     <meta property="og:type" content="website" />

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { CalendarClock, CheckCircle2, Play, TriangleAlert } from "lucide-react";
+import { CalendarClock, CheckCircle2, Play } from "lucide-react";
 import { Skeleton } from "../../components/ui/Skeleton";
 import { ROUTES } from "../../config/routes";
 import { cn } from "../../lib/cn";
@@ -8,6 +8,8 @@ import { ORIGIN_LABELS } from "../../lib/origin";
 import { pluralizePl } from "../../lib/plural";
 import { useDueCount, useMistakesCount } from "../review/hooks";
 import { useLearningSettings } from "../settings/hooks";
+import { LimitNotice } from "../settings/LimitNotice";
+import { limitIssue } from "../settings/newQuestionsLimit";
 import { useActivity, useTestStats } from "../statistics/hooks";
 import { getStreak, getThisWeekTotal } from "../statistics/selectors";
 import { QUIET_BUTTON, START_BUTTON } from "../tests/StartButtons";
@@ -15,12 +17,10 @@ import { InlineError } from "./InlineError";
 import { pickTodayAction } from "./selectors";
 
 const TEXT_LINK =
-  "inline-flex min-h-11 items-center text-sm text-fg-muted underline underline-offset-2 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  "inline-flex min-h-11 items-center text-sm text-fg-muted underline underline-offset-2 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink";
 
 interface TodayCardProps {
   className?: string;
-  /** Użytkownik odłożył wybór egzaminu: zamiast kafelka z wyborem pokazujemy w tej karcie krótkie zaproszenie. */
-  examPromptSkipped?: boolean;
 }
 
 /**
@@ -29,7 +29,7 @@ interface TodayCardProps {
  * a testy i fiszki nie mieszają się w jednej sesji. Na górze karty jest egzamin (termin i wybrana aplikacja), pod
  * przyciskiem cel dnia i cicha seria nauki. Reszta (fiszki do powtórki, poprawa błędów) to ciche linki.
  */
-export function TodayCard({ className, examPromptSkipped = false }: TodayCardProps) {
+export function TodayCard({ className }: TodayCardProps) {
   const dueTests = useDueCount("TEST");
   const dueFlashcards = useDueCount("FLASHCARD");
   const stats = useTestStats();
@@ -65,7 +65,7 @@ export function TodayCard({ className, examPromptSkipped = false }: TodayCardPro
 
   return (
     <section aria-labelledby="today-title" className={frame}>
-      <ExamLine promptSkipped={examPromptSkipped} />
+      <ExamLine />
 
       <div>
         <h2 id="today-title" className="text-sm font-medium text-fg-muted">
@@ -159,27 +159,16 @@ function TodayActions({ action }: { action: ReturnType<typeof pickTodayAction> }
   );
 }
 
-/** Termin egzaminu i wybrana aplikacja. Gdy nie ma wyboru, zaproszenie do niego (tylko po „Wybiorę później"). */
-function ExamLine({ promptSkipped }: { promptSkipped: boolean }) {
+/** Termin egzaminu i wybrana aplikacja. Bez wyboru (nowy użytkownik widzi wtedy okno startowe) nic nie pokazujemy. */
+function ExamLine() {
   const { data } = useLearningSettings();
-  if (!data) return null;
-
-  if (!data.examOrigin) {
-    // Dopóki na górze Pulpitu jest kafelek z wyborem, drugie zaproszenie byłoby powtórką.
-    if (!promptSkipped) return null;
-    return (
-      <Link to={ROUTES.account} className={cn(TEXT_LINK, "w-fit gap-2")}>
-        <CalendarClock aria-hidden size={16} className="shrink-0 text-accent" />
-        Wybierz egzamin, a podpowiem dzienny plan nauki
-      </Link>
-    );
-  }
+  if (!data?.examOrigin) return null;
 
   const application = ORIGIN_LABELS[data.examOrigin];
   const frame = (children: React.ReactNode) => (
     <div className="flex flex-col">
       <Link to={ROUTES.account} className={cn(TEXT_LINK, "w-fit gap-2")}>
-        <CalendarClock aria-hidden size={16} className="shrink-0 text-accent" />
+        <CalendarClock aria-hidden size={16} className="shrink-0 text-accent-ink" />
         <span>{children}</span>
       </Link>
       {data.plan && data.plan.planningDays === 0 && (
@@ -220,9 +209,9 @@ function ExamLine({ promptSkipped }: { promptSkipped: boolean }) {
 }
 
 /**
- * Cel dnia: ile nowych pytań zaczęto dzisiaj z tylu, ile trzeba, żeby zdążyć przed ostatnimi dwoma tygodniami.
- * Cel liczy serwer od stanu z początku dnia, więc nie maleje w miarę nauki. Gdy cel jest wyższy niż dzienny limit,
- * pokazujemy, że w takim tempie nie da się zdążyć, i prowadzimy do Ustawień.
+ * Cel dnia: ile nowych pytań zaczęto dzisiaj z tylu, ile trzeba, żeby zdążyć przed ostatnimi dwoma tygodniami (ale nie
+ * więcej niż rozsądne maksimum dzienne). Cel liczy serwer od stanu z początku dnia, więc nie maleje w miarę nauki.
+ * Gdy własny limit jest za niski, prowadzimy do Ustawień; gdy nawet maksimum nie wystarcza, mówimy to wprost.
  */
 function DailyGoal() {
   const { data } = useLearningSettings();
@@ -232,7 +221,7 @@ function DailyGoal() {
   // Starszy serwer mógłby nie podać liczby zaczętych dziś: wtedy liczymy 0, zamiast pokazać NaN.
   const done = Number.isFinite(data.plan.newTestQuestionsToday) ? data.plan.newTestQuestionsToday : 0;
   const reached = done >= goal;
-  const limit = data.newTestQuestionsPerDay;
+  const issue = limitIssue(data);
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -256,23 +245,8 @@ function DailyGoal() {
           style={{ width: `${Math.min(100, Math.round((done / goal) * 100))}%` }}
         />
       </div>
-      {goal > limit && <LimitWarning limit={limit} />}
+      {issue && <LimitNotice issue={issue} />}
     </div>
-  );
-}
-
-function LimitWarning({ limit }: { limit: number }) {
-  return (
-    <p className="flex items-start gap-2 text-sm text-warning">
-      <TriangleAlert size={16} aria-hidden="true" className="mt-0.5 shrink-0" />
-      <span>
-        Żeby zdążyć, podnieś limit nowych pytań (teraz {limit}) w{" "}
-        <Link to={ROUTES.account} className="underline underline-offset-2 hover:text-fg">
-          Ustawieniach
-        </Link>
-        .
-      </span>
-    </p>
   );
 }
 

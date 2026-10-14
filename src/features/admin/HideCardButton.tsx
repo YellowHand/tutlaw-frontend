@@ -15,7 +15,7 @@ interface HideCardButtonProps {
 }
 
 const LINK_CLASS =
-  "inline-flex min-h-11 cursor-pointer items-center gap-2 whitespace-nowrap rounded-lg px-1 text-sm text-fg-muted transition-colors hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  "inline-flex min-h-11 cursor-pointer items-center gap-2 whitespace-nowrap rounded-lg px-1 text-sm text-fg-muted transition-colors hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink";
 
 /**
  * „Ukryj" – tylko dla administratora. Ukrywa pytanie (albo fiszkę) wszystkim użytkownikom: znika z testów, sesji,

@@ -10,7 +10,7 @@ export function CheckEmailPage() {
   return (
     <AuthLayout title="Sprawdź skrzynkę">
       <div className="flex flex-col items-center gap-3 text-center">
-        <MailCheck className="text-accent" size={32} aria-hidden="true" />
+        <MailCheck className="text-accent-ink" size={32} aria-hidden="true" />
         {/* Ten sam tekst dla każdego adresu: nie zdradzamy, czy konto już istniało. */}
         <p className="text-sm text-fg-muted">
           Jeśli ten adres nie miał jeszcze konta, wysłaliśmy link aktywacyjny na Twój mail uczelniany. Kliknij go, żeby
@@ -18,11 +18,11 @@ export function CheckEmailPage() {
         </p>
         <p className="text-sm text-fg-muted">
           Masz już konto?{" "}
-          <Link to={ROUTES.login} className="text-accent underline">
+          <Link to={ROUTES.login} className="text-accent-ink underline">
             Zaloguj się
           </Link>{" "}
           albo{" "}
-          <Link to={ROUTES.forgotPassword} className="text-accent underline">
+          <Link to={ROUTES.forgotPassword} className="text-accent-ink underline">
             ustaw nowe hasło
           </Link>
           , jeśli go nie pamiętasz.

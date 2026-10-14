@@ -64,20 +64,21 @@ port-fe/
 | `admin` | 1 | Przycisk „Ukryj” (tylko dla administratora) |
 | `auth` | 6 | Pola formularzy logowania, „wyślij link ponownie”, odczyt roli z tokenu, czyszczenie sesji |
 | `customTest` | 5 | Własny test: wybór rodzajów i aktów prawnych, rodzaju pytań, lat i liczby pytań; pamięć ostatniego wyboru |
-| `dashboard` | 8 | Pulpit: karta „Na dziś” z jednym głównym przyciskiem, „Postęp”, wynik egzaminu próbnego, kafelek wyboru egzaminu |
+| `dashboard` | 6 | Pulpit: karta „Na dziś” z jednym głównym przyciskiem, „Postęp”, wynik egzaminu próbnego |
 | `difficult` | 4 | Trudne i zawieszone pytania: podpowiedź, zawieszanie, lista w Koncie |
 | `exam` | 8 | Egzamin próbny: ustawienia, przebieg z zegarem, raport, historia, zapis w przeglądarce |
 | `flashcards` | 2 | Dane do wyboru materiału Fiszek oraz „Dodaj do fiszek” przy pytaniu |
 | `landing` | 17 | Strona główna: sekcje, teksty, demo pytania, ilustracja |
 | `legal` | 3 | Regulamin i polityka prywatności |
 | `misc` | 1 | Strona 404 |
-| `report` | 2 | „Zgłoś błąd w pytaniu” |
+| `onboarding` | 1 | Obowiązkowe okno startowe po zalogowaniu: wybór aplikacji i wyglądu strony |
+| `report` | 2 | „Zgłoś błąd”: okno na środku ekranu z powodem i komentarzem |
 | `review` | 10 | Elementy wspólne sesji nauki: skróty klawiszowe, zaległości, podstawa prawna, etykieta pochodzenia |
-| `settings` | 4 | Ustawienia nauki w Koncie (limity dzienne, retencja, wybór egzaminu), terminy egzaminów dla administratora |
+| `settings` | 10 | Ustawienia nauki w Koncie (limity dzienne z trybem automatycznym, retencja, wybór egzaminu), wygląd jasny/ciemny (karta, wybór, synchronizacja z kontem), komunikat o tempie nowych pytań, terminy egzaminów dla administratora |
 | `statistics` | 14 | Ekran Statystyki: opanowanie, ostatnie 30 dni, aktywność, fiszki; dane statystyk |
 | `tests` | 14 | Ekrany Testów (rodzaj, przedmiot, źródło), filtr pochodzenia, tasowanie odpowiedzi |
 
-W repozytorium jest łącznie 170 plików w `src/`.
+W repozytorium jest łącznie 176 plików w `src/`.
 
 ### Dlaczego strony są w dwóch miejscach
 

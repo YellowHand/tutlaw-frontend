@@ -32,7 +32,7 @@ export function NavBadge({ mode, solid = false, className }: NavBadgeProps) {
       title={label}
       className={cn(
         "inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-semibold tabular-nums",
-        solid ? "bg-accent text-accent-fg" : "bg-accent/15 text-accent",
+        solid ? "bg-accent text-accent-fg" : "bg-accent/15 text-accent-ink",
         className
       )}
     >

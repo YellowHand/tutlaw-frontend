@@ -40,7 +40,7 @@ prośba o reset hasła i ustawienie nowego hasła) jest wpisanych bezpośrednio 
 
 ## Wszystkie wywołania serwera
 
-Frontend używa **53 z 63** endpointów backendu (łącznie 54 wywołań w kodzie, bo `GET /api/statistics/chapters` jest
+Frontend używa **54 z 64** endpointów backendu (łącznie 55 wywołań w kodzie, bo `GET /api/statistics/chapters` jest
 wołany z dwóch miejsc). Endpointów, których frontend nie używa, jest 10; lista jest [niżej](#endpointy-których-frontend-nie-używa).
 Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć wyszukiwarką.
 
@@ -99,7 +99,7 @@ Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć w
 |-----------|----------------|---------------|
 | `POST /api/questions/{questionId}/flashcard` | `addToFlashcards` | „Dodaj do fiszek” pod odpowiedzią w teście |
 | `DELETE /api/questions/{questionId}/flashcard` | `removeFromFlashcards` | „Usuń z fiszek” (cofnięcie) |
-| `POST /api/cards/{cardId}/reports` | `reportCard` (`api/reports.ts`) | „Zgłoś błąd w pytaniu” |
+| `POST /api/cards/{cardId}/reports` | `reportCard` (`api/reports.ts`) | „Zgłoś błąd” (okno na środku ekranu) |
 | `PUT /api/cards/{cardId}/hidden` | `setCardHidden` (`api/flashcards.ts`) | „Ukryj” (tylko administrator) |
 | `GET /api/me/difficult-cards` | `getDifficultCards` | Konto: lista trudnych i zawieszonych pytań |
 | `PUT /api/me/suspended-cards/{cardId}` | `suspendCard` | „Zawieś pytanie” |
@@ -129,10 +129,11 @@ Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć w
 
 | Wywołanie | Funkcja / plik | Gdzie używane |
 |-----------|----------------|---------------|
-| `GET /api/me/settings` | `getLearningSettings` | Karta „Ustawienia nauki” w Koncie, Pulpit (wybrana aplikacja, odliczanie, cel na dziś i kafelek wyboru egzaminu), Statystyki (domyślny zakres), a także jednorazowo przy starcie sesji Testów (czy tasować odpowiedzi) |
-| `PUT /api/me/settings` | `updateLearningSettings` | Zapis ustawień nauki (limity, retencja, tasowanie; bez daty egzaminu) |
-| `PUT /api/me/exam` | `chooseExam` (`api/settings.ts`) | Wybór aplikacji, do której użytkownik się przygotowuje: kafelek na Pulpicie i sekcja „Egzamin” w Koncie. Backend jednorazowo ustawia też filtr pochodzenia |
-| `GET /api/exam-terms` | `getExamTerms` (`api/examTerms.ts`) | Terminy egzaminów pięciu aplikacji: kafelek wyboru egzaminu, informacja o terminie w Koncie i karta „Terminy egzaminów” |
+| `GET /api/me/settings` | `getLearningSettings` | Karta „Ustawienia nauki” w Koncie, Pulpit (wybrana aplikacja, odliczanie, cel na dziś), okno startowe i wygląd strony (`ThemeSync`, `OnboardingGate` w `AppShell`), Statystyki (domyślny zakres), a także jednorazowo przy starcie sesji Testów (czy tasować odpowiedzi) |
+| `PUT /api/me/settings` | `updateLearningSettings` | Zapis ustawień nauki (limity, retencja, tasowanie; bez daty egzaminu i bez wyglądu). `newTestQuestionsPerDay: null` oznacza limit automatyczny |
+| `PUT /api/me/exam` | `chooseExam` (`api/settings.ts`) | Wybór aplikacji, do której użytkownik się przygotowuje: obowiązkowe okno startowe i sekcja „Egzamin” w Koncie. Backend jednorazowo ustawia też filtr pochodzenia |
+| `PUT /api/me/theme` | `chooseTheme` (`api/settings.ts`) | Wybór wyglądu strony (`DARK` albo `LIGHT`), zapisany na koncie: okno startowe (razem z wyborem aplikacji) i karta „Wygląd” w Koncie. Zwraca ustawienia nauki |
+| `GET /api/exam-terms` | `getExamTerms` (`api/examTerms.ts`) | Terminy egzaminów pięciu aplikacji: okno startowe (wiersz terminu przy aplikacji), informacja o terminie w Koncie i karta „Terminy egzaminów” |
 | `PUT /api/exam-terms/{origin}` | `updateExamTerm` (`api/examTerms.ts`) | Zapis albo usunięcie terminu (karta administratora w Koncie; serwer sprawdza rolę) |
 | `GET /api/me/origin-filter` | `getOriginFilter` | Znacznik filtra pochodzenia w Testach |
 | `PUT /api/me/origin-filter` | `saveOriginFilter` | Zapis filtra (okno wyboru aplikacji) |
@@ -225,6 +226,7 @@ przy następnym użyciu (aktywne od razu).
 | Wyjście z sesji Fiszek lub Testów (`useRefreshReviewDataOnExit`) | Liczniki powtórek (`["review","due-count"]`), licznik błędów, liczniki Własnego testu, wszystkie `["statistics",…]`. Dopiero przy wyjściu, nie po każdej odpowiedzi, żeby nie wysyłać zapytania co pytanie |
 | „Dodaj do fiszek” / „Usuń z fiszek” | Jak wyżej (`invalidateReviewData`), od razu |
 | Zapis ustawień nauki | Podmiana `["settings","learning"]` odpowiedzią serwera + `invalidateReviewData` |
+| Zmiana wyglądu (`useChooseTheme`, okno startowe) | Podmiana `["settings","learning"]` odpowiedzią serwera; strona przełącza się od razu, a przy błędzie wraca do poprzedniego wyglądu |
 | Wybór egzaminu (`useChooseExam`) | Podmiana `["settings","learning"]` odpowiedzią serwera + unieważnienie: filtr pochodzenia, katalog Testów, liczniki powtórek, licznik błędów i liczniki Własnego testu (backend zmienia filtr) |
 | Zapis terminu egzaminu (administrator) | Podmiana wiersza w `["settings","exam-terms"]` odpowiedzią serwera + unieważnienie `["settings","learning"]` (zmienia się odliczanie i plan) |
 | Zapis filtra pochodzenia | Podmiana `["tests","origin-filter"]` + unieważnienie: katalog Testów, liczniki powtórek, licznik błędów, liczniki Własnego testu, ustawienia nauki (plan do egzaminu). Statystyk i Fiszek nie dotyka, bo filtr ich nie dotyczy |
@@ -282,7 +284,7 @@ serwer przestał je wysyłać. Najważniejsze typy:
 | `FlashcardStatus` | `api/review.ts` | `UNAVAILABLE`, `AVAILABLE`, `ADDED_MANUALLY`, `ADDED_BY_MISTAKE` |
 | `Backlog` | `api/review.ts` | `dueNow`, `deferred`, `dailyLimit`, `doneToday` |
 | `ExamStart`, `ExamResult`, `ExamAttempt` | `api/exam.ts` | Losowanie (z `passPoints`), wynik z rozbiciem na źródła i pytania, wpis historii (`passPoints` albo `null` dla starych podejść) |
-| `LearningSettings` | `api/settings.ts` | Limity, retencja, wybrana aplikacja (`examOrigin`), termin (`examDate`, tylko do odczytu), tasowanie, plan do egzaminu (z `newTestQuestionsToday`) |
+| `LearningSettings` | `api/settings.ts` | Limity (w tym `newTestQuestionsPerDay` obowiązujący teraz i `newTestQuestionsAuto`), retencja, wybrana aplikacja (`examOrigin`, `null` = jeszcze nie wybrano), termin (`examDate`, tylko do odczytu), wygląd (`theme`: `DARK`/`LIGHT`), tasowanie, plan do egzaminu (z `newTestQuestionsToday`, `requiredTestQuestionsPerDay` bez sufitu, `maxTestQuestionsPerDay` = 100 i `suggestedTestQuestionsPerDay` = mniejsze z nich) |
 | `ExamTerm` | `api/examTerms.ts` | `origin`, `examDate`, `daysToExam` |
 | `OriginFilter` | `api/originFilter.ts` | `selected`, `all`, `options` z liczbą pytań |
 | `QuestionOrigin` | `lib/origin.ts` | Skąd pochodzi pytanie (sześć wartości, patrz [04](04-nauka-w-aplikacji.md)) |

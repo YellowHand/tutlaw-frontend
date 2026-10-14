@@ -49,7 +49,7 @@ export function TestCategoryPage() {
           title="Nie znaleziono tego rodzaju"
           description="Mógł zostać usunięty albo adres jest nieprawidłowy."
           action={
-            <Link to={ROUTES.tests} className="text-sm text-accent underline">
+            <Link to={ROUTES.tests} className="text-sm text-accent-ink underline">
               Wróć do Testów
             </Link>
           }

@@ -80,11 +80,11 @@ const KEY_TO_OPTION: Record<string, OptionKey> = {
 const OPTION_STYLES: Record<OptionState, { button: string; badge: string }> = {
   idle: {
     button: "cursor-pointer border-line bg-surface hover:bg-surface-2",
-    badge: "border-line text-fg-muted group-hover:border-accent/60 group-hover:text-accent",
+    badge: "border-line text-fg-muted group-hover:border-accent-ink/60 group-hover:text-accent-ink",
   },
   pending: {
-    button: "border-accent bg-accent/10",
-    badge: "border-accent bg-accent text-accent-fg",
+    button: "border-accent-ink bg-accent/10",
+    badge: "border-accent-ink bg-accent text-accent-fg",
   },
   correct: {
     button: "border-success/60 bg-success/10",
@@ -106,10 +106,10 @@ const PAGE_SHELL = "mx-auto flex w-full max-w-3xl flex-col gap-6 p-4 pt-6 sm:p-6
 
 // Na telefonie przyciski poprzednie/następne mają 44 px (wygodny cel dla palca), od szerokości sm wracają do 32 px.
 const NAV_BUTTON =
-  "inline-flex size-11 cursor-pointer sm:size-8 items-center justify-center rounded-lg text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg disabled:pointer-events-none disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  "inline-flex size-11 cursor-pointer sm:size-8 items-center justify-center rounded-lg text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg disabled:pointer-events-none disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink";
 
 const PRIMARY_BUTTON =
-  "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-accent px-6 text-sm font-medium text-accent-fg hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-accent px-6 text-sm font-medium text-accent-fg hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink";
 
 /** 1 pytanie, 2–4 pytania, 5+ pytań (biernik) */
 function pytaniaForm(n: number) {
@@ -203,7 +203,7 @@ function QuestionBody({
               disabled={readOnly || !!selected}
               className={cn(
                 "group flex min-h-14 w-full items-center gap-4 rounded-xl border px-4 py-3 text-left text-base leading-snug text-fg transition-colors sm:px-5",
-                "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink",
                 styles.button
               )}
             >
@@ -231,13 +231,13 @@ function QuestionBody({
           aria-checked={guessed}
           onClick={() => onGuessedChange(!guessed)}
           title="Nie jestem pewien (G)"
-          className="inline-flex min-h-11 cursor-pointer items-center gap-3 self-start rounded-lg pr-3 text-sm text-fg-muted transition-colors hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="inline-flex min-h-11 cursor-pointer items-center gap-3 self-start rounded-lg pr-3 text-sm text-fg-muted transition-colors hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink"
         >
           <span
             aria-hidden="true"
             className={cn(
               "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full border transition-colors",
-              guessed ? "border-accent bg-accent/20" : "border-line bg-surface-2"
+              guessed ? "border-accent-ink bg-accent/20" : "border-line bg-surface-2"
             )}
           >
             <span
@@ -808,7 +808,7 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
         {extraBatch > 0 && (
           <button
             onClick={handleStudyMore}
-            className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl border border-accent px-6 text-sm font-medium text-accent hover:bg-accent/10"
+            className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl border border-accent-ink px-6 text-sm font-medium text-accent-ink hover:bg-accent/10"
           >
             Rozwiąż jeszcze {extraBatch} {pytaniaForm(extraBatch)}
           </button>

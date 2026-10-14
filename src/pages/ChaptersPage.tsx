@@ -69,7 +69,7 @@ export function ChaptersPage() {
     const style =
       variant === "primary"
         ? "bg-accent text-accent-fg"
-        : "border border-accent text-accent";
+        : "border border-accent-ink text-accent-ink";
     if (hasReadChapter) {
       return (
         <Link to={to} className={cn(ACTION_BASE, style, variant === "primary" ? "hover:opacity-90" : "hover:bg-accent/10")}>
@@ -143,7 +143,7 @@ export function ChaptersPage() {
                     onChange={() => void toggleRead(chapter)}
                     className="peer sr-only"
                   />
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-field transition-colors peer-checked:border-accent peer-checked:bg-accent peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-field transition-colors peer-checked:border-accent-ink peer-checked:bg-accent peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent-ink">
                     {chapter.isRead && <Check size={14} className="text-accent-fg" aria-hidden="true" />}
                   </span>
                   <span className={cn("flex-1 text-sm", !chapter.isRead && "text-fg-muted")}>{chapter.title}</span>

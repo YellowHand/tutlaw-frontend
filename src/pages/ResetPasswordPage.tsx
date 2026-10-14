@@ -41,7 +41,7 @@ export function ResetPasswordPage() {
         <div className="flex flex-col items-center gap-3 text-center">
           <XCircle className="text-danger" size={32} aria-hidden="true" />
           <p className="text-sm text-fg-muted">Brakuje linku do zmiany hasła. Poproś o nowy.</p>
-          <Link to={ROUTES.forgotPassword} className="text-sm text-accent underline">
+          <Link to={ROUTES.forgotPassword} className="text-sm text-accent-ink underline">
             Wyślij nowy link
           </Link>
         </div>

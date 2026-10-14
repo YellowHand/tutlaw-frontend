@@ -74,7 +74,7 @@ Dlaczego tak:
 | Funkcja | Co kasuje | Kiedy jest używana |
 |---------|-----------|--------------------|
 | `clearStoredToken()` | Tylko token `accessToken` | Wygasła sesja (401) |
-| `clearSession()` | Token oraz **wszystkie klucze zaczynające się od `tutlaw.`** (szkic egzaminu, zapamiętane ustawienia egzaminu, ostatni własny test, wybór zwiniętego panelu, odłożony wybór egzaminu) | Przycisk „Wyloguj się” i usunięcie konta |
+| `clearSession()` | Token oraz **wszystkie klucze zaczynające się od `tutlaw.`** (szkic egzaminu, zapamiętane ustawienia egzaminu, ostatni własny test, wybór zwiniętego panelu), **poza kopią wyglądu** `tutlaw.theme.v1` (patrz niżej) | Przycisk „Wyloguj się” i usunięcie konta |
 
 Przycisk „Wyloguj się” (`LogoutButton`; w panelu bocznym, a na telefonie na ekranie Konto) wywołuje `logout()` z kontekstu (`clearSession()` i token w stanie na `null`),
 a potem przenosi na stronę główną przez `window.location.href`, czyli również z pełnym przeładowaniem. Efekt: na
@@ -89,7 +89,7 @@ wspólnym komputerze nie zostają ślady po poprzednim użytkowniku (w szkicu eg
 | `localStorage` | `tutlaw.exam.settings.v1` | Ostatnio użyty limit czasu egzaminu (zakres, liczbę pytań i próg ustala format egzaminu, więc ich nie zapamiętujemy; zapis ze starszych wersji ma je jeszcze w sobie i są pomijane) | `features/exam/examStorage.ts` | Po wylogowaniu |
 | `localStorage` | `tutlaw.customTest.v1` | Ostatnio ułożony własny test: zaznaczone akty prawne (albo „wszystko”), rodzaj pytań, liczba pytań, lata egzaminu | `features/customTest/customTestStorage.ts` | Po wylogowaniu |
 | `localStorage` | `tutlaw.nav.collapsed.v1` | Czy panel boczny jest zwinięty (`1`) czy rozwinięty (`0`) | `components/layout/useNavCollapsed.ts` | Po wylogowaniu |
-| `localStorage` | `tutlaw.examPrompt.skipped.v1` | Czy użytkownik odłożył wybór egzaminu na Pulpicie („Wybiorę później”); gdy tak, kafelek wyboru się nie pokazuje, a w „Na dziś” jest tylko zaproszenie do Konta | `features/dashboard/examPromptSkip.ts` | Po wylogowaniu |
+| `localStorage` | `tutlaw.theme.v1` | Kopia wyglądu strony z konta (`DARK` albo `LIGHT`). Źródłem prawdy jest serwer (`PUT /api/me/theme`); kopia służy tylko temu, żeby od pierwszej klatki, zanim serwer odpowie, strona miała dobry kolor (skrypt w `index.html` czyta ten sam klucz, tylko na ścieżkach `/app`). Gdy ustawienia z serwera dotrą, wygrywa konto i kopia się odświeża | `features/settings/ThemeSync.tsx`, `lib/theme.ts` | **Przeżywa wylogowanie** (to nie jest dana osobowa; wyjątek wpisany w `features/auth/session.ts`), znika dopiero z ręcznym wyczyszczeniem danych przeglądarki |
 
 Aplikacja nie używa `sessionStorage`, plików cookie ani IndexedDB. Każdy odczyt i zapis jest w `try/catch`: gdy
 pamięć jest niedostępna (np. tryb prywatny), aplikacja działa dalej, tylko bez zapamiętywania.

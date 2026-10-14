@@ -13,6 +13,8 @@ import { EXAM_APPLICATIONS, ORIGIN_LABELS, type QuestionOrigin } from "../../lib
 import { invalidateReviewData } from "../review/hooks";
 import { useChooseExam } from "./examChoice";
 import { LEARNING_SETTINGS_KEY, useExamTerms, useLearningSettings } from "./hooks";
+import { LimitNotice } from "./LimitNotice";
+import { limitIssue, maxPerDay } from "./newQuestionsLimit";
 
 const RETENTION_CHOICES = [
   { value: 0.8, label: "80%: mniej powtórek, więcej zapominania" },
@@ -28,8 +30,12 @@ const LIMITS = {
   maxReviewsPerDay: { min: 10, max: 1000, label: "Najwięcej powtórek dziennie", errorName: "Najwięcej powtórek dziennie" },
 } as const;
 
+/** `auto`: limit nowych pytań idzie za planem do egzaminu (w żądaniu `null`); `manual`: wartość z pola. */
+type NewQuestionsMode = "auto" | "manual";
+
 interface FormState {
   newCardsPerDay: string;
+  newTestQuestionsMode: NewQuestionsMode;
   newTestQuestionsPerDay: string;
   maxReviewsPerDay: string;
   retention: string;
@@ -39,6 +45,8 @@ interface FormState {
 function toForm(s: LearningSettings): FormState {
   return {
     newCardsPerDay: String(s.newCardsPerDay),
+    newTestQuestionsMode: s.newTestQuestionsAuto === false ? "manual" : "auto",
+    // Po przełączeniu na własny limit pole zaczyna od tego, co obowiązuje teraz.
     newTestQuestionsPerDay: String(s.newTestQuestionsPerDay),
     maxReviewsPerDay: String(s.maxReviewsPerDay),
     retention: String(s.desiredRetention),
@@ -56,12 +64,19 @@ function parseLimit(raw: string, key: keyof typeof LIMITS): number | string {
   return value;
 }
 
-/** Składa dane do wysłania albo zwraca komunikat o błędzie. Wartości równe domyślnym wysyłamy jako null („domyślne"). */
+/**
+ * Składa dane do wysłania albo zwraca komunikat o błędzie. Wartości równe domyślnym wysyłamy jako null („domyślne"),
+ * a limit nowych pytań jako null tylko wtedy, gdy wybrano „Automatycznie": własny limit, także równy domyślnemu, jest własny.
+ */
 function buildUpdate(form: FormState, defaults: LearningSettings["defaults"]): LearningSettingsUpdate | string {
   const cards = parseLimit(form.newCardsPerDay, "newCardsPerDay");
   if (typeof cards === "string") return cards;
-  const tests = parseLimit(form.newTestQuestionsPerDay, "newTestQuestionsPerDay");
-  if (typeof tests === "string") return tests;
+  let tests: number | null = null;
+  if (form.newTestQuestionsMode === "manual") {
+    const parsed = parseLimit(form.newTestQuestionsPerDay, "newTestQuestionsPerDay");
+    if (typeof parsed === "string") return parsed;
+    tests = parsed;
+  }
   const reviews = parseLimit(form.maxReviewsPerDay, "maxReviewsPerDay");
   if (typeof reviews === "string") return reviews;
   const retention = Number(form.retention);
@@ -71,7 +86,7 @@ function buildUpdate(form: FormState, defaults: LearningSettings["defaults"]): L
 
   return {
     newCardsPerDay: cards === defaults.newCardsPerDay ? null : cards,
-    newTestQuestionsPerDay: tests === defaults.newTestQuestionsPerDay ? null : tests,
+    newTestQuestionsPerDay: tests,
     maxReviewsPerDay: reviews === defaults.maxReviewsPerDay ? null : reviews,
     desiredRetention: retention === defaults.desiredRetention ? null : retention,
     shuffleOptions: form.shuffleOptions,
@@ -140,6 +155,7 @@ function LearningSettingsForm({ settings }: { settings: LearningSettings }) {
     setForm((prev) => ({
       ...prev,
       newCardsPerDay: String(settings.defaults.newCardsPerDay),
+      newTestQuestionsMode: "auto",
       newTestQuestionsPerDay: String(settings.defaults.newTestQuestionsPerDay),
       maxReviewsPerDay: String(settings.defaults.maxReviewsPerDay),
       retention: String(settings.defaults.desiredRetention),
@@ -150,6 +166,7 @@ function LearningSettingsForm({ settings }: { settings: LearningSettings }) {
   }
 
   const { plan } = settings;
+  const issue = limitIssue(settings);
   const retentionOptions = RETENTION_CHOICES.some((c) => String(c.value) === form.retention)
     ? RETENTION_CHOICES
     : [...RETENTION_CHOICES, { value: Number(form.retention), label: `${Math.round(Number(form.retention) * 100)}%` }].sort(
@@ -169,7 +186,7 @@ function LearningSettingsForm({ settings }: { settings: LearningSettings }) {
       <ExamChoiceSettings settings={settings} />
 
       <form onSubmit={handleSubmit} noValidate className="flex max-w-xl flex-col gap-5">
-        <fieldset className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-3">
+        <fieldset className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
           <legend className="mb-2 text-sm font-medium text-fg">Limity dzienne</legend>
           <Field
             label={LIMITS.newCardsPerDay.label}
@@ -182,16 +199,6 @@ function LearningSettingsForm({ settings }: { settings: LearningSettings }) {
             hint={`Domyślnie ${settings.defaults.newCardsPerDay}`}
           />
           <Field
-            label={LIMITS.newTestQuestionsPerDay.label}
-            type="number"
-            inputMode="numeric"
-            min={LIMITS.newTestQuestionsPerDay.min}
-            max={LIMITS.newTestQuestionsPerDay.max}
-            value={form.newTestQuestionsPerDay}
-            onChange={(e) => change("newTestQuestionsPerDay", e.target.value)}
-            hint={`Domyślnie ${settings.defaults.newTestQuestionsPerDay}`}
-          />
-          <Field
             label={LIMITS.maxReviewsPerDay.label}
             type="number"
             inputMode="numeric"
@@ -202,6 +209,14 @@ function LearningSettingsForm({ settings }: { settings: LearningSettings }) {
             hint={`Domyślnie ${settings.defaults.maxReviewsPerDay}, osobno dla fiszek i dla testów. Nadmiar czeka do jutra.`}
           />
         </fieldset>
+
+        <NewQuestionsLimitField
+          settings={settings}
+          mode={form.newTestQuestionsMode}
+          value={form.newTestQuestionsPerDay}
+          onModeChange={(mode) => change("newTestQuestionsMode", mode)}
+          onValueChange={(value) => change("newTestQuestionsPerDay", value)}
+        />
 
         <div className="flex flex-col gap-1">
           <label htmlFor={retentionId} className="text-sm text-fg-muted">
@@ -244,24 +259,15 @@ function LearningSettingsForm({ settings }: { settings: LearningSettings }) {
                 Do egzaminu zostały mniej niż dwa tygodnie, więc nowych pytań już nie planujemy. Skup się na powtórkach.
               </p>
             )}
-            {plan.planningDays > 0 && (plan.suggestedTestQuestionsPerDay > 0 || plan.suggestedFlashcardsPerDay > 0) && (
-              <Button
-                type="button"
-                variant="secondary"
-                className="mt-3"
-                onClick={() => {
-                  setForm((prev) => ({
-                    ...prev,
-                    newTestQuestionsPerDay: String(Math.min(LIMITS.newTestQuestionsPerDay.max, plan.suggestedTestQuestionsPerDay)),
-                    newCardsPerDay: String(Math.min(LIMITS.newCardsPerDay.max, plan.suggestedFlashcardsPerDay)),
-                  }));
-                  setSaved(false);
-                  setError(null);
-                }}
-              >
-                Wstaw sugerowane limity
-              </Button>
+            {plan.planningDays > 0 && (
+              <p className="mt-2 text-fg-muted" data-testid="plan-limit-line">
+                Limit nowych pytań:{" "}
+                {settings.newTestQuestionsAuto
+                  ? `automatyczny, teraz ${settings.newTestQuestionsPerDay} dziennie.`
+                  : `własny, ${settings.newTestQuestionsPerDay} dziennie.`}
+              </p>
             )}
+            {issue && <LimitNotice issue={issue} withSettingsLink={false} className="mt-2" />}
           </div>
         )}
 
@@ -270,7 +276,7 @@ function LearningSettingsForm({ settings }: { settings: LearningSettings }) {
             type="checkbox"
             checked={form.shuffleOptions}
             onChange={(e) => change("shuffleOptions", e.target.checked)}
-            className="mt-0.5 size-5 shrink-0 cursor-pointer accent-accent"
+            className="mt-0.5 size-5 shrink-0 cursor-pointer accent-accent-ink"
           />
           <span>
             <span className="font-medium text-fg">Mieszaj kolejność odpowiedzi w testach</span>
@@ -422,5 +428,81 @@ function ExamInfo({ settings }: { settings: LearningSettings }) {
         ? `Tryb egzaminacyjny jest włączony: retencja wynosi ${Math.round(settings.effectiveRetention * 100)}%.`
         : "Tryb egzaminacyjny włączy się 30 dni przed egzaminem."}
     </p>
+  );
+}
+
+
+interface NewQuestionsLimitFieldProps {
+  settings: LearningSettings;
+  mode: NewQuestionsMode;
+  value: string;
+  onModeChange: (mode: NewQuestionsMode) => void;
+  onValueChange: (value: string) => void;
+}
+
+const MODE_ROW =
+  "flex min-h-11 cursor-pointer items-start gap-3 rounded-xl border border-line bg-surface-2 px-3 py-2.5 transition-colors hover:bg-line has-[:checked]:border-accent-ink has-[:checked]:bg-accent/10 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent-ink";
+
+/**
+ * Limit nowych pytań dziennie: „Automatycznie" (zalecane) albo własny. Automatyczny nie wymaga niczego ustawiać: trzyma
+ * domyślną wartość, a gdy wybrany egzamin ma termin, idzie za planem (tyle nowych pytań, ile trzeba, żeby zdążyć), do
+ * rozsądnego maksimum. Własny limit obowiązuje wprost i może być wyższy.
+ */
+function NewQuestionsLimitField({ settings, mode, value, onModeChange, onValueChange }: NewQuestionsLimitFieldProps) {
+  const name = useId();
+  const max = maxPerDay(settings);
+
+  return (
+    <fieldset className="flex min-w-0 flex-col gap-2" data-testid="new-questions-limit">
+      <legend className="mb-1 text-sm font-medium text-fg">Nowe pytania dziennie</legend>
+
+      <label className={MODE_ROW}>
+        <input
+          type="radio"
+          name={name}
+          value="auto"
+          checked={mode === "auto"}
+          onChange={() => onModeChange("auto")}
+          className="mt-0.5 size-5 shrink-0 cursor-pointer accent-accent-ink"
+        />
+        <span>
+          <span className="block text-sm font-medium text-fg">Automatycznie (zalecane)</span>
+          <span className="block text-xs text-fg-muted">
+            Co najmniej {settings.defaults.newTestQuestionsPerDay} dziennie. Gdy wybrany egzamin ma termin, limit idzie za planem: tyle
+            nowych pytań, ile trzeba, żeby zdążyć, ale nie więcej niż {max}.
+            {settings.newTestQuestionsAuto ? ` Teraz: ${settings.newTestQuestionsPerDay} dziennie.` : ""}
+          </span>
+        </span>
+      </label>
+
+      <label className={MODE_ROW}>
+        <input
+          type="radio"
+          name={name}
+          value="manual"
+          checked={mode === "manual"}
+          onChange={() => onModeChange("manual")}
+          className="mt-0.5 size-5 shrink-0 cursor-pointer accent-accent-ink"
+        />
+        <span>
+          <span className="block text-sm font-medium text-fg">Własny limit</span>
+          <span className="block text-xs text-fg-muted">Stała liczba nowych pytań dziennie, niezależnie od planu.</span>
+        </span>
+      </label>
+
+      {mode === "manual" && (
+        <Field
+          label={LIMITS.newTestQuestionsPerDay.label}
+          type="number"
+          inputMode="numeric"
+          min={LIMITS.newTestQuestionsPerDay.min}
+          max={LIMITS.newTestQuestionsPerDay.max}
+          value={value}
+          onChange={(e) => onValueChange(e.target.value)}
+          hint={`Od ${LIMITS.newTestQuestionsPerDay.min} do ${LIMITS.newTestQuestionsPerDay.max}`}
+          className="max-w-40"
+        />
+      )}
+    </fieldset>
   );
 }

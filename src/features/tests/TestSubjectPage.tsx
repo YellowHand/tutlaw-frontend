@@ -27,7 +27,7 @@ function SourceRow({ subjectId, source, primary }: { subjectId: number; source: 
   return (
     <Card className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
       <div className="flex min-w-0 items-center gap-3 sm:w-80 sm:shrink-0">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent-ink">
           {isTextbook ? <BookOpen size={20} aria-hidden="true" /> : <Layers size={20} aria-hidden="true" />}
         </span>
         <div className="min-w-0">
@@ -49,7 +49,7 @@ function SourceRow({ subjectId, source, primary }: { subjectId: number; source: 
         {isTextbook && (
           <Link
             to={ROUTES.flashcardsChapters(subjectId, source.id)}
-            className="inline-flex min-h-11 items-center text-sm text-accent underline"
+            className="inline-flex min-h-11 items-center text-sm text-accent-ink underline"
           >
             Wybierz rozdziały
           </Link>
@@ -102,7 +102,7 @@ export function TestSubjectPage() {
           title="Nie znaleziono tej pozycji"
           description="Mogła zostać przeniesiona albo adres jest nieprawidłowy."
           action={
-            <Link to={ROUTES.tests} className="text-sm text-accent underline">
+            <Link to={ROUTES.tests} className="text-sm text-accent-ink underline">
               Wróć do Testów
             </Link>
           }

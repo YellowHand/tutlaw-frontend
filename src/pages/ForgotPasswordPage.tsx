@@ -32,14 +32,14 @@ export function ForgotPasswordPage() {
     <AuthLayout
       title="Nie pamiętasz hasła?"
       footer={
-        <Link to={ROUTES.login} className="text-accent underline">
+        <Link to={ROUTES.login} className="text-accent-ink underline">
           Wróć do logowania
         </Link>
       }
     >
       {sent ? (
         <div className="flex flex-col items-center gap-3 text-center" role="status">
-          <MailCheck className="text-accent" size={32} aria-hidden="true" />
+          <MailCheck className="text-accent-ink" size={32} aria-hidden="true" />
           <p className="text-sm text-fg-muted">
             Jeśli konto o tym adresie istnieje i jest aktywne, wysłaliśmy link do zmiany hasła na mail uczelniany podany
             przy rejestracji. Link jest ważny przez godzinę. Sprawdź też folder ze spamem.

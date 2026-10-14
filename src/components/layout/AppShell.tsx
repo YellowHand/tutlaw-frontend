@@ -2,6 +2,8 @@ import { Link, Outlet, useLocation } from "react-router-dom";
 import { X } from "lucide-react";
 import { cn } from "../../lib/cn";
 import { sessionExitRoute } from "../../config/navigation";
+import { OnboardingGate } from "../../features/onboarding/OnboardingDialog";
+import { ThemeSync } from "../../features/settings/ThemeSync";
 import { SideNav } from "./SideNav";
 import { BottomNav } from "./BottomNav";
 import { useNavCollapsed } from "./useNavCollapsed";
@@ -9,7 +11,8 @@ import { useNavCollapsed } from "./useNavCollapsed";
 /**
  * Szkielet aplikacji po zalogowaniu. Menu zależy od szerokości okna: od `xl` szeroki panel (można go zwinąć),
  * od `md` wąski pasek z podpisami, poniżej `md` dolna belka. W sesji nauki (fiszki, test) menu znika,
- * a u góry jest przycisk „Zakończ sesję”.
+ * a u góry jest przycisk „Zakończ sesję”. Szkielet pilnuje też wyglądu (ciemny/jasny z konta) i obowiązkowego okna
+ * startowego z wyborem aplikacji, więc działają na każdym ekranie aplikacji, także po wejściu z zakładki prosto w sesję.
  */
 export function AppShell() {
   const { pathname } = useLocation();
@@ -43,6 +46,9 @@ export function AppShell() {
       </div>
 
       {!exitTo && <BottomNav className="md:hidden" />}
+
+      <ThemeSync />
+      <OnboardingGate />
     </div>
   );
 }

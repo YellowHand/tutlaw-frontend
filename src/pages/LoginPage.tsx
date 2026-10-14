@@ -45,7 +45,7 @@ export function LoginPage() {
       footer={
         <>
           Nie masz konta?{" "}
-          <Link to={ROUTES.register} className="text-accent underline">
+          <Link to={ROUTES.register} className="text-accent-ink underline">
             Zarejestruj się
           </Link>
         </>
@@ -72,7 +72,7 @@ export function LoginPage() {
           required
         />
 
-        <Link to={ROUTES.forgotPassword} className="-mt-2 self-end text-sm text-accent underline">
+        <Link to={ROUTES.forgotPassword} className="-mt-2 self-end text-sm text-accent-ink underline">
           Nie pamiętasz hasła?
         </Link>
 

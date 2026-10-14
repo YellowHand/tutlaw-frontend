@@ -184,7 +184,7 @@ function YearTable({ entry }: { entry: OriginStatsEntry }) {
         role="region"
         aria-labelledby={headingId}
         tabIndex={0}
-        className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink"
       >
         <table className="w-full text-sm" data-testid="origin-years">
           <thead>

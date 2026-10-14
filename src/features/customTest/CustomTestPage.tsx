@@ -246,7 +246,7 @@ export function CustomTestPage() {
                     <span
                       className={cn(
                         "flex min-h-11 flex-col gap-0.5 rounded-xl border border-line bg-surface px-3 py-2 transition-colors hover:bg-surface-2",
-                        "peer-checked:border-accent peer-checked:bg-accent/10 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent"
+                        "peer-checked:border-accent-ink peer-checked:bg-accent/10 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent-ink"
                       )}
                     >
                       <span className="flex items-baseline justify-between gap-2">
@@ -276,7 +276,7 @@ export function CustomTestPage() {
                   className={cn(
                     "inline-flex min-h-11 min-w-14 items-center justify-center rounded-xl border px-4 text-sm font-medium tabular-nums transition-colors",
                     asked === preset
-                      ? "border-accent bg-accent/10 text-fg"
+                      ? "border-accent-ink bg-accent/10 text-fg"
                       : "border-line bg-surface text-fg hover:bg-surface-2"
                   )}
                 >
@@ -326,7 +326,7 @@ export function CustomTestPage() {
                           setYearFrom(null);
                           setYearTo(null);
                         }}
-                        className="inline-flex min-h-11 items-center text-accent underline underline-offset-2"
+                        className="inline-flex min-h-11 items-center text-accent-ink underline underline-offset-2"
                       >
                         Wyczyść lata
                       </button>
@@ -360,7 +360,7 @@ export function CustomTestPage() {
                 <button
                   type="button"
                   onClick={() => void counts.refetch()}
-                  className="inline-flex min-h-11 items-center text-xs text-accent underline underline-offset-2"
+                  className="inline-flex min-h-11 items-center text-xs text-accent-ink underline underline-offset-2"
                 >
                   Spróbuj ponownie
                 </button>

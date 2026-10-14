@@ -21,7 +21,7 @@ function Avatar({ email }: { email: string | undefined }) {
   return (
     <span
       aria-hidden="true"
-      className="flex size-9 shrink-0 items-center justify-center rounded-full bg-surface-2 text-sm font-semibold text-accent ring-1 ring-line"
+      className="flex size-9 shrink-0 items-center justify-center rounded-full bg-surface-2 text-sm font-semibold text-accent-ink ring-1 ring-line"
     >
       {email ? email[0].toUpperCase() : <UserRound size={16} />}
     </span>
@@ -66,7 +66,7 @@ export function SideNav({ variant, onToggle, className }: SideNavProps) {
               >
                 {active && <ActiveMark edge="-left-2" />}
                 <span className="relative">
-                  <Icon size={20} aria-hidden="true" className={active ? "text-accent" : undefined} />
+                  <Icon size={20} aria-hidden="true" className={active ? "text-accent-ink" : undefined} />
                   {item.badge && (
                     <NavBadge mode={item.badge} solid className="absolute -right-4 -top-2 h-4 min-w-4 px-1 text-[10px] ring-2 ring-surface" />
                   )}
@@ -94,7 +94,7 @@ export function SideNav({ variant, onToggle, className }: SideNavProps) {
             title={email ? `Konto: ${email}` : "Konto"}
             aria-label="Konto"
             aria-current={accountActive ? "page" : undefined}
-            className={cn("rounded-full p-1", accountActive && "ring-2 ring-accent")}
+            className={cn("rounded-full p-1", accountActive && "ring-2 ring-accent-ink")}
           >
             <Avatar email={email} />
           </Link>
@@ -138,7 +138,7 @@ export function SideNav({ variant, onToggle, className }: SideNavProps) {
               )}
             >
               {active && <ActiveMark edge="-left-3" />}
-              <Icon size={19} aria-hidden="true" className={active ? "text-accent" : undefined} />
+              <Icon size={19} aria-hidden="true" className={active ? "text-accent-ink" : undefined} />
               {item.label}
               {item.badge && <NavBadge mode={item.badge} className="ml-auto" />}
             </Link>

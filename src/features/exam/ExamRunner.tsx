@@ -20,10 +20,10 @@ const TIME_WARNINGS = [
 ] as const;
 
 const OPTION_BASE =
-  "group flex min-h-14 w-full cursor-pointer items-center gap-4 rounded-xl border px-4 py-3 text-left text-base leading-snug text-fg transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed sm:px-5";
+  "group flex min-h-14 w-full cursor-pointer items-center gap-4 rounded-xl border px-4 py-3 text-left text-base leading-snug text-fg transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink disabled:cursor-not-allowed sm:px-5";
 
 const NAV_BUTTON =
-  "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-line px-4 text-sm font-medium text-fg transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:pointer-events-none disabled:opacity-40";
+  "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-line px-4 text-sm font-medium text-fg transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink disabled:pointer-events-none disabled:opacity-40";
 
 const questionsWord = (n: number) => pluralizePl(n, { one: "pytanie", few: "pytania", many: "pytań" });
 
@@ -256,13 +256,13 @@ export function ExamRunner({ exam, persist, submitting, submitError, onSubmit, o
                   onClick={() => choose(key)}
                   className={cn(
                     OPTION_BASE,
-                    isSelected ? "border-accent bg-accent/10" : "border-line bg-surface hover:bg-surface-2"
+                    isSelected ? "border-accent-ink bg-accent/10" : "border-line bg-surface hover:bg-surface-2"
                   )}
                 >
                   <span
                     className={cn(
                       "flex size-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold transition-colors",
-                      isSelected ? "border-accent bg-accent text-accent-fg" : "border-line text-fg-muted"
+                      isSelected ? "border-accent-ink bg-accent text-accent-fg" : "border-line text-fg-muted"
                     )}
                   >
                     {key}
@@ -345,9 +345,9 @@ export function ExamRunner({ exam, persist, submitting, submitError, onSubmit, o
                     aria-current={current ? "true" : undefined}
                     aria-label={`Pytanie ${i + 1}: ${answered ? "odpowiedziane" : "bez odpowiedzi"}${marked ? ", oznaczone do sprawdzenia" : ""}`}
                     className={cn(
-                      "relative flex h-9 w-full min-w-0 cursor-pointer items-center justify-center rounded-lg border text-xs font-medium tabular-nums transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-                      answered ? "border-accent/60 bg-accent/15 text-fg" : "border-line text-fg-muted hover:bg-surface-2",
-                      current && "ring-2 ring-accent ring-offset-2 ring-offset-surface"
+                      "relative flex h-9 w-full min-w-0 cursor-pointer items-center justify-center rounded-lg border text-xs font-medium tabular-nums transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink",
+                      answered ? "border-accent-ink/60 bg-accent/15 text-fg" : "border-line text-fg-muted hover:bg-surface-2",
+                      current && "ring-2 ring-accent-ink ring-offset-2 ring-offset-surface"
                     )}
                   >
                     {i + 1}
@@ -365,7 +365,7 @@ export function ExamRunner({ exam, persist, submitting, submitError, onSubmit, o
           </ol>
           <ul className="flex flex-col gap-1 text-xs text-fg-muted" aria-label="Legenda">
             <li className="flex items-center gap-2">
-              <span aria-hidden="true" className="size-3 rounded border border-accent/60 bg-accent/15" /> odpowiedziane
+              <span aria-hidden="true" className="size-3 rounded border border-accent-ink/60 bg-accent/15" /> odpowiedziane
             </li>
             <li className="flex items-center gap-2">
               <span aria-hidden="true" className="size-3 rounded border border-line" /> bez odpowiedzi
@@ -399,7 +399,7 @@ export function ExamRunner({ exam, persist, submitting, submitError, onSubmit, o
             <button
               type="button"
               onClick={() => setDialog("abandon")}
-              className="min-h-11 cursor-pointer rounded-lg px-1 text-sm text-fg-muted underline hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="min-h-11 cursor-pointer rounded-lg px-1 text-sm text-fg-muted underline hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink"
             >
               Porzuć egzamin
             </button>

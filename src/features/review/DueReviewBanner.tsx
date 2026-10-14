@@ -34,7 +34,7 @@ export function DueReviewBanner({ className }: DueReviewBannerProps) {
   return (
     <Card className={cn("flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between", className)}>
       <div className="flex items-center gap-4">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent-ink">
           {hasDue ? <Layers size={20} aria-hidden="true" /> : <CheckCircle2 size={20} aria-hidden="true" />}
         </span>
         <div>

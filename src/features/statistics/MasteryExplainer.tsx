@@ -34,7 +34,7 @@ export function MasteryExplainer({ className }: { className?: string }) {
             key={step.title}
             className={cn(
               "flex gap-3 rounded-lg border p-3",
-              index === STEPS.length - 1 ? "border-accent/50 bg-accent/10" : "border-line bg-surface"
+              index === STEPS.length - 1 ? "border-accent-ink/50 bg-accent/10" : "border-line bg-surface"
             )}
           >
             <span

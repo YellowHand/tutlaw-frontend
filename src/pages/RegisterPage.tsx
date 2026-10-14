@@ -35,7 +35,7 @@ export function RegisterPage() {
       footer={
         <>
           Masz już konto?{" "}
-          <Link to={ROUTES.login} className="text-accent underline">
+          <Link to={ROUTES.login} className="text-accent-ink underline">
             Zaloguj się
           </Link>
         </>
@@ -81,16 +81,16 @@ export function RegisterPage() {
             type="checkbox"
             checked={acceptedTerms}
             onChange={(e) => setAcceptedTerms(e.target.checked)}
-            className="mt-0.5 h-4 w-4 shrink-0 accent-accent"
+            className="mt-0.5 h-4 w-4 shrink-0 accent-accent-ink"
             required
           />
           <span>
             Akceptuję{" "}
-            <Link to={ROUTES.terms} target="_blank" rel="noreferrer" className="text-accent underline">
+            <Link to={ROUTES.terms} target="_blank" rel="noreferrer" className="text-accent-ink underline">
               regulamin
             </Link>{" "}
             i{" "}
-            <Link to={ROUTES.privacy} target="_blank" rel="noreferrer" className="text-accent underline">
+            <Link to={ROUTES.privacy} target="_blank" rel="noreferrer" className="text-accent-ink underline">
               politykę prywatności
             </Link>
             .

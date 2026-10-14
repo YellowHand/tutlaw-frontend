@@ -15,6 +15,9 @@
   --color-fg-muted: #a6a5ab;
   --color-accent: #d8b13a;
   --color-accent-fg: #211804;
+  /* Akcent jako tekst, ramka i obrys fokusu na tle strony. W ciemnym motywie to samo złoto; w jasnym ciemniejszy brąz,
+     bo złoto na papierze ma kontrast poniżej 2:1. Tła przycisków zostają w --color-accent (z tekstem --color-accent-fg). */
+  --color-accent-ink: #d8b13a;
   --color-accent-2: #e8649f;
   --color-success: #4fd68a;
   --color-warning: #f08c3c;
@@ -87,6 +90,26 @@
   color-scheme: dark;
 }
 
+/*
+ * Jasny motyw („papier"): paleta z podglądu dokumentacji, z kolorami stanów przyciemnionymi tak, żeby tekst miał co najmniej
+ * 4,5:1 na tle strony, kartach i polach (--color-field co najmniej 3:1). Atrybut ustawia ThemeSync tylko wewnątrz /app,
+ * a wybór jest zapisany na koncie (PUT /api/me/theme). Strona główna i logowanie zostają ciemne.
+ */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --color-canvas: #fbfaf6;
+  --color-surface: #f2efe9;
+  --color-surface-2: #e9e4d8;
+  --color-line: #d6d0c2;
+  --color-field: #807b6c;
+  --color-fg: #1b1a17;
+  --color-fg-muted: #5b574f;
+  --color-accent-ink: #7a5c00;
+  --color-success: #17703d;
+  --color-warning: #9a4d00;
+  --color-danger: #b3261e;
+}
+
 body {
   background-color: var(--color-canvas);
   color: var(--color-fg);
@@ -94,7 +117,7 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-accent-ink);
   outline-offset: 2px;
 }
 

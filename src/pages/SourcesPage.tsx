@@ -53,7 +53,7 @@ export function SourcesPage() {
                 <button key={source.id} onClick={() => handleSelect(source)} className="text-left">
                   <Card className="flex h-full flex-col gap-3 transition-colors hover:bg-surface-2">
                     <div className="flex items-start justify-between">
-                      <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                      <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent/10 text-accent-ink">
                         {isTextbook ? <BookOpen size={20} aria-hidden="true" /> : <Layers size={20} aria-hidden="true" />}
                       </span>
                       <ChevronRight size={18} className="text-fg-muted" aria-hidden="true" />

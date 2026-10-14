@@ -24,7 +24,7 @@ export function DueReviewsCard({ count }: DueReviewsCardProps) {
       className="flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface p-3 pl-4 sm:p-4"
     >
       <div className="flex min-w-0 items-center gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent-ink">
           <CalendarClock size={20} aria-hidden="true" />
         </span>
         <div className="min-w-0">

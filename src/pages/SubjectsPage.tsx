@@ -40,7 +40,7 @@ export function SubjectsPage() {
               <Link key={subject.id} to={ROUTES.flashcardsSources(subject.id)} className="group block">
                 <Card className="flex h-full flex-col justify-between gap-4 transition-colors hover:bg-surface-2">
                   <div className="flex items-start justify-between">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent/10 text-accent-ink">
                       <BookOpen size={20} aria-hidden="true" />
                     </span>
                     <ChevronRight size={18} className="text-fg-muted opacity-0 transition-opacity group-hover:opacity-100" aria-hidden="true" />

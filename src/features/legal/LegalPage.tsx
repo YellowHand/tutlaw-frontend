@@ -27,10 +27,10 @@ export function LegalPage({ title, updatedAt, children }: LegalPageProps) {
         <p className="mt-2 text-sm text-fg-muted">Ostatnia aktualizacja: {updatedAt}</p>
         <div className="mt-8 flex flex-col gap-8">{children}</div>
         <nav className="mt-12 flex flex-wrap gap-x-6 gap-y-2 border-t border-line pt-6 text-sm">
-          <Link to={ROUTES.terms} className="text-accent underline">
+          <Link to={ROUTES.terms} className="text-accent-ink underline">
             Regulamin
           </Link>
-          <Link to={ROUTES.privacy} className="text-accent underline">
+          <Link to={ROUTES.privacy} className="text-accent-ink underline">
             Polityka prywatności
           </Link>
           <Link to={ROUTES.landing} className="text-fg-muted underline">

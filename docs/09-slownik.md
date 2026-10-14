@@ -51,7 +51,10 @@ dla użytkownika (albo pojęcie techniczne), w drugiej wyjaśnienie, w trzeciej 
 | **Własny test** | Sesja nauki ułożona przez użytkownika: wybrane rodzaje i akty prawne, rodzaj pytań (wszystkie, nowe, błędy, zaległe), lata egzaminu i liczba pytań. To nauka, a nie egzamin: bez progu i wyniku „zdał / nie zdał” | `features/customTest`, [04](04-nauka-w-aplikacji.md) |
 | **Zaległości** (`backlog`) | Karty po terminie powtórki: ile jest teraz (`dueNow`) i ile nie zmieści się dziś w limicie (`deferred`) | `Backlog` w `api/review.ts` |
 | **Zawieszone pytanie** | Pytanie, które użytkownik wyłączył z nauki. Postęp zostaje, można je przywrócić w Koncie | `suspendCard`, `unsuspendCard` |
-| **Zgłoszenie błędu** | Przycisk, którym użytkownik zgłasza błąd w pytaniu (powody: błędna odpowiedź, nieaktualny przepis, literówka lub niejasne sformułowanie, coś innego) | `ReportCardButton.tsx`, `ReportReason` |
+| **Okno startowe** | Obowiązkowe okno po zalogowaniu nowego użytkownika: wybór aplikacji i wyglądu strony. Nie zamyka się bez wyboru aplikacji | `OnboardingDialog.tsx` |
+| **Wygląd** (motyw) | Ciemny (domyślny) albo jasny; zapisany na koncie w backendzie, działa tylko wewnątrz aplikacji (`/app`) | `lib/theme.ts`, `ThemeSync.tsx`, `AppearanceCard.tsx` |
+| **Limit automatyczny** | Tryb limitu nowych pytań dziennie, w którym limit idzie za planem do egzaminu (co najmniej 40, najwyżej 100 dziennie); drugi tryb to własny limit | `newQuestionsLimit.ts`, `LimitNotice.tsx` |
+| **Zgłoś błąd** | Przycisk, który otwiera okno na środku ekranu, w którym użytkownik zgłasza błąd w pytaniu lub fiszce (powody: błędna odpowiedź, nieaktualny przepis, literówka lub niejasne sformułowanie, coś innego) | `ReportCardButton.tsx`, `ReportReason` |
 | **Źródło** (`Source`) | Książka lub zbiór pytań należący do przedmiotu. Ma typ: podręcznik albo pula płaska | `api/sources.ts` |
 
 ## Pojęcia techniczne

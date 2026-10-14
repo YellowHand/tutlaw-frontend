@@ -201,8 +201,8 @@ function FilterButton({ active, onClick, children }: { active: boolean; onClick:
       aria-pressed={active}
       onClick={onClick}
       className={cn(
-        "min-h-11 cursor-pointer rounded-xl border px-4 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-        active ? "border-accent bg-accent/10 text-fg" : "border-line text-fg-muted hover:bg-surface-2"
+        "min-h-11 cursor-pointer rounded-xl border px-4 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink",
+        active ? "border-accent-ink bg-accent/10 text-fg" : "border-line text-fg-muted hover:bg-surface-2"
       )}
     >
       {children}

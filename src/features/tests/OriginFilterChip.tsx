@@ -46,11 +46,11 @@ export function OriginFilterChip({ className }: OriginFilterChipProps) {
         onClick={() => setOpen(true)}
         className={cn(
           "relative inline-flex min-h-11 max-w-full cursor-pointer items-center gap-2 rounded-full border px-4 text-sm transition-colors hover:bg-surface-2",
-          active ? "border-accent/50 bg-accent/10" : "border-line bg-surface",
+          active ? "border-accent-ink/50 bg-accent/10" : "border-line bg-surface",
           className
         )}
       >
-        <ListFilter size={16} aria-hidden="true" className={active ? "shrink-0 text-accent" : "shrink-0 text-fg-muted"} />
+        <ListFilter size={16} aria-hidden="true" className={active ? "shrink-0 text-accent-ink" : "shrink-0 text-fg-muted"} />
         <span className="min-w-0 truncate">
           <span className="text-fg-muted">Pochodzenie pytań: </span>
           <span data-testid="origin-filter-summary" className="font-medium">
@@ -117,7 +117,7 @@ function OriginFilterDialog({ filter, onClose, returnFocusTo }: OriginFilterDial
                 type="checkbox"
                 checked={chosen.has(origin)}
                 onChange={() => toggle(origin)}
-                className="size-5 shrink-0 cursor-pointer accent-accent"
+                className="size-5 shrink-0 cursor-pointer accent-accent-ink"
               />
               <span className="flex-1 text-sm">{ORIGIN_LABELS[origin]}</span>
               <span className="text-xs tabular-nums text-fg-muted">
@@ -143,7 +143,7 @@ function OriginFilterDialog({ filter, onClose, returnFocusTo }: OriginFilterDial
         <button
           type="button"
           onClick={() => setChosen(new Set(ORIGIN_ORDER))}
-          className="min-h-11 cursor-pointer rounded-lg px-1 text-sm text-accent underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="min-h-11 cursor-pointer rounded-lg px-1 text-sm text-accent-ink underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink"
         >
           Zaznacz wszystkie
         </button>

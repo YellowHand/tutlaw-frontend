@@ -1,11 +1,18 @@
+import { THEME_STORAGE_KEY } from "../../lib/theme";
 import { clearStoredToken } from "./tokenStorage";
 
 /** Wszystkie klucze localStorage zapisywane przez aplikację (poza tokenem) zaczynają się od tego przedrostka. */
 const APP_KEY_PREFIX = "tutlaw.";
 
 /**
+ * Klucze, które przeżywają wylogowanie. Kopia wyglądu (ciemny/jasny) nie jest daną osobową, a po ponownym zalogowaniu na
+ * tym samym urządzeniu pozwala od pierwszej klatki mieć właściwy kolor. Wygląd z konta i tak ma pierwszeństwo.
+ */
+const KEPT_KEYS: readonly string[] = [THEME_STORAGE_KEY];
+
+/**
  * Pełne czyszczenie po wylogowaniu z własnej woli albo po usunięciu konta: token sesji oraz wszystko, co aplikacja
- * zapisała w przeglądarce (szkic i ustawienia egzaminu próbnego, w szkicu jest adres e-mail właściciela).
+ * zapisała w przeglądarce (szkic i ustawienia egzaminu próbnego, w szkicu jest adres e-mail właściciela), poza kopią wyglądu.
  * Dzięki temu na cudzym komputerze nie zostają ślady po poprzednim użytkowniku.
  *
  * Przy wygaśnięciu sesji (401) kasujemy tylko token, patrz {@link clearStoredToken}: po ponownym zalogowaniu
@@ -17,7 +24,7 @@ export function clearSession(): void {
     const appKeys: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key !== null && key.startsWith(APP_KEY_PREFIX)) appKeys.push(key);
+      if (key !== null && key.startsWith(APP_KEY_PREFIX) && !KEPT_KEYS.includes(key)) appKeys.push(key);
     }
     // Najpierw zbieramy klucze, potem kasujemy: usuwanie w trakcie pętli przesuwałoby indeksy.
     appKeys.forEach((key) => localStorage.removeItem(key));

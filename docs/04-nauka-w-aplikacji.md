@@ -62,7 +62,7 @@ stateDiagram-v2
    - wyjaśnienie (jeśli jest), podstawa prawna i data stanu prawnego (`LegalBasisLine`);
    - podpowiedź o trudnym pytaniu, jeśli `leech` jest prawdą (patrz niżej);
    - informacja o fiszce: „Dodałem fiszkę do tego pytania w Fiszkach.” przy pierwszym pewnym błędzie.
-4. Pod wynikiem są przyciski: **Dodaj do fiszek / Usuń z fiszek**, **Zgłoś błąd w pytaniu**, **Ukryj** (tylko administrator),
+4. Pod wynikiem są przyciski: **Dodaj do fiszek / Usuń z fiszek**, **Zgłoś błąd**, **Ukryj** (tylko administrator),
    **Zawieś pytanie** (tylko przy trudnym pytaniu) oraz **Dalej** albo **Zakończ test**.
 5. Gdy zapis się nie uda (np. brak internetu), odpowiedzi odblokowują się i pojawia się komunikat „Nie udało się zapisać
    odpowiedzi. Spróbuj ponownie.”: nic nie przepada.
@@ -142,7 +142,7 @@ stateDiagram-v2
 - Jeśli zapis oceny się nie uda, karta zostaje na ekranie z odkrytą odpowiedzią i komunikatem; można ocenić ją jeszcze raz.
 - Koniec sesji i przyciski dodatkowe działają jak w teście: „Ucz się jeszcze N fiszek” (max 10 nowych), „Powtórz jeszcze N fiszek”
   (zaległe ponad limit, max 20), „Wróć do Fiszek”, „Przejrzyj powtórki”.
-- Pod kartą są te same przyciski pomocnicze: „Zgłoś błąd w pytaniu”, „Zawieś” (przy trudnej fiszce) i „Ukryj” (administrator).
+- Pod kartą są te same przyciski pomocnicze: „Zgłoś błąd”, „Zawieś” (przy trudnej fiszce) i „Ukryj” (administrator).
 
 ## Skróty klawiszowe
 
@@ -202,12 +202,24 @@ odświeżane są liczniki (patrz [05](05-warstwa-api-i-dane.md)).
   są w nauce (z przyciskiem „Zawieś”). Każda lista ma limit 200 pozycji (limit serwera). Po akcji lista się odświeża, a
   fokus przechodzi na nagłówek sekcji, z której wiersz zniknął.
 
-## Zgłaszanie błędu w pytaniu
+## Zgłoś błąd
 
-`ReportCardButton` rozwija mały formularz: powód (cztery do wyboru: „Zaznaczona odpowiedź jest błędna”, „Przepis się zmienił”,
-„Literówka albo niejasne sformułowanie”, „Coś innego”) i komentarz do 1000 znaków (przy „Coś innego” wymagany). Wysyła
-`POST /api/cards/{id}/reports`. Jeśli użytkownik miał już otwarte zgłoszenie tego pytania, serwer je uzupełnia (`updated: true`)
-i ekran mówi o tym osobnym zdaniem. Zgłoszenia nie mają ekranu do przeglądania: administrator rozpatruje je w bazie.
+`ReportCardButton` (przycisk „Zgłoś błąd” pod pytaniem testowym i pod fiszką) otwiera **okno na środku ekranu** (`Dialog`), a nie
+formularz wstawiony pod pytaniem. W oknie: powód (cztery do wyboru: „Zaznaczona odpowiedź jest błędna”, „Przepis się zmienił”,
+„Literówka albo niejasne sformułowanie”, „Coś innego”; żaden nie jest zaznaczony z góry, a „Wyślij zgłoszenie” jest nieaktywne
+bez wyboru) i komentarz do 1000 znaków (przy „Coś innego” wymagany). Wysyła `POST /api/cards/{id}/reports`.
+
+- Esc, „Anuluj” i kliknięcie w tło zamykają okno; **kliknięcie w tło nie zamyka okna, gdy jest w nim wpisany komentarz**
+  (nie ginie od przypadkowego kliknięcia). Każde otwarcie zaczyna od pustego formularza.
+- Po wysłaniu okno pokazuje podziękowanie („Dziękujemy! Zgłoszenie zapisane, sprawdzimy tę kartę.”) i przycisk „Zamknij”; po
+  jego zamknięciu w miejscu przycisku zostaje informacja „Zgłoszenie wysłane. Dziękujemy!” (z fokusem, żeby nie przepadł).
+  Przy następnej karcie wszystko zaczyna od zera (`key={cardId}`).
+- Jeśli użytkownik miał już otwarte zgłoszenie tego pytania, serwer je uzupełnia (`updated: true`) i okno mówi o tym osobnym
+  zdaniem („Uzupełniliśmy Twoje wcześniejsze zgłoszenie tej karty. Dziękujemy!”).
+- Błąd serwera pokazuje komunikat w oknie, które zostaje otwarte, z zachowanym wyborem i komentarzem; można ponowić.
+- Skróty klawiszowe sesji nie działają, gdy okno jest otwarte (m.in. Enter w polu komentarza nie przechodzi do następnego pytania).
+
+Zgłoszenia nie mają ekranu do przeglądania: administrator rozpatruje je w bazie.
 
 ## Ukrywanie kart (administrator)
 
@@ -238,13 +250,26 @@ z liczbą pytań).
 | Pole | Zakres sprawdzany we frontendzie | Uwagi |
 |------|----------------------------------|-------|
 | Najwięcej nowych fiszek dziennie | liczba całkowita 0–200 | Domyślną wartość podaje serwer |
-| Najwięcej nowych pytań dziennie | 0–500 | Górna granica; cel na dziś z planu to tylko podpowiedź |
+| Nowe pytania dziennie | „Automatycznie (zalecane)” albo „Własny limit” 0–500 | Patrz niżej: limit automatyczny |
 | Najwięcej powtórek dziennie | 10–1000 | Osobno dla fiszek i testów; nadmiar czeka do jutra |
 | Docelowa retencja | 70%–97% (lista: 80, 85, 90, 95, 97%) | Wartość spoza listy (ustawiona innym kanałem) jest dodawana do listy |
 | Mieszaj kolejność odpowiedzi | pole wyboru | Domyślnie włączone |
 
 - Wartość równa domyślnej jest wysyłana jako `null` („użyj domyślnej serwera”), więc późniejsza zmiana domyślnych wartości na serwerze
-  obejmie takiego użytkownika.
+  obejmie takiego użytkownika. Wyjątek: **limit nowych pytań** ma dwa tryby, a `null` oznacza tu „Automatycznie”; własny limit, także
+  równy domyślnemu (40), wysyłany jest jako liczba.
+- **Limit nowych pytań: automatyczny albo własny.** Po co jest limit: żeby nowe pytania nie wypierały powtórek (każde nowe
+  pytanie wraca później kilka razy). „Automatycznie” (zalecane, nic nie trzeba ustawiać) to co najmniej 40 dziennie, a gdy wybrana
+  aplikacja ma termin, limit idzie za planem: tyle nowych pytań, ile trzeba, żeby zdążyć przed ostatnimi dwoma tygodniami, ale
+  **nie więcej niż 100** (`maxTestQuestionsPerDay` z planu). „Własny limit” obowiązuje wprost (0–500). Obliczenia robi serwer od
+  stanu z początku dnia, więc limit nie zmienia się w trakcie dnia. Ustawienia zwracają limit obowiązujący teraz
+  (`newTestQuestionsPerDay`) i znacznik `newTestQuestionsAuto`.
+- **Uczciwy komunikat zamiast „podnieś limit”** (`LimitNotice`, reguły w `newQuestionsLimit.ts`; ten sam na Pulpicie i w Koncie,
+  w Koncie bez linku do samego siebie): (a) własny limit niższy niż potrzeba, a potrzeba mieści się w maksimum: „Zmień go w
+  Ustawieniach albo wybierz limit automatyczny”; (b) potrzeba więcej niż maksimum: „Wszystkich nowych pytań nie zdążysz zacząć
+  przed ostatnimi dwoma tygodniami…”, bez prośby o podniesienie limitu (to nic by nie dało), z podpowiedzią zawężenia zakresu
+  filtrem pochodzenia; przy limicie automatycznym dopisek „Limit ustawiliśmy na 100.”; (c) własny limit co najmniej tak duży jak potrzeba: brak
+  komunikatu.
 - **Egzamin.** Użytkownik nie wpisuje już własnej daty. W sekcji „Egzamin” (testid `exam-choice-settings`) wybiera aplikację,
   do której się przygotowuje („Aplikacja, do której się przygotowuję”, przycisk „Wybierz egzamin” albo „Zmień egzamin”), a
   termin ustawia administrator (niżej). Wybór woła `PUT /api/me/exam` (`chooseExam`, hook `useChooseExam` w
@@ -252,12 +277,12 @@ z liczbą pytań).
   autorskie, więc po wyborze frontend unieważnia także filtr pochodzenia, katalog Testów, liczniki powtórek i błędów oraz liczniki
   Własnego testu. Każdy kolejny wybór filtr nadpisuje; poza wyborem filtr zmienia się osobno.
 - **Plan do egzaminu**: gdy wybrana aplikacja ma przyszły termin, serwer zwraca plan (ile nowych pytań i fiszek zostało, ile
-  dni na ich zaczęcie, sugerowane limity dzienne), a przycisk „Wstaw sugerowane limity” przepisuje je do formularza.
+  dni na ich zaczęcie, sugerowane limity dzienne), a sugerowane limity są tylko informacją (limit nowych pytań robi się sam w trybie „Automatycznie”).
 - Ostatnie **14 dni** przed egzaminem serwer zostawia na same powtórki; to stąd bierze się `planningDays`
   (dni do egzaminu − 14, najmniej 0). W tym czasie cel nowych pytań wynosi 0, a Pulpit pokazuje „Ostatnie dwa tygodnie: skup
   się na powtórkach.” Plan jest tylko informacją, nie blokuje nauki, a górną granicą pozostaje dzienny limit.
 - Po zapisie unieważniane są liczniki powtórek i statystyki, bo limity zmieniają liczbę powtórek na dziś.
-- Przycisk „Wstaw wartości domyślne” tylko wypełnia formularz; zapis wymaga „Zapisz ustawienia”.
+- Przycisk „Wstaw wartości domyślne” tylko wypełnia formularz (limit nowych pytań wraca do „Automatycznie”); zapis wymaga „Zapisz ustawienia”.
 
 ### Terminy egzaminów (administrator)
 
@@ -267,6 +292,40 @@ tylko wygoda interfejsu, bo naprawdę chroni `403` z serwera. Dla każdej z pię
 „Zapisz” oraz „Usuń termin”. Serwer odrzuca datę z przeszłości i oddaloną o więcej niż 3 lata; komunikat błędu jest pokazany
 przy wierszu. Zmiana działa od razu u wszystkich, którzy wybrali daną aplikację, ale wyznaczone już terminy powtórek nie
 są przeliczane wstecz.
+
+## Okno startowe i wygląd strony
+
+### Okno startowe (`features/onboarding/OnboardingDialog.tsx`)
+
+`OnboardingGate` stoi w `AppShell` i czyta ustawienia nauki. Gdy `examOrigin` jest dokładnie `null` (nowe konto, które nie
+wybrało aplikacji), otwiera okno modalne „Witaj w Tutlaw”. **Wybór aplikacji jest obowiązkowy**: okno można zamknąć tylko
+wybierając aplikację i klikając „Zacznij naukę” (albo wylogowując się).
+
+- Dwie grupy wyboru: „Do jakiego egzaminu się przygotowujesz?” (pięć aplikacji z wierszem terminu) i „Wygląd strony” (Ciemny
+  zaznaczony z góry, Jasny). Z aplikacji biorą się odliczanie, plan dnia i zawężenie pytań w Testach (backend ustawia przy
+  wyborze filtr pochodzenia na wybraną aplikację i pytania autorskie).
+- „Zacznij naukę” jest nieaktywne, dopóki nie wybrano aplikacji, a pod przyciskiem stoi podpowiedź „Wybierz aplikację, żeby
+  przejść dalej.” Okno nie ma przycisku zamknięcia, Esc i kliknięcie w tło nic nie robią (`Dialog` z `dismissible={false}`; gdyby
+  przeglądarka mimo to zamknęła okno, otworzy się z powrotem).
+- Wybór wyglądu działa od razu jako **podgląd** (zmienia całą stronę), ale niczego nie zapisuje. Zapis dzieje się dopiero po
+  „Zacznij naukę”: najpierw `PUT /api/me/theme` (tylko gdy wygląd się zmienił), potem `PUT /api/me/exam`. Błąd któregokolwiek
+  kroku zostaje w oknie jako komunikat z serwera i można ponowić (gdy zawiedzie zapis wyglądu, aplikacja nie jest wysyłana).
+- Okno nie blokuje aplikacji, gdy nie wiadomo, czy aplikację wybrano: błąd pobrania ustawień, ładowanie albo odpowiedź bez
+  `examOrigin` nie otwierają go. Konta, które aplikację już wybrały, nie widzą okna wcale; stare konta bez wyboru zobaczą je
+  przy najbliższym wejściu do aplikacji.
+- Okno jest `Dialog`em, więc skróty klawiszowe sesji pod nim nie działają, a fokus jest uwięziony w oknie.
+
+### Wygląd: ciemny i jasny (`features/settings`)
+
+- Karta „Wygląd” w Koncie (`AppearanceCard`, `ThemePicker`, `testid="appearance-card"`) ma dwie duże opcje z próbką koloru:
+  Ciemny (domyślny) i Jasny („kolory papieru, jak w dokumentacji”). Wybór zapisuje się od razu na koncie
+  (`PUT /api/me/theme`, hook `useChooseTheme`); strona przełącza się natychmiast, a przy błędzie zapisu wraca do poprzedniego
+  wyglądu i pokazuje komunikat. Karta działa także wtedy, gdy ustawienia nauki się nie wczytały.
+- **Źródłem prawdy jest konto.** `ThemeSync` (w `AppShell`) stosuje wygląd z ustawień, zapisuje jego kopię w przeglądarce
+  (`tutlaw.theme.v1`, patrz [03](03-logowanie-i-sesja.md)) i przy opuszczeniu aplikacji przywraca ciemny. Skrypt w `index.html`
+  ustawia jasny wygląd przed pierwszą klatką, ale tylko na ścieżkach `/app`; strona główna, logowanie i strony prawne są
+  zawsze ciemne.
+- Szczegóły kolorów w [06](06-wyglad-i-komponenty.md#paleta-kolorów-aplikacja).
 
 ## Własny test (`features/customTest`)
 

@@ -151,7 +151,7 @@ Pełna lista wywołań serwera z nazwami funkcji jest w [05](05-warstwa-api-i-da
 
 | Ekran | Dane z serwera |
 |-------|----------------|
-| Pulpit | Liczby powtórek pytań i fiszek (`due-count`), liczba błędów, ustawienia nauki (wybrana aplikacja, termin, plan dnia), terminy egzaminów (kafelek wyboru), statystyki Testów, aktywność z 28 dni (seria), katalog Testów (postęp według rodzajów), historia egzaminów |
+| Pulpit | Liczby powtórek pytań i fiszek (`due-count`), liczba błędów, ustawienia nauki (wybrana aplikacja, termin, plan dnia), terminy egzaminów (okno startowe), statystyki Testów, aktywność z 28 dni (seria), katalog Testów (postęp według rodzajów), historia egzaminów |
 | Fiszki (poziomy 1–3) | Kategorie, przedmioty rodzaju, źródła przedmiotu z postępem |
 | Rozdziały | Rozdziały źródła, opanowanie rozdziałów, zapis „przeczytany” |
 | Sesja fiszek | Kolejka fiszek, zapis oceny, liczba nowych kart do dołożenia, zaległości |
@@ -175,17 +175,24 @@ po lewej, „Egzamin próbny” po prawej), na telefonie jedna.
 
 Kolejność kart (na telefonie od góry, na szerokim ekranie lewa kolumna, potem prawa):
 
-0. **Wybór egzaminu** (`ExamChoiceCard`, nad kartami; tylko dopóki użytkownik nie wybrał aplikacji): „Do jakiego egzaminu
-   się przygotowujesz?”, pięć przycisków aplikacji (z wierszem terminu albo „termin nieogłoszony”) i cichy przycisk „Wybiorę
-   później”. Wybór woła `PUT /api/me/exam` (backend ustawia przy tym filtr pochodzenia na wybraną aplikację i pytania
-   autorskie), a odłożenie zapisuje się w przeglądarce (`tutlaw.examPrompt.skipped.v1`, patrz [03](03-logowanie-i-sesja.md)).
-   Kafelek pojawia się dopiero, gdy ustawienia się wczytały i `examOrigin` jest puste; błąd ani ładowanie ustawień nie
-   wołają o egzamin.
+0. **Okno startowe** (`OnboardingGate` z `features/onboarding`, osadzone w `AppShell`, więc działa na każdej stronie
+   aplikacji, nie tylko na Pulpicie): dopóki użytkownik nie wybrał aplikacji, na środku ekranu stoi **okno modalne „Witaj w
+   Tutlaw”**, którego nie da się zamknąć. Jest w nim wybór aplikacji („Do jakiego egzaminu się przygotowujesz?”, pięć opcji z
+   wierszem terminu albo „termin nieogłoszony”) i wybór wyglądu strony (Ciemny, domyślny, albo Jasny) z podglądem na żywo.
+   Przycisk „Zacznij naukę” jest nieaktywny, dopóki nie wybrano aplikacji; okno nie ma przycisku zamknięcia, Esc i kliknięcie
+   w tło nic nie robią, a jedyne inne wyjście to „Wyloguj się”. Zapis: najpierw wygląd (`PUT /api/me/theme`, tylko gdy się
+   zmienił), potem aplikacja (`PUT /api/me/exam`; backend ustawia przy tym filtr pochodzenia na wybraną aplikację i pytania
+   autorskie). Okno pojawia się dopiero, gdy ustawienia się wczytały i `examOrigin` jest dokładnie `null`: błąd ani ładowanie
+   ustawień nie blokują aplikacji. Szczegóły w [04](04-nauka-w-aplikacji.md#okno-startowe-i-wygląd-strony).
 1. **Na dziś** (`TodayCard`). Wiersz egzaminu: „Aplikacja notarialna: do egzaminu 69 dni (22 grudnia 2026), tryb
-   egzaminacyjny włączony” (tryb od 30 dni przed egzaminem), „termin nieogłoszony”, „już się odbył”, a po odłożeniu wyboru
-   zaproszenie z linkiem do Konta. Dalej cel dnia: „Nowe pytania dziś: X z Y” z paskiem (Y to cel z planu serwera, liczony
-   od stanu z początku dnia, więc nie maleje w ciągu dnia), po wykonaniu „, cel na dziś zrobiony”. Gdy cel jest wyższy niż
-   dzienny limit, ostrzeżenie „Żeby zdążyć, podnieś limit nowych pytań (teraz N) w Ustawieniach” z linkiem do Konta. W
+   egzaminacyjny włączony” (tryb od 30 dni przed egzaminem), „termin nieogłoszony”, „już się odbył”. Dalej cel dnia: „Nowe pytania dziś: X z Y” z paskiem (Y to cel z planu serwera, liczony
+   od stanu z początku dnia, więc nie maleje w ciągu dnia i nie przekracza rozsądnego maksimum 100), po wykonaniu „, cel na
+   dziś zrobiony”. Gdy użytkownik ma **własny** limit niższy niż potrzeba (a potrzeba mieści się w maksimum), ostrzeżenie mówi:
+   „Żeby zdążyć, potrzeba N nowych pytań dziennie, a Twój limit to M. Zmień go w Ustawieniach albo wybierz limit
+   automatyczny.” Gdy potrzeba więcej niż maksimum, ostrzeżenie mówi to **wprost** („Wszystkich nowych pytań nie zdążysz
+   zacząć przed ostatnimi dwoma tygodniami: trzeba by N nowych pytań dziennie, a 100 dziennie to rozsądne maksimum”, przy
+   limicie automatycznym z dopiskiem „Limit ustawiliśmy na 100.”) i podpowiada zawężenie zakresu filtrem „Pochodzenie pytań w
+   Testach”, zamiast prosić o podniesienie limitu, które nic by nie dało (`LimitNotice`, reguły w `newQuestionsLimit.ts`). W
    ostatnich 14 dniach przed egzaminem zamiast celu jest zdanie „Ostatnie dwa tygodnie: skup się na powtórkach.” Potem
    komunikat i **jedyny złoty przycisk na ekranie**, który sam wybiera następny krok: zaległe pytania → „Zacznij powtórkę
    pytań”, potem zaległe fiszki → „Zacznij powtórkę fiszek”, potem nowe pytania → „Ucz się nowych pytań”; gdy nic nie

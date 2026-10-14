@@ -39,7 +39,7 @@ export function WeakCardsTable({ subjectId }: WeakCardsTableProps) {
         role="region"
         aria-labelledby="weak-cards-heading"
         tabIndex={0}
-        className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink"
       >
         <table className="w-full text-sm">
           <thead>

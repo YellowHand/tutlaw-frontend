@@ -25,7 +25,7 @@ function TriCheckbox({ state, onChange }: { state: CheckState; onChange: () => v
       type="checkbox"
       checked={state === "checked"}
       onChange={onChange}
-      className="size-5 shrink-0 cursor-pointer accent-accent"
+      className="size-5 shrink-0 cursor-pointer accent-accent-ink"
     />
   );
 }
@@ -83,7 +83,7 @@ export function ScopeTree({ tree, selected, onChange, onSelectAll, onClear }: Sc
         <button
           type="button"
           onClick={everything ? onClear : onSelectAll}
-          className="inline-flex min-h-11 items-center rounded-xl px-2 text-sm text-accent underline-offset-2 hover:underline"
+          className="inline-flex min-h-11 items-center rounded-xl px-2 text-sm text-accent-ink underline-offset-2 hover:underline"
         >
           {everything ? "Odznacz wszystko" : "Zaznacz wszystko"}
         </button>
@@ -123,7 +123,7 @@ export function ScopeTree({ tree, selected, onChange, onSelectAll, onClear }: Sc
                           type="checkbox"
                           checked={selected.has(subject.id)}
                           onChange={() => onChange(toggleSubject(subject.id, selected))}
-                          className="size-5 shrink-0 cursor-pointer accent-accent"
+                          className="size-5 shrink-0 cursor-pointer accent-accent-ink"
                         />
                         <span className="min-w-0 flex-1 text-sm">{subject.name}</span>
                         <QuestionCount value={subject.questionCount} />

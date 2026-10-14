@@ -34,7 +34,7 @@ export function BottomNav({ className }: BottomNavProps) {
                 <span
                   className={cn(
                     "relative flex h-8 w-14 items-center justify-center rounded-full transition-colors",
-                    active ? "bg-accent/15 text-accent" : "text-fg-muted"
+                    active ? "bg-accent/15 text-accent-ink" : "text-fg-muted"
                   )}
                 >
                   <Icon size={21} aria-hidden="true" />
