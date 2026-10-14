@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Tailwind sam szuka nazw klas w całym projekcie. Dokumentacja (docs/: Markdown i podgląd HTML) to zwykły tekst,
+   a nie kod aplikacji, więc jest pomijana: inaczej do CSS trafiałyby klasy z samych opisów. */
+@source not "../docs";
+
 @theme {
   --color-canvas: #121214;
   --color-surface: #1a1a1d;

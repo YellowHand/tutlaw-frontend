@@ -1,0 +1,12 @@
+{
+  "name": "tutlaw-docs-tools",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Narzędzia do budowania podglądu dokumentacji (dokumentacja.html). Nie są częścią aplikacji.",
+  "type": "module",
+  "dependencies": {
+    "@fontsource-variable/manrope": "^5.3.0",
+    "marked": "^18.1.1",
+    "mermaid": "^12.2.0"
+  }
+}
