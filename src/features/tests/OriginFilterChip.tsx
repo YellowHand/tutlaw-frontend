@@ -1,5 +1,5 @@
 import { useId, useRef, useState } from "react";
-import { ListFilter } from "lucide-react";
+import { ChevronDown, ListFilter } from "lucide-react";
 import type { OriginFilter } from "../../api/originFilter";
 import { Button } from "../../components/ui/Button";
 import { Dialog } from "../../components/ui/Dialog";
@@ -15,20 +15,20 @@ import {
   useSaveOriginFilter,
 } from "./originFilter";
 
-interface OriginFilterBarProps {
+interface OriginFilterChipProps {
   className?: string;
 }
 
 /**
- * Pasek „Pochodzenie pytań" w Testach: co jest teraz wybrane i przycisk „Zmień", który otwiera okno z polami wyboru.
- * Filtr jest zapisany na koncie i dotyczy tylko Testów (katalog, testy, powtórki, błędy, egzamin), nie Fiszek ani
- * statystyk. Gdy nie uda się go pobrać, paska nie ma, a Testy działają jak zwykle.
+ * Znacznik „Pochodzenie pytań" przy tytule strony: co jest teraz wybrane, a kliknięcie otwiera okno z polami wyboru.
+ * Gdy filtr coś zawęża, znacznik ma złotą kropkę i podpowiedź z liczbą pytań, bo filtr po cichu zmienia liczby w całych
+ * Testach. Filtr jest zapisany na koncie i dotyczy tylko Testów (katalog, testy, powtórki, błędy, egzamin), nie Fiszek
+ * ani statystyk. Gdy nie uda się go pobrać, znacznika nie ma, a Testy działają jak zwykle.
  */
-export function OriginFilterBar({ className }: OriginFilterBarProps) {
+export function OriginFilterChip({ className }: OriginFilterChipProps) {
   const { data } = useOriginFilter();
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const labelId = useId();
 
   if (!data) return null;
 
@@ -36,40 +36,33 @@ export function OriginFilterBar({ className }: OriginFilterBarProps) {
   const count = selectedQuestionCount(data);
 
   return (
-    <div
-      data-testid="origin-filter-bar"
-      className={cn(
-        "flex flex-col gap-3 rounded-2xl border border-line bg-surface px-4 py-3 sm:flex-row sm:items-center sm:justify-between",
-        className
-      )}
-    >
-      <div className="flex items-start gap-3">
-        <ListFilter size={18} className="mt-0.5 shrink-0 text-accent" aria-hidden="true" />
-        <p id={labelId} className="text-sm">
-          <span className="text-fg-muted">Pochodzenie pytań: </span>
-          <span data-testid="origin-filter-summary" className="font-medium">
-            {describeSelection(data)}
-          </span>
-          {active && (
-            <span className="text-fg-muted">
-              {" "}
-              · <span className="tabular-nums">{count}</span> {questionsWord(count)}
-            </span>
-          )}
-        </p>
-      </div>
-      <Button
+    <>
+      <button
         ref={buttonRef}
         type="button"
-        variant="secondary"
-        aria-describedby={labelId}
-        className="shrink-0 self-start sm:self-auto"
+        data-testid="origin-filter-chip"
+        aria-haspopup="dialog"
+        title={active ? `${count} ${questionsWord(count)} w wybranych pochodzeniach` : undefined}
         onClick={() => setOpen(true)}
+        className={cn(
+          "relative inline-flex min-h-11 max-w-full cursor-pointer items-center gap-2 rounded-full border px-4 text-sm transition-colors hover:bg-surface-2",
+          active ? "border-accent/50 bg-accent/10" : "border-line bg-surface",
+          className
+        )}
       >
-        Zmień
-      </Button>
+        <ListFilter size={16} aria-hidden="true" className={active ? "shrink-0 text-accent" : "shrink-0 text-fg-muted"} />
+        <span className="min-w-0 truncate">
+          <span className="text-fg-muted">Pochodzenie pytań: </span>
+          <span data-testid="origin-filter-summary" className="font-medium">
+            {data.all ? "wszystkie" : describeSelection(data)}
+          </span>
+        </span>
+        {active && <span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-accent" />}
+        <ChevronDown size={16} aria-hidden="true" className="shrink-0 text-fg-muted" />
+        <span className="sr-only">{active ? `, filtr włączony: ${count} ${questionsWord(count)}. Zmień` : ". Zmień"}</span>
+      </button>
       {open && <OriginFilterDialog filter={data} onClose={() => setOpen(false)} returnFocusTo={buttonRef} />}
-    </div>
+    </>
   );
 }
 

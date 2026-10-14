@@ -1,5 +1,5 @@
 import { Link, useParams } from "react-router-dom";
-import { BookOpen, ClipboardList, FolderOpen } from "lucide-react";
+import { BookOpen, FolderOpen } from "lucide-react";
 import { PageHeader } from "../../components/layout/PageHeader";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { ErrorState } from "../../components/ui/ErrorState";
@@ -9,9 +9,9 @@ import { pluralizePl } from "../../lib/plural";
 import { Breadcrumbs } from "./Breadcrumbs";
 import { CatalogTile, TileGrid } from "./CatalogTile";
 import { useTestCatalog } from "./hooks";
-import { OriginFilterBar } from "./OriginFilterBar";
+import { OriginFilterChip } from "./OriginFilterChip";
 import { isFilterActive, useOriginFilter } from "./originFilter";
-import { StartTestCard } from "./StartTestCard";
+import { StartAllButton } from "./StartButtons";
 
 /** Poziom 2: przedmioty / akty prawne w wybranym rodzaju. */
 export function TestCategoryPage() {
@@ -61,20 +61,19 @@ export function TestCategoryPage() {
   return (
     <div>
       <Breadcrumbs items={[{ label: "Testy", to: ROUTES.tests }, { label: category.name }]} />
-      <PageHeader title={category.name} subtitle={`${category.itemsLabel}: wybierz, z czego chcesz rozwiązywać pytania.`} />
+      <PageHeader
+        title={category.name}
+        actions={
+          <>
+            <OriginFilterChip />
+            {category.questionCount > 0 && (
+              <StartAllButton to={ROUTES.testCategory(category.id)} label="Test z całego rodzaju" />
+            )}
+          </>
+        }
+      />
 
       <div className="flex flex-col gap-6 px-4 pb-8 sm:px-8">
-        <OriginFilterBar />
-
-        {category.questionCount > 0 && (
-          <StartTestCard
-            icon={ClipboardList}
-            title={`Test z całego rodzaju: ${category.name}`}
-            description="Pytania ze wszystkich pozycji poniżej naraz: zaległe powtórki i nowe pytania."
-            to={ROUTES.testCategory(category.id)}
-          />
-        )}
-
         <section aria-labelledby="test-items" className="flex flex-col gap-3">
           <h2 id="test-items" className="text-sm font-medium text-fg-muted">
             {category.itemsLabel}

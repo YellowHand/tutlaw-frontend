@@ -216,10 +216,11 @@ historia zostaje. Przywrócenie jest tylko w bazie (nie ma przycisku).
 
 ## Filtr pochodzenia pytań
 
-Pasek „Pochodzenie pytań” (`features/tests/OriginFilterBar.tsx`) jest na wszystkich ekranach Testów i w ustawieniach
-egzaminu. Pokazuje, co jest wybrane („Wszystkie pochodzenia”, jedna lub dwie nazwy albo „3 z 6 pochodzeń” z łączną liczbą
-pytań), a przycisk **Zmień** otwiera okno z sześcioma polami wyboru (pięć aplikacji prawniczych i pytania autorskie,
-każde z liczbą pytań).
+Znacznik „Pochodzenie pytań” (`features/tests/OriginFilterChip.tsx`) stoi przy tytule na wszystkich ekranach Testów i w
+ustawieniach egzaminu. Pokazuje, co jest wybrane („wszystkie”, jedna lub dwie nazwy albo „3 z 6 pochodzeń”). Gdy filtr
+coś zawęża, znacznik ma złotą ramkę i kropkę, a podpowiedź (atrybut `title` i tekst dla czytnika ekranu) podaje łączną
+liczbę pytań. Kliknięcie otwiera okno z sześcioma polami wyboru (pięć aplikacji prawniczych i pytania autorskie, każde
+z liczbą pytań).
 
 - Trzeba zaznaczyć co najmniej jedno pochodzenie; „Zaznacz wszystkie” przywraca stan domyślny.
 - Zapis: `PUT /api/me/origin-filter`. Filtr jest na koncie, więc działa też na innym urządzeniu.
@@ -227,7 +228,7 @@ każde z liczbą pytań).
   po zapisie unieważnia tylko dane Testów (katalog, liczniki powtórek i błędów, ustawienia/plan). **Fiszek i statystyk
   filtr nie dotyczy.**
 - Gdy filtr zawęża, puste pozycje katalogu mają napis „Brak w filtrze” zamiast „Wkrótce”.
-- Gdy filtru nie uda się pobrać, paska po prostu nie ma, a Testy działają normalnie.
+- Gdy filtru nie uda się pobrać, znacznika po prostu nie ma, a Testy działają normalnie.
 
 ## Ustawienia nauki (Konto)
 

@@ -1,4 +1,4 @@
-import { ClipboardList, FolderOpen, Timer } from "lucide-react";
+import { FolderOpen } from "lucide-react";
 import { PageHeader } from "../../components/layout/PageHeader";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { ErrorState } from "../../components/ui/ErrorState";
@@ -7,14 +7,12 @@ import { ROUTES } from "../../config/routes";
 import { CatalogTile, TileGrid } from "./CatalogTile";
 import { iconForCategory } from "./categoryIcons";
 import { describeItems } from "./format";
-import { pluralizePl } from "../../lib/plural";
 import { useDueCount } from "../review/hooks";
 import { useTestCatalog } from "./hooks";
-import { OriginFilterBar } from "./OriginFilterBar";
+import { OriginFilterChip } from "./OriginFilterChip";
 import { isFilterActive, useOriginFilter } from "./originFilter";
-import { MistakesCard } from "./MistakesCard";
 import { DueReviewsCard } from "./DueReviewsCard";
-import { StartTestCard } from "./StartTestCard";
+import { QuickStart } from "./QuickStart";
 
 /** Poziom 1: rodzaj (Student, Prawo karne i postępowanie karne, ...). */
 export function TestsPage() {
@@ -24,46 +22,18 @@ export function TestsPage() {
   // Z włączonym filtrem pochodzenia pusta pozycja znaczy „nic w wybranych pochodzeniach", a nie „wkrótce".
   const filterActive = isFilterActive(useOriginFilter().data);
 
-  const allTestsDescription = dueTests
-    ? `Pytania ze wszystkich rodzajów naraz. Do powtórki: ${dueTests} ${pluralizePl(dueTests, {
-        one: "pytanie",
-        few: "pytania",
-        many: "pytań",
-      })}, a do tego nowe pytania.`
-    : "Pytania ze wszystkich rodzajów naraz: zaległe powtórki i nowe pytania.";
-
   return (
     <div>
-      <PageHeader
-        title="Testy"
-        subtitle="Wybierz rodzaj, potem przedmiot lub akt prawny. Pytania, w których się pomylisz, wracają jako powtórki."
-      />
+      <PageHeader title="Testy" actions={<OriginFilterChip />} />
 
       <div className="flex flex-col gap-6 px-4 pb-8 sm:px-8">
-        <OriginFilterBar />
-
         <DueReviewsCard count={dueTests ?? 0} />
 
-        <StartTestCard
-          icon={ClipboardList}
-          title="Test z całego materiału"
-          description={allTestsDescription}
-          to={ROUTES.testAll}
-        />
-
-        <MistakesCard />
-
-        <StartTestCard
-          icon={Timer}
-          title="Egzamin próbny"
-          description="Losowy zestaw pytań z limitem czasu i progiem zaliczenia, a na końcu raport. Nie zmienia Twoich powtórek."
-          to={ROUTES.exam}
-          actionLabel="Przejdź do egzaminu"
-        />
+        <QuickStart />
 
         <section aria-labelledby="test-kinds" className="flex flex-col gap-3">
           <h2 id="test-kinds" className="text-sm font-medium text-fg-muted">
-            Rodzaj
+            Wybierz rodzaj
           </h2>
 
           {isLoading ? (

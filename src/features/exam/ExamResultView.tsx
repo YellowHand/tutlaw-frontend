@@ -10,7 +10,7 @@ import { pluralizePl } from "../../lib/plural";
 import { LegalBasisLine } from "../review/LegalBasisLine";
 import { OriginLabel } from "../review/OriginLabel";
 import { ReportCardButton } from "../report/ReportCardButton";
-import { START_BUTTON } from "../tests/StartTestCard";
+import { START_BUTTON } from "../tests/StartButtons";
 import { formatDateTime, formatDuration, formatPercent, pointsNeeded } from "./format";
 
 const OPTION_KEYS: readonly OptionKey[] = ["A", "B", "C"];

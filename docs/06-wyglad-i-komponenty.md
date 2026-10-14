@@ -112,7 +112,7 @@ Szerokości progów (Tailwind): `sm` 640 px, `md` 768 px, `lg` 1024 px, `xl` 128
 `sm:` (odstępy `px-4 sm:px-8`, układy kolumnowe), a `md:` i `xl:` służą m.in. do przełączania postaci menu.
 
 Nagłówek strony (`PageHeader`): tytuł `h1` (24 px, pogrubiony), opcjonalny podtytuł i miejsce na akcje po prawej (na
-wąskim ekranie pod tytułem). Ekrany logowania i rejestracji używają `AuthLayout`: wyśrodkowana karta o szerokości
+wąskim ekranie pod tytułem, a gdy się nie mieszczą, zawijają się do następnej linii). Ekrany logowania i rejestracji używają `AuthLayout`: wyśrodkowana karta o szerokości
 najwyżej 24 rem z logo nad nią.
 
 ## Wspólne komponenty (`components/ui/`)

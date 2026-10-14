@@ -84,7 +84,7 @@ Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć w
 | `GET /api/review/test-queue` | `getTestQueue` | Sesja Testów w trybach zakres i powtórki (`TestSessionPage`) |
 | `GET /api/review/practice-queue` | `getPracticeQueue` (`api/exam.ts`) | Sesja „Przećwicz błędy z egzaminu” (`?cardIds=`) |
 | `GET /api/review/mistakes-queue` | `getMistakesQueue` | Sesja „Powtórz moje błędy” |
-| `GET /api/review/mistakes-count` | `getMistakesCount` | Karta „Powtórz moje błędy” na ekranie Testy |
+| `GET /api/review/mistakes-count` | `getMistakesCount` | Przycisk „Moje błędy” (z liczbą) w „Szybkim starcie” na ekranie Testy |
 | `GET /api/review/queue/new-cards-available` | `getAvailableNewCardsCount` | Przycisk „Dołóż nowe” na końcu sesji |
 | `GET /api/review/queue/backlog` | `getBacklog` | Informacja o zaległościach i przycisk „Powtórz jeszcze” |
 | `GET /api/review/due-count` | `getDueCount` | Odznaki w menu, „Powtórki na dziś”, ekran Testy |
@@ -129,7 +129,7 @@ Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć w
 |-----------|----------------|---------------|
 | `GET /api/me/settings` | `getLearningSettings` | Karta „Ustawienia nauki” w Koncie, Pulpit (odliczanie), a także jednorazowo przy starcie sesji Testów (czy tasować odpowiedzi) |
 | `PUT /api/me/settings` | `updateLearningSettings` | Zapis ustawień nauki |
-| `GET /api/me/origin-filter` | `getOriginFilter` | Pasek filtra pochodzenia w Testach |
+| `GET /api/me/origin-filter` | `getOriginFilter` | Znacznik filtra pochodzenia w Testach |
 | `PUT /api/me/origin-filter` | `saveOriginFilter` | Zapis filtra (okno wyboru aplikacji) |
 
 ### Endpointy, których frontend nie używa

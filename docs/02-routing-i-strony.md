@@ -73,9 +73,9 @@ aplikacji](#menu-aplikacji)).
 | `/app/test/practice` | `TestSessionPage` (tryb `practice`) | Sesja z podanych pytań (`?cardIds=1,2,3`), np. błędy z egzaminu próbnego |
 | `/app/test/:subjectId` | `TestSessionPage` | Sesja testowa z jednego przedmiotu; `?sourceId=` zawęża do źródła |
 | `/app/exam` | `ExamPage` (`features/exam/ExamPage.tsx`) | Egzamin próbny: ustawienia, przebieg z zegarem, raport i historia |
-| `/app/tests` | `TestsPage` (`features/tests/TestsPage.tsx`) | Testy, poziom 1: filtr pochodzenia, zaległe powtórki, błędy, egzamin, rodzaje |
-| `/app/tests/:categoryId` | `TestCategoryPage` (`features/tests/TestCategoryPage.tsx`) | Testy, poziom 2: przedmioty lub akty prawne rodzaju |
-| `/app/tests/:categoryId/:subjectId` | `TestSubjectPage` (`features/tests/TestSubjectPage.tsx`) | Testy, poziom 3: źródła przedmiotu i przyciski „Rozpocznij test” |
+| `/app/tests` | `TestsPage` (`features/tests/TestsPage.tsx`) | Testy, poziom 1: znacznik filtra pochodzenia, pasek zaległych powtórek, „Szybki start” (cały materiał, moje błędy, egzamin), rodzaje |
+| `/app/tests/:categoryId` | `TestCategoryPage` (`features/tests/TestCategoryPage.tsx`) | Testy, poziom 2: przedmioty lub akty prawne rodzaju, przycisk „Test z całego rodzaju” przy tytule |
+| `/app/tests/:categoryId/:subjectId` | `TestSubjectPage` (`features/tests/TestSubjectPage.tsx`) | Testy, poziom 3: źródła przedmiotu w wierszach, przycisk „Test ze wszystkich źródeł” przy tytule i „Rozpocznij test” przy źródle |
 | `/app/statistics` | `StatisticsPage` (`features/statistics/StatisticsPage.tsx`) | Statystyki: przegląd, według aplikacji i roku, opanowanie działów, najsłabsze karty |
 | `/app/account` | `AccountPage` (`features/account/AccountPage.tsx`) | Konto: ustawienia nauki, trudne i zawieszone pytania, zmiana hasła, pobranie danych, usunięcie konta |
 | `/app/*` | `NotFoundPage` (`features/misc/NotFoundPage.tsx`) | Strona 404 w ramce aplikacji |
@@ -184,9 +184,17 @@ poprzedniego stanu i pokazuje komunikat.
 
 Trzypoziomowy katalog (rodzaj → przedmiot lub akt prawny → źródło) z licznikami „Rozwiązano X / Y”. Pusta pozycja jest
 wyszarzona i nie prowadzi dalej. Pytania z nieprzeczytanych rozdziałów podręczników są liczone osobno („+N po
-przeczytaniu rozdziałów”). Na każdym z trzech poziomów jest pasek filtra pochodzenia pytań (patrz
-[04](04-nauka-w-aplikacji.md)). Pierwszy poziom ma też kafelki: zaległe powtórki, powtórka błędów, test z całego
-materiału i egzamin próbny.
+przeczytaniu rozdziałów”). Na każdym z trzech poziomów przy tytule jest znacznik filtra pochodzenia pytań (patrz
+[04](04-nauka-w-aplikacji.md)).
+
+Strona ma **jedną główną akcję** (złoty przycisk), a resztę przycisków ciszej (ramka, bez złota):
+
+- Poziom 1: pasek „N pytań do powtórki” ze złotym przyciskiem „Powtórz” (jest tylko wtedy, gdy coś zalega), potem rząd
+  „Szybki start” z trzema cichymi przyciskami: „Cały materiał”, „Moje błędy” (z liczbą, tylko gdy są błędy) i
+  „Egzamin próbny”, a pod nim rodzaje („Wybierz rodzaj”). Dzięki temu rodzaje zaczynają się wysoko, także na telefonie.
+- Poziom 2: złoty „Test z całego rodzaju” przy tytule.
+- Poziom 3: źródła w wierszach (nazwa, postęp, przycisk). Złoty jest „Test ze wszystkich źródeł” przy tytule, a gdy
+  źródło jest jedno, złoty jest jego przycisk „Rozpocznij test”. Pozostałe przyciski w wierszach są ciche.
 
 ### Statystyki (`features/statistics`)
 

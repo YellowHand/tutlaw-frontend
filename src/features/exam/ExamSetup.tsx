@@ -8,7 +8,7 @@ import { Field } from "../../components/ui/Field";
 import { serverMessage } from "../../lib/errors";
 import { pluralizePl } from "../../lib/plural";
 import { useTestCatalog } from "../tests/hooks";
-import { OriginFilterBar } from "../tests/OriginFilterBar";
+import { OriginFilterChip } from "../tests/OriginFilterChip";
 import { isFilterActive, useOriginFilter } from "../tests/originFilter";
 import { formatClock } from "./format";
 import { loadRememberedSettings, saveRememberedSettings, type ExamDraft } from "./examStorage";
@@ -174,7 +174,7 @@ export function ExamSetup({ draft, onResume, onDiscard, onStarted }: ExamSetupPr
           Egzamin nie zmienia terminów Twoich powtórek ani statystyk nauki.
         </p>
 
-        <OriginFilterBar className="mb-5 max-w-xl" />
+        <OriginFilterChip className="mb-5" />
 
         <form onSubmit={handleSubmit} noValidate className="flex max-w-xl flex-col gap-5" aria-describedby={error ? formErrorId : undefined}>
           <div className="flex flex-col gap-1">

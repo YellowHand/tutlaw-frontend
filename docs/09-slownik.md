@@ -29,7 +29,7 @@ dla użytkownika (albo pojęcie techniczne), w drugiej wyjaśnienie, w trzeciej 
 | **Podstawa prawna** | Przepis, na którym opiera się pytanie, np. „art. 415 k.c.”; pokazywana po odpowiedzi | `legalBasis`; `features/review/LegalBasisLine.tsx` |
 | **Powtórka** | Ponowne rozwiązanie albo ocena karty po terminie wyznaczonym przez algorytm | `getDueCount`, odznaki w menu |
 | **Powtórz jeszcze** | Przycisk na końcu sesji: dokłada porcję zaległych powtórek ponad dzienny limit (20) | `EXTRA_DUE_BATCH` w `features/review/useBacklog.ts` |
-| **Powtórz moje błędy** | Specjalna sesja z pytań, na które ostatnia odpowiedź w teście była błędna | Tryb `mistakes`, `/app/test/mistakes` |
+| **Powtórz moje błędy** | Specjalna sesja z pytań, na które ostatnia odpowiedź w teście była błędna. Wchodzi się z niej przyciskiem „Moje błędy” w „Szybkim starcie” na ekranie Testy | Tryb `mistakes`, `/app/test/mistakes` |
 | **Przeczytany** (rozdział) | Oznaczenie, które odblokowuje pytania z rozdziału podręcznika | `Chapter.isRead`, `setChapterProgress` |
 | **Pula płaska** (`FLAT_POOL`) | Źródło bez rozdziałów: po prostu zbiór pytań (np. z egzaminu). Dostępna od razu, nie wymaga „przeczytania” | `SourceType` |
 | **Pytanie autorskie** (`AUTHORED`) | Pytanie napisane na potrzeby Tutlaw, nie pochodzące z egzaminu. Nie ma roku | `QuestionOrigin` |
@@ -41,6 +41,7 @@ dla użytkownika (albo pojęcie techniczne), w drugiej wyjaśnienie, w trzeciej 
 | **Sesja** | Jedno podejście do nauki: kolejka kart pobrana z serwera i przerobiona po kolei | `StudySessionPage`, `TestSessionPage` |
 | **Sesja dodatkowa** | Dokładanie kart po zakończeniu głównej sesji: „Powtórz jeszcze” (zaległe) albo „Rozwiąż jeszcze” (nowe, 10) | [04](04-nauka-w-aplikacji.md) |
 | **Stan prawny** (`validAsOf`) | Data, na którą sprawdzono zgodność pytania z przepisami | `legalDate.ts` w `features/review` |
+| **Szybki start** | Rząd trzech cichych przycisków na ekranie Testy: „Cały materiał”, „Moje błędy” (tylko gdy są błędy) i „Egzamin próbny” | `features/tests/QuickStart.tsx`, [02](02-routing-i-strony.md) |
 | **Szkic egzaminu** | Zapis trwającego egzaminu w przeglądarce (pytania, odpowiedzi, termin końca). Dzięki niemu odświeżenie strony nie kasuje egzaminu | `tutlaw.exam.draft.v1`, `features/exam/examStorage.ts` |
 | **Testy** (z wielkiej litery) | Dział aplikacji z pytaniami ABC | `/app/tests`, [02](02-routing-i-strony.md) |
 | **Trudne pytanie** (`leech`) | Pytanie, w którym liczba błędów osiągnęła próg ustalony przez serwer. Aplikacja proponuje je zawiesić | `DifficultCards.leechThreshold` |
@@ -60,6 +61,7 @@ dla użytkownika (albo pojęcie techniczne), w drugiej wyjaśnienie, w trzeciej 
 | **axios** | Biblioteka do wysyłania żądań HTTP do serwera | `api/axiosInstance.ts`, [05](05-warstwa-api-i-dane.md) |
 | **Dolna belka** (`BottomNav`) | Menu na telefonie: pięć pozycji przyklejonych do dołu ekranu, w zasięgu kciuka | `components/layout/BottomNav.tsx`, [06](06-wyglad-i-komponenty.md) |
 | **Dostawca** (`provider`) | Komponent otaczający aplikację, który udostępnia coś wszystkim ekranom (dane, sesję) | `app/providers.tsx` |
+| **Znacznik filtra** (`OriginFilterChip`) | Mały przycisk przy tytule w Testach, który pokazuje wybrane pochodzenia pytań i po kliknięciu otwiera okno wyboru | `features/tests/OriginFilterChip.tsx`, [04](04-nauka-w-aplikacji.md) |
 | **Hook** | Funkcja Reacta zaczynająca się od `use`, np. `useQuery`, `useDueCount` | `features/*/hooks.ts` |
 | **Interceptor** | Funkcja axiosa, która „przechwytuje” każde żądanie lub odpowiedź: dokłada token albo wylogowuje po 401 | [03](03-logowanie-i-sesja.md) |
 | **JWT** | Token logowania: podpisany napis z identyfikatorem konta, rolą i terminem ważności | [03](03-logowanie-i-sesja.md) |

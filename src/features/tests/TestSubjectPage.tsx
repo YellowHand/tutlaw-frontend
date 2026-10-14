@@ -1,5 +1,5 @@
 import { Link, useParams } from "react-router-dom";
-import { BookOpen, ClipboardList, FolderOpen, Layers, Play } from "lucide-react";
+import { BookOpen, FolderOpen, Layers, Play } from "lucide-react";
 import { PageHeader } from "../../components/layout/PageHeader";
 import { Card } from "../../components/ui/Card";
 import { EmptyState } from "../../components/ui/EmptyState";
@@ -7,21 +7,26 @@ import { ErrorState } from "../../components/ui/ErrorState";
 import { Skeleton } from "../../components/ui/Skeleton";
 import type { TestSourceNode } from "../../api/tests";
 import { ROUTES } from "../../config/routes";
+import { cn } from "../../lib/cn";
 import { Breadcrumbs } from "./Breadcrumbs";
 import { ProgressLine, TileGrid } from "./CatalogTile";
 import { isEmpty } from "./format";
 import { useTestCatalog } from "./hooks";
-import { OriginFilterBar } from "./OriginFilterBar";
+import { OriginFilterChip } from "./OriginFilterChip";
 import { isFilterActive, useOriginFilter } from "./originFilter";
-import { START_BUTTON, StartTestCard } from "./StartTestCard";
+import { QUIET_BUTTON, START_BUTTON, StartAllButton } from "./StartButtons";
 
-function SourceCard({ subjectId, source }: { subjectId: number; source: TestSourceNode }) {
+/**
+ * Jedno źródło w wierszu: nazwa, postęp i jeden przycisk. Przycisk jest złoty tylko wtedy, gdy to jedyne źródło
+ * (nie ma wtedy przycisku „Test ze wszystkich źródeł"), w pozostałych przypadkach jest cichy.
+ */
+function SourceRow({ subjectId, source, primary }: { subjectId: number; source: TestSourceNode; primary: boolean }) {
   const isTextbook = source.sourceType === "TEXTBOOK";
   const hasQuestions = source.questionCount > 0;
 
   return (
-    <Card className="flex flex-col gap-3">
-      <div className="flex items-start gap-3">
+    <Card className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
+      <div className="flex min-w-0 items-center gap-3 sm:w-80 sm:shrink-0">
         <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
           {isTextbook ? <BookOpen size={20} aria-hidden="true" /> : <Layers size={20} aria-hidden="true" />}
         </span>
@@ -33,24 +38,28 @@ function SourceCard({ subjectId, source }: { subjectId: number; source: TestSour
         </div>
       </div>
 
-      <ProgressLine counts={source} />
+      <div className="flex min-w-0 flex-col gap-2 sm:flex-1">
+        <ProgressLine counts={source} />
+        {isTextbook && source.lockedCount > 0 && !hasQuestions && (
+          <p className="text-sm text-fg-muted">Zaznacz przeczytane rozdziały, żeby odblokować pytania do testu.</p>
+        )}
+      </div>
 
-      {isTextbook && source.lockedCount > 0 && !hasQuestions && (
-        <p className="text-sm text-fg-muted">Zaznacz przeczytane rozdziały, żeby odblokować pytania do testu.</p>
-      )}
-
-      <div className="mt-auto flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 sm:shrink-0 sm:justify-end">
+        {isTextbook && (
+          <Link
+            to={ROUTES.flashcardsChapters(subjectId, source.id)}
+            className="inline-flex min-h-11 items-center text-sm text-accent underline"
+          >
+            Wybierz rozdziały
+          </Link>
+        )}
         {hasQuestions ? (
-          <Link to={ROUTES.test(subjectId, source.id)} className={START_BUTTON}>
+          <Link to={ROUTES.test(subjectId, source.id)} className={cn(primary ? START_BUTTON : QUIET_BUTTON)}>
             <Play size={16} aria-hidden="true" />
             Rozpocznij test
           </Link>
         ) : null}
-        {isTextbook && (
-          <Link to={ROUTES.flashcardsChapters(subjectId, source.id)} className="text-sm text-accent underline">
-            Wybierz rozdziały
-          </Link>
-        )}
       </div>
     </Card>
   );
@@ -105,6 +114,7 @@ export function TestSubjectPage() {
   // Testy pokazują tylko źródła, w których są pytania testowe (także jeszcze zablokowane). Źródło złożone wyłącznie
   // z fiszek (np. podręcznik bez pytań ABC) należy do Fiszek i tu tylko zaśmiecałoby ekran.
   const sources = subject.sources.filter((source) => !isEmpty(source));
+  const showStartAll = sources.length > 1 && subject.questionCount > 0;
 
   return (
     <div>
@@ -115,20 +125,17 @@ export function TestSubjectPage() {
           { label: subject.name },
         ]}
       />
-      <PageHeader title={subject.name} subtitle="Wybierz źródło pytań." />
+      <PageHeader
+        title={subject.name}
+        actions={
+          <>
+            <OriginFilterChip />
+            {showStartAll && <StartAllButton to={ROUTES.test(subject.id)} label="Test ze wszystkich źródeł" />}
+          </>
+        }
+      />
 
       <div className="flex flex-col gap-6 px-4 pb-8 sm:px-8">
-        <OriginFilterBar />
-
-        {sources.length > 1 && subject.questionCount > 0 && (
-          <StartTestCard
-            icon={ClipboardList}
-            title={`Test z całego: ${subject.name}`}
-            description="Pytania ze wszystkich źródeł poniżej naraz."
-            to={ROUTES.test(subject.id)}
-          />
-        )}
-
         {sources.length === 0 ? (
           filterActive ? (
             <EmptyState
@@ -140,11 +147,16 @@ export function TestSubjectPage() {
             <EmptyState icon={BookOpen} title="Wkrótce" description="Do tej pozycji nie dodano jeszcze pytań testowych." />
           )
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {sources.map((source) => (
-              <SourceCard key={source.id} subjectId={subject.id} source={source} />
-            ))}
-          </div>
+          <section aria-labelledby="test-sources" className="flex flex-col gap-3">
+            <h2 id="test-sources" className="text-sm font-medium text-fg-muted">
+              Źródła pytań
+            </h2>
+            <div className="flex flex-col gap-3">
+              {sources.map((source) => (
+                <SourceRow key={source.id} subjectId={subject.id} source={source} primary={!showStartAll} />
+              ))}
+            </div>
+          </section>
         )}
       </div>
     </div>
