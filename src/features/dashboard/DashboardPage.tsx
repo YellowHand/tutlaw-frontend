@@ -1,44 +1,46 @@
-import { useState } from "react";
-import { DashboardModeSwitcher, type DashboardMode } from "./DashboardModeSwitcher";
-import { QuickActions } from "./QuickActions";
-import { DueReviewBanner } from "../review/DueReviewBanner";
-import { ProgressSummaryCard } from "./ProgressSummaryCard";
-import { WeeklyBarsCard } from "./WeeklyBarsCard";
-import { RetentionRingCard } from "./RetentionRingCard";
-import { TestsStatsPanel } from "./TestsStatsPanel";
-import { ExamCountdown } from "./ExamCountdown";
+import { PageHeader } from "../../components/layout/PageHeader";
+import { formatFullDatePl } from "../../lib/date";
+import { useLearningSettings } from "../settings/hooks";
+import { ExamCard } from "./ExamCard";
+import { ExamChoiceCard } from "./ExamChoiceCard";
+import { ProgressCard } from "./ProgressCard";
+import { TodayCard } from "./TodayCard";
+import { useExamPromptSkipped } from "./examPromptSkip";
 
+/**
+ * Pulpit odpowiada na dwa pytania: co robić teraz („Na dziś") i czy jestem na dobrej drodze („Postęp", „Egzamin
+ * próbny"). Są tylko trzy karty, bo więcej rozprasza; mapy aktywności i rozbicia błędów są w Statystykach. Nie ma
+ * przełącznika Fiszki / Testy ani skrótów do nich: te same wejścia są w menu.
+ *
+ * Gdy użytkownik nie wybrał jeszcze egzaminu (i nie odłożył wyboru), na samej górze jest kafelek z wyborem aplikacji.
+ *
+ * Na komputerze dwie kolumny: „Na dziś" i „Postęp" po lewej, „Egzamin próbny" po prawej. Na telefonie jedna, a
+ * opakowania kolumn znikają (`contents`), więc karty idą jedna pod drugą w kolejności z kodu. Nie przestawiamy ich przez
+ * CSS (`order`), żeby klawisz Tab przechodził po ekranie w tej samej kolejności, w jakiej widać karty.
+ */
 export function DashboardPage() {
-  const [mode, setMode] = useState<DashboardMode>("flashcards");
+  const settings = useLearningSettings();
+  const [promptSkipped, skipPrompt] = useExamPromptSkipped();
+  // Pytamy dopiero, gdy wiemy na pewno, że wyboru nie ma: błąd lub ładowanie ustawień nie może wołać o egzamin.
+  const askForExam = settings.data !== undefined && settings.data.examOrigin == null && !promptSkipped;
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 p-4 sm:p-6">
-      <h1 className="text-lg font-semibold">Cześć!</h1>
+    <div className="mx-auto w-full max-w-6xl">
+      <PageHeader title="Pulpit" subtitle={formatFullDatePl(new Date())} />
 
-      <ExamCountdown />
+      <div className="flex flex-col gap-4 px-4 pb-8 sm:px-8">
+        {askForExam && <ExamChoiceCard onSkip={skipPrompt} />}
 
-      <DueReviewBanner />
-
-      <QuickActions />
-
-      <div className="mt-1 flex items-center justify-between">
-        <h2 className="text-sm font-medium text-fg-muted">Twoje postępy</h2>
-        <DashboardModeSwitcher value={mode} onChange={setMode} />
-      </div>
-
-      {mode === "flashcards" ? (
-        <div aria-live="polite" className="flex flex-col gap-3">
-          <ProgressSummaryCard />
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_220px]">
-            <WeeklyBarsCard />
-            <RetentionRingCard />
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)] lg:items-start">
+          <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-4">
+            <TodayCard examPromptSkipped={promptSkipped} />
+            <ProgressCard />
+          </div>
+          <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-4">
+            <ExamCard />
           </div>
         </div>
-      ) : (
-        <div aria-live="polite">
-          <TestsStatsPanel />
-        </div>
-      )}
+      </div>
     </div>
   );
 }

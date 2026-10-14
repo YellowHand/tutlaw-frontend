@@ -60,7 +60,7 @@ aplikacji](#menu-aplikacji)).
 
 | Adres | Ekran (plik) | Co robi |
 |-------|--------------|---------|
-| `/app/dashboard` | `DashboardPage` (`features/dashboard/DashboardPage.tsx`) | Pulpit: odliczanie do egzaminu, „Powtórki na dziś”, skróty do Fiszek i Testów, postępy (zakładki Fiszki i Testy) |
+| `/app/dashboard` | `DashboardPage` (`features/dashboard/DashboardPage.tsx`) | Pulpit: „Na dziś” (jeden główny przycisk), „Postęp”, wynik egzaminu próbnego, a na początku wybór egzaminu |
 | `/app/flashcards` | `CategoriesPage` (`pages/CategoriesPage.tsx`) | Fiszki, poziom 1: rodzaje materiału oraz „Powtórki na dziś”. Gdy użytkownik nie ma jeszcze żadnej fiszki, wyjaśnia, skąd się biorą |
 | `/app/flashcards/:categoryId/subjects` | `SubjectsPage` (`pages/SubjectsPage.tsx`) | Fiszki, poziom 2: przedmioty lub akty prawne wybranego rodzaju |
 | `/app/flashcards/:subjectId/sources` | `SourcesPage` (`pages/SourcesPage.tsx`) | Fiszki, poziom 3: źródła przedmiotu z paskiem postępu. Podręcznik prowadzi do rozdziałów, pula płaska od razu do nauki |
@@ -78,8 +78,8 @@ aplikacji](#menu-aplikacji)).
 | `/app/tests` | `TestsPage` (`features/tests/TestsPage.tsx`) | Testy, poziom 1: znacznik filtra pochodzenia, pasek zaległych powtórek, „Szybki start” (cały materiał, własny test, moje błędy, egzamin), rodzaje |
 | `/app/tests/:categoryId` | `TestCategoryPage` (`features/tests/TestCategoryPage.tsx`) | Testy, poziom 2: przedmioty lub akty prawne rodzaju, przycisk „Test z całego rodzaju” przy tytule |
 | `/app/tests/:categoryId/:subjectId` | `TestSubjectPage` (`features/tests/TestSubjectPage.tsx`) | Testy, poziom 3: źródła przedmiotu w wierszach, przycisk „Test ze wszystkich źródeł” przy tytule i „Rozpocznij test” przy źródle |
-| `/app/statistics` | `StatisticsPage` (`features/statistics/StatisticsPage.tsx`) | Statystyki: przegląd, według aplikacji i roku, opanowanie działów, najsłabsze karty |
-| `/app/account` | `AccountPage` (`features/account/AccountPage.tsx`) | Konto: ustawienia nauki, trudne i zawieszone pytania, zmiana hasła, pobranie danych, usunięcie konta |
+| `/app/statistics` | `StatisticsPage` (`features/statistics/StatisticsPage.tsx`) | Statystyki: opanowanie według aplikacji i roku, ostatnie 30 dni, aktywność, fiszki |
+| `/app/account` | `AccountPage` (`features/account/AccountPage.tsx`) | Konto: ustawienia nauki, terminy egzaminów (administrator), trudne i zawieszone pytania, zmiana hasła, pobranie danych, usunięcie konta |
 | `/app/*` | `NotFoundPage` (`features/misc/NotFoundPage.tsx`) | Strona 404 w ramce aplikacji |
 
 Kolejność tras w `router.tsx` ma znaczenie dla czytelności: trasy stałe (`test/mistakes`, `test/due`, `test/practice`, `test/custom`)
@@ -151,7 +151,7 @@ Pełna lista wywołań serwera z nazwami funkcji jest w [05](05-warstwa-api-i-da
 
 | Ekran | Dane z serwera |
 |-------|----------------|
-| Pulpit | Liczba powtórek (`due-count`), ustawienia nauki (data egzaminu), przegląd nauki i aktywność z 28 dni dla fiszek, statystyki Testów |
+| Pulpit | Liczby powtórek pytań i fiszek (`due-count`), liczba błędów, ustawienia nauki (wybrana aplikacja, termin, plan dnia), terminy egzaminów (kafelek wyboru), statystyki Testów, aktywność z 28 dni (seria), katalog Testów (postęp według rodzajów), historia egzaminów |
 | Fiszki (poziomy 1–3) | Kategorie, przedmioty rodzaju, źródła przedmiotu z postępem |
 | Rozdziały | Rozdziały źródła, opanowanie rozdziałów, zapis „przeczytany” |
 | Sesja fiszek | Kolejka fiszek, zapis oceny, liczba nowych kart do dołożenia, zaległości |
@@ -159,8 +159,8 @@ Pełna lista wywołań serwera z nazwami funkcji jest w [05](05-warstwa-api-i-da
 | Testy (poziomy 1–3) | Katalog Testów, filtr pochodzenia, liczba błędów i zaległych |
 | Własny test | Katalog Testów (drzewo wyboru), liczniki „Dostępnych: N” (`custom-test/counts`), statystyki według pochodzenia (lista lat), losowanie pytań (`custom-test`) |
 | Egzamin | Katalog Testów (tylko liczba dostępnych pytań), start (bez ciała, serwer losuje 150 pytań) i zakończenie egzaminu (serwer ocenia i ustala próg), historia |
-| Statystyki | Przegląd, statystyki według pochodzenia, opanowanie rozdziałów, najsłabsze karty, lista przedmiotów |
-| Konto | Adres konta, ustawienia nauki, trudne i zawieszone pytania, zmiana hasła, eksport i usunięcie konta |
+| Statystyki | Statystyki według pochodzenia (opanowanie), statystyki Testów (ostatnie 30 dni), aktywność, przegląd fiszek (`mode=FLASHCARD`), opanowanie rozdziałów, najsłabsze karty, lista przedmiotów, liczba błędów |
+| Konto | Adres konta, ustawienia nauki (wybór egzaminu), terminy egzaminów (administrator), trudne i zawieszone pytania, zmiana hasła, eksport i usunięcie konta |
 | Logowanie i rejestracja | Wywołania `/api/auth/*` |
 | Regulamin, polityka, strona główna | Brak (treść jest w kodzie) |
 
@@ -168,12 +168,44 @@ Pełna lista wywołań serwera z nazwami funkcji jest w [05](05-warstwa-api-i-da
 
 ### Pulpit (`features/dashboard`)
 
-Od góry: nagłówek „Cześć!”, odliczanie do egzaminu (tylko gdy ustawiona jest przyszła data egzaminu; pigułka prowadzi
-do Konta), baner „Powtórki na dziś” z przyciskiem startu, dwa skróty (Fiszki, Testy) i sekcja „Twoje postępy” z
-przełącznikiem Fiszki / Testy. Zakładka **Fiszki** pokazuje pasek „rozwiązano X z Y dostępnych fiszek”, słupki aktywności
-z bieżącego tygodnia (Pn–Nd, na podstawie 28 dni) i pierścień skuteczności z 30 dni. Zakładka **Testy** pokazuje to
-samo dla pytań oraz dwa kafelki: „Pewne błędy” (błędy bez „Nie jestem pewien”) i „Trafione w ciemno” (poprawne z
-„Nie jestem pewien”).
+Pulpit odpowiada na dwa pytania: **co zrobić teraz** i **czy jestem na dobrej drodze**. Ma tylko trzy karty, bo więcej
+rozprasza; mapy aktywności, rozbicia błędów i „opanowane” są w Statystykach. Nie ma przełącznika Fiszki / Testy ani
+powitania „Cześć!”; nagłówek to „Pulpit” z dzisiejszą datą. Na szerokim ekranie są dwie kolumny („Na dziś” i „Postęp”
+po lewej, „Egzamin próbny” po prawej), na telefonie jedna.
+
+Kolejność kart (na telefonie od góry, na szerokim ekranie lewa kolumna, potem prawa):
+
+0. **Wybór egzaminu** (`ExamChoiceCard`, nad kartami; tylko dopóki użytkownik nie wybrał aplikacji): „Do jakiego egzaminu
+   się przygotowujesz?”, pięć przycisków aplikacji (z wierszem terminu albo „termin nieogłoszony”) i cichy przycisk „Wybiorę
+   później”. Wybór woła `PUT /api/me/exam` (backend ustawia przy tym filtr pochodzenia na wybraną aplikację i pytania
+   autorskie), a odłożenie zapisuje się w przeglądarce (`tutlaw.examPrompt.skipped.v1`, patrz [03](03-logowanie-i-sesja.md)).
+   Kafelek pojawia się dopiero, gdy ustawienia się wczytały i `examOrigin` jest puste; błąd ani ładowanie ustawień nie
+   wołają o egzamin.
+1. **Na dziś** (`TodayCard`). Wiersz egzaminu: „Aplikacja notarialna: do egzaminu 69 dni (22 grudnia 2026), tryb
+   egzaminacyjny włączony” (tryb od 30 dni przed egzaminem), „termin nieogłoszony”, „już się odbył”, a po odłożeniu wyboru
+   zaproszenie z linkiem do Konta. Dalej cel dnia: „Nowe pytania dziś: X z Y” z paskiem (Y to cel z planu serwera, liczony
+   od stanu z początku dnia, więc nie maleje w ciągu dnia), po wykonaniu „, cel na dziś zrobiony”. Gdy cel jest wyższy niż
+   dzienny limit, ostrzeżenie „Żeby zdążyć, podnieś limit nowych pytań (teraz N) w Ustawieniach” z linkiem do Konta. W
+   ostatnich 14 dniach przed egzaminem zamiast celu jest zdanie „Ostatnie dwa tygodnie: skup się na powtórkach.” Potem
+   komunikat i **jedyny złoty przycisk na ekranie**, który sam wybiera następny krok: zaległe pytania → „Zacznij powtórkę
+   pytań”, potem zaległe fiszki → „Zacznij powtórkę fiszek”, potem nowe pytania → „Ucz się nowych pytań”; gdy nic nie
+   zalega, „Na dziś gotowe” i cichy przycisk „Ułóż własny test”. Pod spodem ciche linki „Fiszki do powtórki: N” i „Popraw
+   moje błędy: N” (tylko gdy N > 0) oraz wiersz serii: „Seria: N dni  W tym tygodniu: M odpowiedzi” albo „Zacznij serię
+   dziś”.
+2. **Postęp** (`ProgressCard`): jeden pasek „Przerobione: 166 z 400 (42%)”. „Przerobione” to pytania, które miały już choć
+   jedną odpowiedź; to **nie** to samo co „opanowane” (to jest w Statystykach, bo przez pierwsze dwa tygodnie byłoby 0).
+   Pod paskiem podpis z objaśnieniem i, gdy jest filtr pochodzenia, notka o nim. Niżej wiersze według rodzajów (każdy
+   prowadzi do tego rodzaju w Testach).
+3. **Egzamin próbny** (`ExamCard`, kolumna boczna): ostatni wynik („112 / 150”, „Zaliczony” albo „Niezaliczony”, data,
+   próg), mały wykres ostatnich pięciu podejść z przerywaną linią progu (100 z 150) i przycisk „Nowy egzamin”. Wykres
+   bierze tylko podejścia w stałym formacie (z progiem w punktach); starsze podejścia z progiem w procentach są pomijane,
+   bo ich wyników nie da się uczciwie porównać. Bez żadnego takiego podejścia karta opisuje format i zaprasza do pierwszego.
+
+Każda karta pobiera dane sama i sama pokazuje błąd z przyciskiem „Spróbuj ponownie” (`InlineError`), więc awaria jednego
+zapytania nie wywraca reszty Pulpitu (odpowiedź o złym kształcie, np. pusty obiekt zamiast listy w historii egzaminów albo
+aktywności, jest traktowana jak błąd tej karty). Wybór głównego kroku i lista podejść do wykresu są liczone w
+`selectors.ts` (czyste funkcje, bez wywołań serwera). Kolejność w kodzie jest zarazem kolejnością tabulatora, bez
+przestawiania elementów w CSS.
 
 ### Fiszki i rozdziały (`pages/CategoriesPage` ... `ChaptersPage`)
 
@@ -226,12 +258,25 @@ przeglądarce (`tutlaw.customTest.v1`, patrz [03](03-logowanie-i-sesja.md)).
 
 ### Statystyki (`features/statistics`)
 
-Cztery bloki: przegląd (wszystkie, rozpoczęte, opanowane, skuteczność), „Testy według aplikacji” (wybór aplikacji i
-rozbicie na lata egzaminu), „Opanowanie działów” (rozdziały pierwszego podręcznika wybranego przedmiotu, od
-najsłabszych) i „Do poprawy” (10 kart z największą liczbą błędów). Filtr przedmiotu w nagłówku działa na przegląd,
-rozdziały i najsłabsze karty, ale **nie** na blok „według aplikacji”.
+Trzy części, od góry:
+
+1. **Opanowanie** (`MasterySection`): wybór zakresu „Aplikacja:” (domyślnie wybrany egzamin, jeśli ma pytania, w przeciwnym
+   razie „Wszystkie”), pasek i liczby: opanowane, w nauce, nowe, do powtórki i skuteczność, a pod nimi tabela według roku
+   egzaminu. Zawsze widoczne objaśnienie (`MasteryExplainer`): pytanie jest **opanowane**, gdy jego stabilność przekracza
+   21 dni; zwykle potrzeba trzech poprawnych odpowiedzi w terminie (około dwóch tygodni nauki), a błędna albo „Nie jestem
+   pewien” cofa je do „W nauce”. Pierwsze dwa tygodnie „0 opanowanych” jest normalne. Ta część ignoruje filtr pochodzenia
+   pytań (zakres wybiera się tu).
+2. **Ostatnie 30 dni** (`RecentAnswersCard`) obok **Aktywności** (`ActivityChart`: 28 słupków, seria dni, ostatnie 7 dni
+   na tle poprzednich 7), na telefonie jedno pod drugim. Pod pierwszą cichy link „Popraw moje błędy: N”.
+3. **Fiszki** (`FlashcardsSection`): liczby z przeglądu fiszek (zapytanie `overview` z `mode=FLASHCARD`), filtr
+   przedmiotu w nagłówku sekcji, po wybraniu przedmiotu opanowanie rozdziałów (`ChapterMasteryList`) i zawsze tabela „Do
+   poprawy” (10 kart z największą liczbą błędów). **Tylko ta sekcja zależy od filtra przedmiotu.**
+
+Każda sekcja pobiera dane sama i przy błędzie pokazuje komunikat z przyciskiem „Spróbuj ponownie”; odpowiedź o złym
+kształcie (np. obiekt zamiast listy) jest traktowana jak błąd.
 
 ### Konto (`features/account`)
 
-Karty w tej kolejności: adres konta, ustawienia nauki, trudne i zawieszone pytania, zmiana hasła, pobranie danych, usunięcie
-konta. Szczegóły w [03](03-logowanie-i-sesja.md) (konto) i [04](04-nauka-w-aplikacji.md) (ustawienia nauki, zawieszanie).
+Karty w tej kolejności: adres konta, ustawienia nauki (z wyborem egzaminu), **terminy egzaminów** (tylko dla administratora,
+`ExamTermsCard`: data dla każdej z pięciu aplikacji, „Zapisz” i „Usuń termin”), trudne i zawieszone pytania, zmiana hasła,
+pobranie danych, usunięcie konta. Szczegóły w [03](03-logowanie-i-sesja.md) (konto) i [04](04-nauka-w-aplikacji.md) (ustawienia nauki, zawieszanie).

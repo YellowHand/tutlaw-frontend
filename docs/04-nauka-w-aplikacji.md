@@ -237,20 +237,36 @@ z liczbą pytań).
 
 | Pole | Zakres sprawdzany we frontendzie | Uwagi |
 |------|----------------------------------|-------|
-| Nowe fiszki dziennie | liczba całkowita 0–200 | Domyślną wartość podaje serwer |
-| Nowe pytania testowe dziennie | 0–500 | |
+| Najwięcej nowych fiszek dziennie | liczba całkowita 0–200 | Domyślną wartość podaje serwer |
+| Najwięcej nowych pytań dziennie | 0–500 | Górna granica; cel na dziś z planu to tylko podpowiedź |
 | Najwięcej powtórek dziennie | 10–1000 | Osobno dla fiszek i testów; nadmiar czeka do jutra |
 | Docelowa retencja | 70%–97% (lista: 80, 85, 90, 95, 97%) | Wartość spoza listy (ustawiona innym kanałem) jest dodawana do listy |
-| Data egzaminu | data od dziś (opcjonalna) | Włącza tryb egzaminacyjny na 30 dni przed egzaminem |
 | Mieszaj kolejność odpowiedzi | pole wyboru | Domyślnie włączone |
 
 - Wartość równa domyślnej jest wysyłana jako `null` („użyj domyślnej serwera”), więc późniejsza zmiana domyślnych wartości na serwerze
   obejmie takiego użytkownika.
-- **Plan do egzaminu**: gdy jest przyszła data egzaminu, serwer zwraca plan (ile nowych pytań i fiszek zostało, ile dni na
-  ich zaczęcie, sugerowane limity dzienne), a przycisk „Wstaw sugerowane limity” przepisuje je do formularza.
-- Ostatnie 7 dni przed egzaminem serwer zostawia na same powtórki; to stąd bierze się `planningDays`.
+- **Egzamin.** Użytkownik nie wpisuje już własnej daty. W sekcji „Egzamin” (testid `exam-choice-settings`) wybiera aplikację,
+  do której się przygotowuje („Aplikacja, do której się przygotowuję”, przycisk „Wybierz egzamin” albo „Zmień egzamin”), a
+  termin ustawia administrator (niżej). Wybór woła `PUT /api/me/exam` (`chooseExam`, hook `useChooseExam` w
+  `features/settings/examChoice.ts`). **Backend przy tym jednorazowo ustawia filtr pochodzenia** na wybraną aplikację i pytania
+  autorskie, więc po wyborze frontend unieważnia także filtr pochodzenia, katalog Testów, liczniki powtórek i błędów oraz liczniki
+  Własnego testu. Każdy kolejny wybór filtr nadpisuje; poza wyborem filtr zmienia się osobno.
+- **Plan do egzaminu**: gdy wybrana aplikacja ma przyszły termin, serwer zwraca plan (ile nowych pytań i fiszek zostało, ile
+  dni na ich zaczęcie, sugerowane limity dzienne), a przycisk „Wstaw sugerowane limity” przepisuje je do formularza.
+- Ostatnie **14 dni** przed egzaminem serwer zostawia na same powtórki; to stąd bierze się `planningDays`
+  (dni do egzaminu − 14, najmniej 0). W tym czasie cel nowych pytań wynosi 0, a Pulpit pokazuje „Ostatnie dwa tygodnie: skup
+  się na powtórkach.” Plan jest tylko informacją, nie blokuje nauki, a górną granicą pozostaje dzienny limit.
 - Po zapisie unieważniane są liczniki powtórek i statystyki, bo limity zmieniają liczbę powtórek na dziś.
 - Przycisk „Wstaw wartości domyślne” tylko wypełnia formularz; zapis wymaga „Zapisz ustawienia”.
+
+### Terminy egzaminów (administrator)
+
+`features/settings/ExamTermsCard.tsx` ↔ `GET /api/exam-terms`, `PUT /api/exam-terms/{origin}` (`api/examTerms.ts`,
+hook `useExamTerms`). Karta w Koncie jest widoczna tylko dla administratora: rolę czyta `useIsAdmin()` z tokenu, ale to
+tylko wygoda interfejsu, bo naprawdę chroni `403` z serwera. Dla każdej z pięciu aplikacji jest pole daty i przyciski
+„Zapisz” oraz „Usuń termin”. Serwer odrzuca datę z przeszłości i oddaloną o więcej niż 3 lata; komunikat błędu jest pokazany
+przy wierszu. Zmiana działa od razu u wszystkich, którzy wybrali daną aplikację, ale wyznaczone już terminy powtórek nie
+są przeliczane wstecz.
 
 ## Własny test (`features/customTest`)
 
@@ -344,7 +360,14 @@ dopiero ta sesja zapisuje odpowiedzi w powtórkach.
 
 ## Statystyki i Pulpit
 
-Ekrany statystyk tylko wyświetlają liczby policzone przez serwer. Frontend liczy sam wyłącznie rzeczy czysto prezentacyjne
-(`features/statistics/selectors.ts`): ograniczenie procentów do 0–100, siatka 4 tygodni (Pn–Nd) z poziomami koloru, słupki bieżącego
-tygodnia i etykiety dni. Definicje liczb („Opanowane”, „Skuteczność”, „Pewne błędy”) są w dokumentacji backendu, rozdział o
-statystykach.
+Ekrany statystyk tylko wyświetlają liczby policzone przez serwer. Frontend liczy sam wyłącznie rzeczy czysto prezentacyjne:
+ograniczenie procentów do 0–100 i podział „opanowane / w nauce / nowe” z klamrami (`masterySplit` w
+`features/statistics/originStats.ts`), 28 słupków aktywności i porównanie ostatnich 7 dni z poprzednimi (`selectors.ts`),
+serię dni i liczbę odpowiedzi w tym tygodniu. Definicje liczb („Opanowane”, „Skuteczność”, „Pewne błędy”) są w dokumentacji
+backendu, rozdział o statystykach.
+
+**„Przerobione” a „opanowane”.** Pulpit pokazuje „Przerobione”: pytania, które miały choć jedną odpowiedź. „Opanowane” jest
+w Statystykach i oznacza pytanie, którego stabilność w modelu FSRS przekracza 21 dni (backend: `MATURE_STABILITY_THRESHOLD`).
+Przy odpowiedziach w terminie stabilność rośnie mniej więcej 2,3 → 11 → 46 dni, więc trzy poprawne odpowiedzi w terminie
+(około dwóch tygodni nauki) wystarczą. Błędna odpowiedź albo „Nie jestem pewien” zwykle cofa pytanie do „W nauce”. W pierwszych
+dwóch tygodniach „0 opanowanych” jest więc normalne, dlatego tej liczby nie ma na Pulpicie.

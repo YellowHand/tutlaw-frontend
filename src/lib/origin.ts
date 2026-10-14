@@ -29,6 +29,9 @@ export const ORIGIN_ORDER: QuestionOrigin[] = [
   "AUTHORED",
 ];
 
+/** Aplikacje, do których można się przygotowywać (każda ma własny egzamin); pytania autorskie egzaminu nie mają. */
+export const EXAM_APPLICATIONS: QuestionOrigin[] = ORIGIN_ORDER.filter((origin) => origin !== "AUTHORED");
+
 /**
  * Podpis pod pytaniem: „Aplikacja notarialna, 2021" albo samo „Pytanie autorskie" (autorskie nie ma roku).
  * Gdy backend nie podał pochodzenia (nieznany kod albo brak), zwraca null i nic się nie pokazuje.

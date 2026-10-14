@@ -167,8 +167,10 @@ w `@theme`) oraz płynne przejścia kolorów przy najechaniu. Wszystko to wyłą
 
 ## Wykresy i wizualizacje
 
-W projekcie **nie ma biblioteki wykresów**. Słupki, pierścień retencji, rytm aktywności i krzywa zapominania są rysowane
-zwykłymi elementami HTML i SVG z kolorami z palety (np. słupki powtórek mają `bg-accent-2`). Liczby, które wykresy
+W projekcie **nie ma biblioteki wykresów**. Paski postępu, wykres podejść egzaminu na Pulpicie, rytm aktywności i krzywa
+zapominania (strona główna) są rysowane zwykłymi elementami HTML i SVG z kolorami z palety (np. pasek „Opanowane” ma
+`bg-accent`, a poprawne i niepoprawne podejścia na wykresie egzaminu `bg-success` i `bg-danger`). Wykresy są dostępne dla
+czytników ekranu: blok wykresu ma `role="img"` i opis z liczbami. Liczby, które wykresy
 pokazują, pochodzą z serwera (`/api/statistics/...`), a przeliczenia na kształt (wysokość słupka, wypełnienie kółka)
 są w plikach `selectors.ts` i `*.tsx` w `features/statistics` i `features/dashboard`.
 

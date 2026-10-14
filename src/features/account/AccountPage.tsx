@@ -8,6 +8,7 @@ import { ChangePasswordCard } from "./ChangePasswordCard";
 import { ExportCard } from "./ExportCard";
 import { DeleteAccountCard } from "./DeleteAccountCard";
 import { DifficultCardsCard } from "../difficult/DifficultCardsCard";
+import { ExamTermsCard } from "../settings/ExamTermsCard";
 import { LearningSettingsCard } from "../settings/LearningSettingsCard";
 
 export function AccountPage() {
@@ -27,6 +28,8 @@ export function AccountPage() {
         </Card>
 
         <LearningSettingsCard />
+
+        <ExamTermsCard />
 
         <DifficultCardsCard />
 

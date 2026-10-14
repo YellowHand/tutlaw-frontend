@@ -15,7 +15,7 @@ export function WeakCardsTable({ subjectId }: WeakCardsTableProps) {
 
   if (isLoading) return <Skeleton className="h-64 w-full" />;
 
-  if (isError || !data) {
+  if (isError || !Array.isArray(data)) {
     return (
       <Card>
         <ErrorState onRetry={() => refetch()} />

@@ -1,6 +1,6 @@
 import { ORIGIN_LABELS, ORIGIN_ORDER, type QuestionOrigin } from "../../lib/origin";
 import { pluralizePl } from "../../lib/plural";
-import type { OriginStats, OriginStatsEntry } from "./types";
+import type { OriginMetrics, OriginStats, OriginStatsEntry } from "./types";
 
 /** Nazwa w liczbie mnogiej tam, gdzie mówimy o całej grupie pytań („Pytania autorskie"), reszta jak w etykietach. */
 export function originGroupLabel(origin: QuestionOrigin): string {
@@ -14,11 +14,6 @@ export function orderedEntries(stats: OriginStats): OriginStatsEntry[] {
     const entry = byOrigin.get(origin);
     return entry ? [entry] : [];
   });
-}
-
-/** Pierwsza aplikacja, w której są pytania (a gdy nigdzie ich nie ma, pierwsza z listy). */
-export function defaultOrigin(entries: OriginStatsEntry[]): QuestionOrigin | undefined {
-  return (entries.find((entry) => entry.stats.totalQuestions > 0) ?? entries[0])?.origin;
 }
 
 export function questionsWord(count: number): string {
@@ -43,8 +38,52 @@ export function yearsRange(entry: OriginStatsEntry): string | null {
   return min === max ? String(min) : `${min}–${max}`;
 }
 
-/** Procent rozwiązanych pytań do paska postępu (0–100). */
-export function solvedPercent(solved: number, total: number): number {
-  if (total <= 0) return 0;
-  return Math.max(0, Math.min(100, (solved * 100) / total));
+/** Zakres widoku opanowania: jedna aplikacja albo wszystkie razem. */
+export type MasteryScope = QuestionOrigin | "ALL";
+
+/** Sumuje liczby ze wszystkich pochodzeń. Skuteczność z 30 dni nie ma z czego się policzyć, więc jest pusta. */
+export function sumMetrics(entries: OriginStatsEntry[]): OriginMetrics {
+  const sum = entries.reduce(
+    (acc, { stats }) => ({
+      totalQuestions: acc.totalQuestions + stats.totalQuestions,
+      solvedQuestions: acc.solvedQuestions + stats.solvedQuestions,
+      matureQuestions: acc.matureQuestions + stats.matureQuestions,
+      dueQuestions: acc.dueQuestions + stats.dueQuestions,
+      answers: acc.answers + stats.answers,
+      correctAnswers: acc.correctAnswers + stats.correctAnswers,
+      answersLast30Days: acc.answersLast30Days + stats.answersLast30Days,
+      confidentMistakesLast30Days: acc.confidentMistakesLast30Days + stats.confidentMistakesLast30Days,
+    }),
+    {
+      totalQuestions: 0,
+      solvedQuestions: 0,
+      matureQuestions: 0,
+      dueQuestions: 0,
+      answers: 0,
+      correctAnswers: 0,
+      answersLast30Days: 0,
+      confidentMistakesLast30Days: 0,
+    }
+  );
+  return {
+    ...sum,
+    accuracyRate: sum.answers > 0 ? (sum.correctAnswers * 100) / sum.answers : null,
+    accuracyLast30Days: null,
+  };
+}
+
+/** Podział wszystkich pytań na opanowane, w nauce (rozwiązane, jeszcze nieopanowane) i nowe (jeszcze nierozwiązane). */
+export interface MasterySplit {
+  total: number;
+  mastered: number;
+  learning: number;
+  fresh: number;
+}
+
+/** Liczby są obcinane do sensownych zakresów (opanowane ≤ rozwiązane ≤ wszystkie), żeby trzy części zawsze dawały całość. */
+export function masterySplit(metrics: Pick<OriginMetrics, "totalQuestions" | "solvedQuestions" | "matureQuestions">): MasterySplit {
+  const total = Math.max(0, metrics.totalQuestions);
+  const solved = Math.min(Math.max(0, metrics.solvedQuestions), total);
+  const mastered = Math.min(Math.max(0, metrics.matureQuestions), solved);
+  return { total, mastered, learning: solved - mastered, fresh: total - solved };
 }

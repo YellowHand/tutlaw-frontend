@@ -40,7 +40,7 @@ prośba o reset hasła i ustawienie nowego hasła) jest wpisanych bezpośrednio 
 
 ## Wszystkie wywołania serwera
 
-Frontend używa **50 z 60** endpointów backendu (łącznie 51 wywołań w kodzie, bo `GET /api/statistics/chapters` jest
+Frontend używa **53 z 63** endpointów backendu (łącznie 54 wywołań w kodzie, bo `GET /api/statistics/chapters` jest
 wołany z dwóch miejsc). Endpointów, których frontend nie używa, jest 10; lista jest [niżej](#endpointy-których-frontend-nie-używa).
 Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć wyszukiwarką.
 
@@ -74,7 +74,7 @@ Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć w
 | `GET /api/subjects/{subjectId}/sources` | `getSourcesBySubject` | Fiszki: wybór źródła; Statystyki (szukanie podręcznika) |
 | `GET /api/sources/{sourceId}/chapters` | `getChaptersBySource` | Fiszki: lista rozdziałów |
 | `PUT /api/chapters/{chapterId}/progress` | `setChapterProgress` | Przełącznik „Przeczytany” przy rozdziale |
-| `GET /api/tests/catalog` | `getTestCatalog` | Testy: drzewo rodzaj → przedmiot → źródło z licznikami |
+| `GET /api/tests/catalog` | `getTestCatalog` | Testy: drzewo rodzaj → przedmiot → źródło z licznikami; Pulpit: wiersze postępu według rodzajów |
 
 ### Nauka: kolejki, odpowiedzi, liczniki
 
@@ -84,12 +84,12 @@ Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć w
 | `GET /api/review/test-queue` | `getTestQueue` | Sesja Testów w trybach zakres i powtórki (`TestSessionPage`) |
 | `GET /api/review/practice-queue` | `getPracticeQueue` (`api/exam.ts`) | Sesja „Przećwicz błędy z egzaminu” i sesja Własnego testu (`?cardIds=`) |
 | `GET /api/review/mistakes-queue` | `getMistakesQueue` | Sesja „Powtórz moje błędy” |
-| `GET /api/review/mistakes-count` | `getMistakesCount` | Przycisk „Moje błędy” (z liczbą) w „Szybkim starcie” na ekranie Testy |
+| `GET /api/review/mistakes-count` | `getMistakesCount` | Przycisk „Moje błędy” (z liczbą) w „Szybkim starcie” na ekranie Testy, wiersz „Moje błędy” w „Do poprawy” na Pulpicie |
 | `GET /api/review/custom-test/counts` | `getCustomTestCounts` (`api/customTest.ts`) | Własny test: „Dostępnych: N” przy każdym rodzaju pytań w wybranym zakresie |
 | `POST /api/review/custom-test` | `drawCustomTest` (`api/customTest.ts`) | Własny test: losowanie numerów pytań po „Rozpocznij test” |
 | `GET /api/review/queue/new-cards-available` | `getAvailableNewCardsCount` | Przycisk „Dołóż nowe” na końcu sesji |
 | `GET /api/review/queue/backlog` | `getBacklog` | Informacja o zaległościach i przycisk „Powtórz jeszcze” |
-| `GET /api/review/due-count` | `getDueCount` | Odznaki w menu, „Powtórki na dziś”, ekran Testy |
+| `GET /api/review/due-count` | `getDueCount` | Odznaki w menu, karta „Na dziś” na Pulpicie (osobno dla pytań i fiszek), ekran Testy |
 | `POST /api/review` | `submitReview` | Ocena fiszki (1–4) |
 | `POST /api/review/test-answer` | `submitTestAnswer` | Odpowiedź w teście (A/B/C, „Nie jestem pewien”) |
 
@@ -111,26 +111,29 @@ Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć w
 |-----------|----------------|---------------|
 | `POST /api/exams/start` | `startExam` (`api/exam.ts`) | Przycisk „Rozpocznij egzamin” w ustawieniach egzaminu. **Bez ciała**: format jest stały, serwer losuje 150 pytań i zwraca `passPoints` |
 | `POST /api/exams/submit` | `submitExam` | Wysłanie odpowiedzi po zakończeniu (ręcznym albo przez zegar). Ciało: `timeLimitMinutes`, `durationSeconds`, `timedOut`, `answers`; **bez zakresu i progu**, bo ocenia serwer |
-| `GET /api/exams/history` | `getExamHistory` | Historia egzaminów (do 50). Wpis ma `passPoints`; `null` oznacza podejście sprzed stałego formatu |
+| `GET /api/exams/history` | `getExamHistory` | Historia egzaminów (do 50) oraz karta „Egzamin próbny” na Pulpicie. Wpis ma `passPoints`; `null` oznacza podejście sprzed stałego formatu |
 
 ### Statystyki
 
 | Wywołanie | Funkcja / plik | Gdzie używane |
 |-----------|----------------|---------------|
-| `GET /api/statistics/overview` | `fetchOverview` | Podsumowanie na Statystykach, karty na Pulpicie |
-| `GET /api/statistics/activity` | `fetchActivity` | Wykres aktywności (Statystyki, Pulpit) |
+| `GET /api/statistics/overview` | `fetchOverview` | Sekcja „Fiszki” na Statystykach (zawsze z `mode=FLASHCARD`, opcjonalnie z `subjectId`) |
+| `GET /api/statistics/activity` | `fetchActivity` | Wykres „Aktywność” (Statystyki) i wiersz serii w „Na dziś” (Pulpit); w obu 28 dni |
 | `GET /api/statistics/chapters` | `fetchChapterMastery`, `getChapterMastery` | Opanowanie rozdziałów (Statystyki) i paski w widoku rozdziałów Fiszek (z `mode=FLASHCARD`) |
 | `GET /api/statistics/sources` | `getSourceProgress` | Paski postępu przy źródłach Fiszek (`mode=FLASHCARD`) |
 | `GET /api/statistics/weak-cards` | `fetchWeakCards` | Tabela „Karty, które najłatwiej zapomnisz” |
-| `GET /api/statistics/tests` | `fetchTestStats` | Statystyki Testów (30 dni) |
-| `GET /api/statistics/origins` | `fetchOriginStats` | Statystyki według aplikacji i roku egzaminu |
+| `GET /api/statistics/tests` | `fetchTestStats` | Karta „Ostatnie 30 dni” (Statystyki); Pulpit: „Na dziś” i „Postęp” (liczba rozpoczętych pytań) |
+| `GET /api/statistics/origins` | `fetchOriginStats` | Sekcja „Opanowanie” w Statystykach (według aplikacji i roku egzaminu). Pulpit tego nie pobiera |
 
 ### Ustawienia
 
 | Wywołanie | Funkcja / plik | Gdzie używane |
 |-----------|----------------|---------------|
-| `GET /api/me/settings` | `getLearningSettings` | Karta „Ustawienia nauki” w Koncie, Pulpit (odliczanie), a także jednorazowo przy starcie sesji Testów (czy tasować odpowiedzi) |
-| `PUT /api/me/settings` | `updateLearningSettings` | Zapis ustawień nauki |
+| `GET /api/me/settings` | `getLearningSettings` | Karta „Ustawienia nauki” w Koncie, Pulpit (wybrana aplikacja, odliczanie, cel na dziś i kafelek wyboru egzaminu), Statystyki (domyślny zakres), a także jednorazowo przy starcie sesji Testów (czy tasować odpowiedzi) |
+| `PUT /api/me/settings` | `updateLearningSettings` | Zapis ustawień nauki (limity, retencja, tasowanie; bez daty egzaminu) |
+| `PUT /api/me/exam` | `chooseExam` (`api/settings.ts`) | Wybór aplikacji, do której użytkownik się przygotowuje: kafelek na Pulpicie i sekcja „Egzamin” w Koncie. Backend jednorazowo ustawia też filtr pochodzenia |
+| `GET /api/exam-terms` | `getExamTerms` (`api/examTerms.ts`) | Terminy egzaminów pięciu aplikacji: kafelek wyboru egzaminu, informacja o terminie w Koncie i karta „Terminy egzaminów” |
+| `PUT /api/exam-terms/{origin}` | `updateExamTerm` (`api/examTerms.ts`) | Zapis albo usunięcie terminu (karta administratora w Koncie; serwer sprawdza rolę) |
 | `GET /api/me/origin-filter` | `getOriginFilter` | Znacznik filtra pochodzenia w Testach |
 | `PUT /api/me/origin-filter` | `saveOriginFilter` | Zapis filtra (okno wyboru aplikacji) |
 
@@ -198,7 +201,8 @@ dane po powrocie do karty przeglądarki. Pamięć żyje tylko w otwartej karcie;
 | `["statistics","tests"]` | Statystyki Testów | 60 s | j.w. |
 | `["statistics","origins"]` | Statystyki według aplikacji | 60 s | j.w. |
 | `["difficult-cards"]` | Trudne i zawieszone pytania | 30 s | `features/difficult/hooks.ts` |
-| `["settings","learning"]` | Ustawienia nauki | 60 s | `features/settings/hooks.ts` |
+| `["settings","learning"]` | Ustawienia nauki (z wybraną aplikacją, terminem i planem) | 60 s | `features/settings/hooks.ts` |
+| `["settings","exam-terms"]` | Terminy egzaminów aplikacji | 60 s | j.w. |
 | `["exam","history"]` | Historia egzaminów | **0** | `features/exam/hooks.ts` |
 | `["me"]` | Adres e-mail zalogowanego | 5 min | `AccountPage.tsx`, `ExamPage.tsx` |
 | `["subjects"]` | Wszystkie przedmioty (lista rozwijana w Statystykach) | 60 s | `features/statistics/SubjectFilter.tsx` |
@@ -221,6 +225,8 @@ przy następnym użyciu (aktywne od razu).
 | Wyjście z sesji Fiszek lub Testów (`useRefreshReviewDataOnExit`) | Liczniki powtórek (`["review","due-count"]`), licznik błędów, liczniki Własnego testu, wszystkie `["statistics",…]`. Dopiero przy wyjściu, nie po każdej odpowiedzi, żeby nie wysyłać zapytania co pytanie |
 | „Dodaj do fiszek” / „Usuń z fiszek” | Jak wyżej (`invalidateReviewData`), od razu |
 | Zapis ustawień nauki | Podmiana `["settings","learning"]` odpowiedzią serwera + `invalidateReviewData` |
+| Wybór egzaminu (`useChooseExam`) | Podmiana `["settings","learning"]` odpowiedzią serwera + unieważnienie: filtr pochodzenia, katalog Testów, liczniki powtórek, licznik błędów i liczniki Własnego testu (backend zmienia filtr) |
+| Zapis terminu egzaminu (administrator) | Podmiana wiersza w `["settings","exam-terms"]` odpowiedzią serwera + unieważnienie `["settings","learning"]` (zmienia się odliczanie i plan) |
 | Zapis filtra pochodzenia | Podmiana `["tests","origin-filter"]` + unieważnienie: katalog Testów, liczniki powtórek, licznik błędów, liczniki Własnego testu, ustawienia nauki (plan do egzaminu). Statystyk i Fiszek nie dotyka, bo filtr ich nie dotyczy |
 | Zawieszenie pytania (w sesji nauki) albo zawieszenie i przywrócenie na liście w Koncie | `["difficult-cards"]` |
 | „Ukryj” (administrator) | `invalidateReviewData` + wszystkie `["catalog",…]` |
@@ -276,7 +282,8 @@ serwer przestał je wysyłać. Najważniejsze typy:
 | `FlashcardStatus` | `api/review.ts` | `UNAVAILABLE`, `AVAILABLE`, `ADDED_MANUALLY`, `ADDED_BY_MISTAKE` |
 | `Backlog` | `api/review.ts` | `dueNow`, `deferred`, `dailyLimit`, `doneToday` |
 | `ExamStart`, `ExamResult`, `ExamAttempt` | `api/exam.ts` | Losowanie (z `passPoints`), wynik z rozbiciem na źródła i pytania, wpis historii (`passPoints` albo `null` dla starych podejść) |
-| `LearningSettings` | `api/settings.ts` | Limity, retencja, data egzaminu, tasowanie, plan do egzaminu |
+| `LearningSettings` | `api/settings.ts` | Limity, retencja, wybrana aplikacja (`examOrigin`), termin (`examDate`, tylko do odczytu), tasowanie, plan do egzaminu (z `newTestQuestionsToday`) |
+| `ExamTerm` | `api/examTerms.ts` | `origin`, `examDate`, `daysToExam` |
 | `OriginFilter` | `api/originFilter.ts` | `selected`, `all`, `options` z liczbą pytań |
 | `QuestionOrigin` | `lib/origin.ts` | Skąd pochodzi pytanie (sześć wartości, patrz [04](04-nauka-w-aplikacji.md)) |
 

@@ -64,7 +64,7 @@ port-fe/
 | `admin` | 1 | Przycisk „Ukryj” (tylko dla administratora) |
 | `auth` | 6 | Pola formularzy logowania, „wyślij link ponownie”, odczyt roli z tokenu, czyszczenie sesji |
 | `customTest` | 5 | Własny test: wybór rodzajów i aktów prawnych, rodzaju pytań, lat i liczby pytań; pamięć ostatniego wyboru |
-| `dashboard` | 12 | Pulpit: odliczanie do egzaminu, powtórki na dziś, wykresy aktywności i skuteczności |
+| `dashboard` | 8 | Pulpit: karta „Na dziś” z jednym głównym przyciskiem, „Postęp”, wynik egzaminu próbnego, kafelek wyboru egzaminu |
 | `difficult` | 4 | Trudne i zawieszone pytania: podpowiedź, zawieszanie, lista w Koncie |
 | `exam` | 8 | Egzamin próbny: ustawienia, przebieg z zegarem, raport, historia, zapis w przeglądarce |
 | `flashcards` | 2 | Dane do wyboru materiału Fiszek oraz „Dodaj do fiszek” przy pytaniu |
@@ -73,11 +73,11 @@ port-fe/
 | `misc` | 1 | Strona 404 |
 | `report` | 2 | „Zgłoś błąd w pytaniu” |
 | `review` | 10 | Elementy wspólne sesji nauki: skróty klawiszowe, zaległości, podstawa prawna, etykieta pochodzenia |
-| `settings` | 2 | Ustawienia nauki w Koncie (limity dzienne, retencja, data egzaminu) |
-| `statistics` | 11 | Ekran Statystyki i dane statystyk |
+| `settings` | 4 | Ustawienia nauki w Koncie (limity dzienne, retencja, wybór egzaminu), terminy egzaminów dla administratora |
+| `statistics` | 14 | Ekran Statystyki: opanowanie, ostatnie 30 dni, aktywność, fiszki; dane statystyk |
 | `tests` | 14 | Ekrany Testów (rodzaj, przedmiot, źródło), filtr pochodzenia, tasowanie odpowiedzi |
 
-W repozytorium jest łącznie 168 plików w `src/`.
+W repozytorium jest łącznie 170 plików w `src/`.
 
 ### Dlaczego strony są w dwóch miejscach
 

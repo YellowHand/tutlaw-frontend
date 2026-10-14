@@ -34,16 +34,6 @@ export function getNextDaysForecast(upcomingReviews: DailyCount[]): ForecastBar[
   });
 }
 
-export interface HeatmapCell {
-  date: string;
-  count: number;
-  level: 0 | 1 | 2 | 3 | 4;
-  isFuture: boolean;
-}
-
-export type HeatmapWeek = HeatmapCell[];
-
-const WEEKS_IN_HEATMAP = 4;
 const DAYS_IN_WEEK = 7;
 
 function startOfWeekMonday(date: Date): Date {
@@ -55,32 +45,37 @@ function startOfWeekMonday(date: Date): Date {
   return result;
 }
 
-// Builds a 4-week x 7-day grid (Mon..Sun), oldest week first, current week
-// last. `activity` should cover at least the last 28 days.
-export function buildHeatmap(activity: ActivityItem[]): HeatmapWeek[] {
+export interface ActivityDay {
+  date: string;
+  count: number;
+  /** Czy to dzisiaj (dzień jeszcze trwa, więc jego słupek może urosnąć). */
+  isToday: boolean;
+}
+
+/**
+ * Ostatnie `days` dni (najstarszy pierwszy, dzisiaj ostatni) z liczbą odpowiedzi. Dni bez wpisu w odpowiedzi serwera
+ * to zero odpowiedzi, więc wykres nie ma dziur i zawsze pokazuje pełne okno.
+ */
+export function lastDays(activity: ActivityItem[], days = 28): ActivityDay[] {
   const countByDate = new Map(activity.map((item) => [item.date, item.reviewCount]));
   const today = startOfToday();
-  const currentWeekStart = startOfWeekMonday(today);
-  const gridStart = new Date(currentWeekStart);
-  gridStart.setDate(gridStart.getDate() - (WEEKS_IN_HEATMAP - 1) * DAYS_IN_WEEK);
-
-  const maxCount = Math.max(1, ...activity.map((item) => item.reviewCount), 0);
-
-  const weeks: HeatmapWeek[] = [];
-  for (let week = 0; week < WEEKS_IN_HEATMAP; week++) {
-    const days: HeatmapCell[] = [];
-    for (let day = 0; day < DAYS_IN_WEEK; day++) {
-      const cellDate = new Date(gridStart);
-      cellDate.setDate(cellDate.getDate() + week * DAYS_IN_WEEK + day);
-      const dateKey = toLocalDateKey(cellDate);
-      const isFuture = cellDate.getTime() > today.getTime();
-      const count = isFuture ? 0 : countByDate.get(dateKey) ?? 0;
-      const level = (isFuture || count === 0 ? 0 : Math.ceil((4 * count) / maxCount)) as HeatmapCell["level"];
-      days.push({ date: dateKey, count, level, isFuture });
-    }
-    weeks.push(days);
+  const result: ActivityDay[] = [];
+  for (let offset = days - 1; offset >= 0; offset--) {
+    const day = new Date(today);
+    day.setDate(day.getDate() - offset);
+    const key = toLocalDateKey(day);
+    result.push({ date: key, count: countByDate.get(key) ?? 0, isToday: offset === 0 });
   }
-  return weeks;
+  return result;
+}
+
+/** Suma odpowiedzi z dni `from`..`to` (włącznie) licząc wstecz od dzisiaj: 0 = dzisiaj, 1 = wczoraj. */
+export function sumDaysAgo(days: ActivityDay[], from: number, to: number): number {
+  let total = 0;
+  for (let i = from; i <= to; i++) {
+    total += days[days.length - 1 - i]?.count ?? 0;
+  }
+  return total;
 }
 
 // Consecutive days with reviewCount > 0, counted backwards from today. If
