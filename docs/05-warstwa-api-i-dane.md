@@ -109,9 +109,9 @@ Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć w
 
 | Wywołanie | Funkcja / plik | Gdzie używane |
 |-----------|----------------|---------------|
-| `POST /api/exams/start` | `startExam` (`api/exam.ts`) | Przycisk „Rozpocznij egzamin” w ustawieniach egzaminu |
-| `POST /api/exams/submit` | `submitExam` | Wysłanie odpowiedzi po zakończeniu (ręcznym albo przez zegar) |
-| `GET /api/exams/history` | `getExamHistory` | Historia egzaminów (do 50) |
+| `POST /api/exams/start` | `startExam` (`api/exam.ts`) | Przycisk „Rozpocznij egzamin” w ustawieniach egzaminu. **Bez ciała**: format jest stały, serwer losuje 150 pytań i zwraca `passPoints` |
+| `POST /api/exams/submit` | `submitExam` | Wysłanie odpowiedzi po zakończeniu (ręcznym albo przez zegar). Ciało: `timeLimitMinutes`, `durationSeconds`, `timedOut`, `answers`; **bez zakresu i progu**, bo ocenia serwer |
+| `GET /api/exams/history` | `getExamHistory` | Historia egzaminów (do 50). Wpis ma `passPoints`; `null` oznacza podejście sprzed stałego formatu |
 
 ### Statystyki
 
@@ -275,7 +275,7 @@ serwer przestał je wysyłać. Najważniejsze typy:
 | `TestAnswerResult` | `api/review.ts` | Wynik odpowiedzi: `correct`, `correctOption`, `explanation`, `legalBasis`, `lapses`, `leech`, `flashcardUnlocked`, `flashcard` |
 | `FlashcardStatus` | `api/review.ts` | `UNAVAILABLE`, `AVAILABLE`, `ADDED_MANUALLY`, `ADDED_BY_MISTAKE` |
 | `Backlog` | `api/review.ts` | `dueNow`, `deferred`, `dailyLimit`, `doneToday` |
-| `ExamStart`, `ExamResult`, `ExamAttempt` | `api/exam.ts` | Losowanie, wynik z rozbiciem na źródła i pytania, wpis historii |
+| `ExamStart`, `ExamResult`, `ExamAttempt` | `api/exam.ts` | Losowanie (z `passPoints`), wynik z rozbiciem na źródła i pytania, wpis historii (`passPoints` albo `null` dla starych podejść) |
 | `LearningSettings` | `api/settings.ts` | Limity, retencja, data egzaminu, tasowanie, plan do egzaminu |
 | `OriginFilter` | `api/originFilter.ts` | `selected`, `all`, `options` z liczbą pytań |
 | `QuestionOrigin` | `lib/origin.ts` | Skąd pochodzi pytanie (sześć wartości, patrz [04](04-nauka-w-aplikacji.md)) |

@@ -13,7 +13,7 @@ dla użytkownika (albo pojęcie techniczne), w drugiej wyjaśnienie, w trzeciej 
 | **Aplikacja** (prawnicza) | Nie program, tylko **aplikacja prawnicza**: szkolenie zawodowe po studiach (adwokacka, radcowska, sędziowska, prokuratorska, notarialna, komornicza). Z jej egzaminów pochodzą pytania | Sześć wartości `QuestionOrigin` w `lib/origin.ts` |
 | **Dodaj do fiszek** | Przycisk pod odpowiedzią w teście: tworzy z pytania fiszkę w dziale Fiszki | `QuestionFlashcardActions.tsx`, [04](04-nauka-w-aplikacji.md) |
 | **Dzienny limit** | Ile nowych kart i ile zaległych powtórek aplikacja podaje jednego dnia. Ustawia go użytkownik w Koncie, pilnuje serwer | `LearningSettings`, [04](04-nauka-w-aplikacji.md) |
-| **Egzamin próbny** | Losowy zestaw pytań z zegarem, bez podpowiedzi w trakcie, z raportem na końcu. Oddzielny od zwykłych Testów | `features/exam`, [04](04-nauka-w-aplikacji.md) |
+| **Egzamin próbny** | Egzamin w stałym formacie: 150 pytań z całego materiału, zaliczenie od 100 punktów (próg ustala serwer), z zegarem, bez podpowiedzi w trakcie i z raportem na końcu. Oddzielny od zwykłych Testów. Ćwiczenie jednego działu to nie egzamin, tylko **Własny test** | `features/exam`, [04](04-nauka-w-aplikacji.md) |
 | **Fiszka** | Karta z przodem (pytanie) i tyłem (odpowiedź), którą użytkownik sam ocenia czterema przyciskami | Sesja: `pages/StudySessionPage.tsx` |
 | **Fiszki** (z wielkiej litery) | Dział aplikacji z fiszkami i podręcznikami | `/app/flashcards`, [02](02-routing-i-strony.md) |
 | **FSRS-6** | Algorytm powtórek interwałowych (21 parametrów), który wylicza, kiedy pytanie ma wrócić. Działa **tylko w backendzie**; frontend pokazuje wynik | Dokumentacja backendu |
@@ -42,7 +42,7 @@ dla użytkownika (albo pojęcie techniczne), w drugiej wyjaśnienie, w trzeciej 
 | **Sesja dodatkowa** | Dokładanie kart po zakończeniu głównej sesji: „Powtórz jeszcze” (zaległe) albo „Rozwiąż jeszcze” (nowe, 10) | [04](04-nauka-w-aplikacji.md) |
 | **Stan prawny** (`validAsOf`) | Data, na którą sprawdzono zgodność pytania z przepisami | `legalDate.ts` w `features/review` |
 | **Szybki start** | Rząd cichych przycisków na ekranie Testy: „Cały materiał”, „Własny test”, „Moje błędy” (tylko gdy są błędy) i „Egzamin próbny” | `features/tests/QuickStart.tsx`, [02](02-routing-i-strony.md) |
-| **Szkic egzaminu** | Zapis trwającego egzaminu w przeglądarce (pytania, odpowiedzi, termin końca). Dzięki niemu odświeżenie strony nie kasuje egzaminu | `tutlaw.exam.draft.v1`, `features/exam/examStorage.ts` |
+| **Szkic egzaminu** | Zapis trwającego egzaminu w przeglądarce (pytania, odpowiedzi, termin końca, próg w punktach z serwera). Dzięki niemu odświeżenie strony nie kasuje egzaminu | `tutlaw.exam.draft.v1`, `features/exam/examStorage.ts` |
 | **Testy** (z wielkiej litery) | Dział aplikacji z pytaniami ABC | `/app/tests`, [02](02-routing-i-strony.md) |
 | **Trudne pytanie** (`leech`) | Pytanie, w którym liczba błędów osiągnęła próg ustalony przez serwer. Aplikacja proponuje je zawiesić | `DifficultCards.leechThreshold` |
 | **Tryb sesji** (`SessionMode`) | `FLASHCARD` albo `TEST`: Fiszki i Testy mają osobne liczniki i kolejki | `api/review.ts` |

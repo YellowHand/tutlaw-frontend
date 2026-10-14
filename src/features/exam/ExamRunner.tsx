@@ -188,7 +188,10 @@ export function ExamRunner({ exam, persist, submitting, submitError, onSubmit, o
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-surface p-3 sm:px-5">
         <div className="min-w-0">
           <h1 className="text-base font-semibold">Egzamin próbny</h1>
-          <p className="truncate text-xs text-fg-muted">{exam.scopeLabel}</p>
+          <p className="truncate text-xs text-fg-muted">
+            {exam.scopeLabel}
+            {exam.passPoints !== null && ` · zaliczenie od ${exam.passPoints} pkt`}
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <p
@@ -210,8 +213,8 @@ export function ExamRunner({ exam, persist, submitting, submitError, onSubmit, o
 
       {exam.requestedCount > total && (
         <p className="rounded-xl border border-line bg-surface-2 px-4 py-3 text-sm text-fg-muted">
-          Wylosowano {total} z {exam.requestedCount} {questionsWord(exam.requestedCount)}: tyle jest dostępnych w tym
-          zakresie.
+          Wylosowano {total} z {exam.requestedCount} {questionsWord(exam.requestedCount)}: tyle jest dostępnych w
+          materiale. Próg zaliczenia jest proporcjonalnie niższy{exam.passPoints !== null && ` (${exam.passPoints} pkt)`}.
         </p>
       )}
 

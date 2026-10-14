@@ -40,7 +40,14 @@ export function formatDateTime(isoDateTime: string): string {
   return Number.isNaN(date.getTime()) ? isoDateTime : DATE_TIME_FORMATTER.format(date);
 }
 
-/** Ile poprawnych odpowiedzi trzeba mieć, żeby zaliczyć (przy dokładnym porównaniu, bez zaokrągleń). */
+/** Stały format egzaminu (zob. ExamStart): tyle pytań i tyle punktów do zaliczenia; liczy je serwer, tu tylko opisy. */
+export const EXAM_QUESTION_COUNT = 150;
+export const EXAM_PASS_POINTS = 100;
+
+/**
+ * Ile poprawnych odpowiedzi trzeba było mieć w podejściu sprzed stałego formatu, które miało próg w procentach
+ * (przy dokładnym porównaniu, bez zaokrągleń).
+ */
 export function pointsNeeded(total: number, thresholdPercent: number): number {
   return Math.ceil((total * thresholdPercent) / 100);
 }

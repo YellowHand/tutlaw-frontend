@@ -9,6 +9,7 @@ import { clearDraft, loadDraft, saveDraft, type ExamDraft } from "./examStorage"
 import { ExamResultView } from "./ExamResultView";
 import { ExamRunner } from "./ExamRunner";
 import { ExamSetup, type ExamConfig } from "./ExamSetup";
+import { EXAM_PASS_POINTS, EXAM_QUESTION_COUNT } from "./format";
 import { EXAM_HISTORY_KEY } from "./hooks";
 
 /** Najdłuższy czas trwania, jaki przyjmuje serwer (48 godzin). */
@@ -46,13 +47,12 @@ function ExamFlow({ owner }: { owner: string }) {
     (start: ExamStart, config: ExamConfig) => {
       const startedAtMs = Date.now();
       const exam: ExamDraft = {
-        version: 1,
+        version: 2,
         owner,
-        scope: config.scope,
         scopeLabel: start.scopeLabel,
         requestedCount: start.requestedCount,
+        passPoints: start.passPoints,
         timeLimitMinutes: config.timeLimitMinutes,
-        passThresholdPercent: config.passThresholdPercent,
         questions: start.questions,
         answers: {},
         flagged: [],
@@ -76,10 +76,9 @@ function ExamFlow({ owner }: { owner: string }) {
       // Po wznowieniu po długiej przerwie upłynęło więcej niż limit; do wyniku liczymy co najwyżej limit.
       const cap = exam.timeLimitMinutes === null ? MAX_DURATION_SECONDS : exam.timeLimitMinutes * 60;
       try {
+        // Zakresu ani progu nie wysyłamy: format egzaminu jest stały, a próg liczy serwer.
         const result = await submitExam({
-          ...exam.scope,
           timeLimitMinutes: exam.timeLimitMinutes,
-          passThresholdPercent: exam.passThresholdPercent,
           durationSeconds: Math.min(elapsedSeconds, cap, MAX_DURATION_SECONDS),
           timedOut,
           answers,
@@ -130,7 +129,7 @@ function ExamFlow({ owner }: { owner: string }) {
     <div>
       <PageHeader
         title="Egzamin próbny"
-        subtitle="Sprawdź się w warunkach zbliżonych do egzaminu: czas, próg zaliczenia i raport z błędami."
+        subtitle={`Sprawdź się w warunkach zbliżonych do egzaminu: ${EXAM_QUESTION_COUNT} pytań, zaliczenie od ${EXAM_PASS_POINTS} punktów i raport z błędami.`}
       />
       <div className="px-4 pb-8 sm:px-8">
         <ExamSetup

@@ -59,7 +59,7 @@ function AttemptRow({ attempt }: { attempt: ExamAttempt }) {
         <p className="truncate text-sm text-fg-muted">{attempt.scopeLabel}</p>
         <p className="text-xs text-fg-muted">
           {formatDateTime(attempt.finishedAt)}
-          {" · "}próg {attempt.passThresholdPercent}%
+          {" · "}próg {attempt.passPoints !== null ? `${attempt.passPoints} pkt` : `${attempt.passThresholdPercent}%`}
           {" · "}
           {formatDuration(attempt.durationSeconds)}
           {attempt.timeLimitMinutes !== null ? ` z ${attempt.timeLimitMinutes} min` : ", bez limitu czasu"}

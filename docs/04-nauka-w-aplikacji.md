@@ -269,6 +269,11 @@ zaległe), opcjonalnie lata egzaminu i liczbę pytań (1–200). Opis ekranu jes
 
 ## Egzamin próbny (`features/exam`)
 
+Egzamin ma **stały format**: zawsze **150 pytań** z całego dostępnego materiału, a zaliczenie jest od **100 punktów**
+(1 punkt za poprawną odpowiedź, bez punktów ujemnych). Użytkownik niczego z tego nie wybiera: ani zakresu, ani liczby pytań,
+ani progu. Pytania losuje serwer, a serwer też ocenia egzamin i sam ustala próg, więc frontend tylko wyświetla to, co dostał.
+Ćwiczenie jednego działu to osobna funkcja, [Własny test](#własny-test-featurescustomtest), który niczego nie zalicza.
+
 Egzamin ma trzy fazy na jednym adresie `/app/exam`: **ustawienia → przebieg → raport**. Nie zmienia harmonogramu powtórek
 (odpowiedzi z egzaminu nie trafiają do FSRS), dopóki użytkownik nie przerobi błędów zwykłą sesją.
 
@@ -284,41 +289,53 @@ flowchart LR
 
 ### Ustawienia
 
-- **Zakres:** cały materiał, cały rodzaj, przedmiot albo (gdy przedmiot ma kilka źródeł) pojedyncze źródło, każdy z liczbą
-  dostępnych pytań (z katalogu Testów, uwzględnia filtr pochodzenia).
-- **Liczba pytań:** 5–200 (domyślnie 150). Gdy w zakresie jest mniej pytań, egzamin ma tyle, ile jest.
+- **Format** pokazują dwa kafelki: „150 pytań z całego materiału” i „100 punktów do zaliczenia”. To opis, a nie pola
+  formularza (stałe `EXAM_QUESTION_COUNT` i `EXAM_PASS_POINTS` w `features/exam/format.ts` służą tylko do wyświetlania;
+  prawdziwy próg przychodzi z serwera).
+- **Pochodzenie pytań:** znacznik filtra pochodzenia (jak w Testach) i informacja, ile pytań jest do wylosowania
+  (z katalogu Testów, bez zawieszonych i z nieodblokowanych rozdziałów).
 - **Limit czasu:** 1–600 minut albo „Bez limitu czasu”. Dopóki użytkownik nie ustawi własnego, czas jest równy liczbie pytań w
-  minutach (minuta na pytanie).
-- **Próg zaliczenia:** 1–100% (domyślnie 75%).
-- Ostatnio użyte ustawienia są zapamiętywane w przeglądarce (`tutlaw.exam.settings.v1`).
+  minutach (minuta na pytanie, czyli 150 min). Prawdziwy czas egzaminu nie jest tu odtwarzany, to wybór użytkownika.
+- Zapamiętywany jest tylko ostatnio użyty limit czasu (`tutlaw.exam.settings.v1`).
+- **Mniej niż 150 pytań w materiale:** egzamin ma tyle pytań, ile jest, a próg jest proporcjonalnie niższy
+  (100 z 150, w górę do pełnego punktu, np. 12 pytań to 8 punktów). Ekran uprzedza o tym przed startem.
+- Obok przycisku „Rozpocznij egzamin” jest link „Chcesz poćwiczyć jeden dział? Ułóż własny test” do `/app/custom-test`.
 - Pod formularzem jest **historia** ostatnich podejść (do 50; `GET /api/exams/history`): wynik, zakres, data, próg, czas.
+  Podejścia sprzed stałego formatu zostają w historii: mają nazwę wybranego wtedy zakresu i próg w procentach (zob. „Raport”).
 
 ### Przebieg
 
-- Serwer losuje pytania (`POST /api/exams/start`), a frontend od razu zapisuje **szkic** w przeglądarce. Termin końca
+- Serwer losuje pytania (`POST /api/exams/start`, bez ciała) i zwraca też próg w punktach (`passPoints`), a frontend od razu
+  zapisuje **szkic** w przeglądarce. Termin końca
   (`deadlineMs`) jest liczony raz, przy starcie, więc czas płynie dalej także po odświeżeniu strony (jak na prawdziwym egzaminie).
 - **Zegar** liczy od terminu końca, a nie od licznika: nie „dryfuje” i nie staje w ukrytej karcie. Czytniki ekranu dostają
   zapowiedzi przy 10, 5 i 1 minucie do końca (nie co sekundę). Ostatnia minuta jest czerwona.
 - Użytkownik wybiera odpowiedzi, może **oznaczać pytania „do sprawdzenia”** i skakać po pytaniach przez paletę (lista numerów z
   oznaczeniem odpowiedzianych i oznaczonych) albo strzałkami. Ponowny wybór tej samej odpowiedzi ją odznacza.
+- Gdy w materiale jest mniej niż 150 pytań, pod paskiem górnym jest informacja „Wylosowano N z 150 pytań” i o niższym progu.
 - Każda zmiana zapisuje szkic. Zamknięcie karty w trakcie egzaminu pokazuje ostrzeżenie przeglądarki.
 - **Zakończenie:** okno „Zakończyć egzamin?” podaje liczbę pytań bez odpowiedzi (liczą się jako błędne) i oznaczonych.
   „Porzuć egzamin” kasuje szkic bez oceniania.
 - **Koniec czasu** kończy egzamin sam, dokładnie raz.
-- **Wysłanie:** `POST /api/exams/submit` z zakresem, limitem, progiem, czasem trwania (ucięty do limitu i do 48 godzin),
-  znacznikiem `timedOut` i odpowiedziami (pusta odpowiedź to `null`). **Szkic kasuje się dopiero po udanym wysłaniu**: przy
+- **Wysłanie:** `POST /api/exams/submit` z limitem czasu, czasem trwania (ucięty do limitu i do 48 godzin), znacznikiem
+  `timedOut` i odpowiedziami (pusta odpowiedź to `null`). Zakresu ani progu klient nie wysyła: ocenia serwer. **Szkic kasuje się dopiero po udanym wysłaniu**: przy
   błędzie ekran mówi, że odpowiedzi są zapisane w tej przeglądarce, i pozwala spróbować jeszcze raz.
 
 ### Wznawianie
 
 Szkic ma numer wersji i adres konta właściciela. Przy wejściu na `/app/exam` aplikacja czyta go z pamięci i sprawdza kształt
-danych: uszkodzony, starszej wersji albo cudzy (inne konto w tej przeglądarce) szkic jest po prostu pomijany. Jeśli szkic jest
+danych: uszkodzony, nieznanej wersji albo cudzy (inne konto w tej przeglądarce) szkic jest po prostu pomijany. Szkic w wersji 1
+(z czasów własnego zakresu i progu) da się wznowić: jego zakres i próg są odrzucane, bo ocenia serwer, a próg w punktach
+bywa wtedy nieznany (ekran go po prostu nie pokazuje). Jeśli szkic jest
 poprawny, ekran ustawień oferuje „Wznów egzamin” (a gdy czas minął, „Zakończ i sprawdź”) albo „Porzuć”.
 
 ### Raport
 
-`ExamResultView`: werdykt „Zaliczony” lub „Niezaliczony”, wynik (poprawne / wszystkie i procent), próg (w procentach i w
-liczbie poprawnych odpowiedzi, której potrzeba), czas, liczba odpowiedzi udzielonych i pominiętych, zakres i data.
+`ExamResultView`: werdykt „Zaliczony” lub „Niezaliczony”, wynik (poprawne / wszystkie i procent), próg w punktach
+(„100 z 150 pkt”, z dopiskiem „Zabrakło N pkt do zaliczenia”, gdy zabrakło), czas, liczba odpowiedzi udzielonych i pominiętych,
+zakres i data. Zaliczenie rozstrzyga serwer (`passed`: poprawne ≥ `passPoints`), frontend niczego nie przelicza.
+Podejście **sprzed stałego formatu** (`passPoints: null`) ma w raporcie i w historii stary próg w procentach z liczbą
+poprawnych odpowiedzi, której wtedy wymagał (`pointsNeeded`), i nazwę wybranego wtedy zakresu.
 Dodatkowo: informacja o automatycznym zakończeniu po czasie, informacja o pytaniach, których nie dało się ocenić (usunięte
 albo już niedostępne; nie wliczają się do wyniku), wyniki według źródeł (gdy źródeł jest więcej niż jedno) oraz przegląd
 pytań z poprawnymi odpowiedziami, wyjaśnieniami i podstawą prawną (domyślnie tylko błędne, z przełącznikiem na wszystkie).

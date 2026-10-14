@@ -2,19 +2,18 @@ import { api } from "./axiosInstance";
 import type { TestQueueItem } from "./review";
 import type { QuestionOrigin } from "../lib/origin";
 
-/** Zakres egzaminu od najwęższego: źródło, przedmiot, kategoria; bez żadnego cały dostępny materiał. */
-export interface ExamScope {
-  categoryId?: number;
-  subjectId?: number;
-  sourceId?: number;
-}
-
 export type OptionKey = "A" | "B" | "C";
 
+/**
+ * Egzamin ma stały format: zawsze 150 pytań z całego materiału, zaliczenie od 100 punktów. Losuje je i ocenia serwer,
+ * użytkownik niczego nie wybiera (poza czasem, który liczy tylko frontend).
+ */
 export interface ExamStart {
   scopeLabel: string;
-  /** Ile pytań użytkownik chciał; gdy w zakresie jest mniej, pytań jest tyle, ile dostępnych. */
+  /** Ile pytań ma pełny egzamin (150); gdy w materiale jest mniej, pytań jest tyle, ile dostępnych. */
   requestedCount: number;
+  /** Ile punktów trzeba mieć, żeby zdać ten egzamin: 100, a przy krótszym zestawie proporcjonalnie. */
+  passPoints: number;
   questions: TestQueueItem[];
 }
 
@@ -24,10 +23,10 @@ export interface ExamAnswerPayload {
   selectedOption: OptionKey | null;
 }
 
-export interface ExamSubmitPayload extends ExamScope {
+/** Próg zaliczenia i zakres ustala serwer, więc w zgłoszeniu ich nie ma. */
+export interface ExamSubmitPayload {
   /** null = egzamin bez limitu czasu. */
   timeLimitMinutes: number | null;
-  passThresholdPercent: number;
   durationSeconds: number;
   /** Czy egzamin zakończył się sam, bo skończył się czas. */
   timedOut: boolean;
@@ -43,7 +42,13 @@ export interface ExamAttempt {
   correctCount: number;
   /** Wynik w procentach, zaokrąglony do 0,1. */
   scorePercent: number;
+  /** Próg w pełnych procentach (do wyświetlania liczy się `passPoints`, gdy jest). */
   passThresholdPercent: number;
+  /**
+   * Próg zaliczenia w punktach (100 z 150). null = podejście sprzed stałego formatu: miało własny próg w procentach
+   * (`passThresholdPercent`) i własny zakres.
+   */
+  passPoints: number | null;
   passed: boolean;
   timeLimitMinutes: number | null;
   durationSeconds: number;
@@ -82,8 +87,8 @@ export interface ExamResult {
   questions: ExamQuestionResult[];
 }
 
-export async function startExam(scope: ExamScope, questionCount: number): Promise<ExamStart> {
-  const res = await api.post<ExamStart>("/api/exams/start", { ...scope, questionCount });
+export async function startExam(): Promise<ExamStart> {
+  const res = await api.post<ExamStart>("/api/exams/start");
   return res.data;
 }
 

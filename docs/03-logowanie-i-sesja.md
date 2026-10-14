@@ -85,8 +85,8 @@ wspólnym komputerze nie zostają ślady po poprzednim użytkowniku (w szkicu eg
 | Gdzie | Klucz | Co | Kto zapisuje | Kiedy znika |
 |-------|-------|----|--------------|-------------|
 | `localStorage` | `accessToken` | Token sesji (JWT) | `AuthProvider.login` | Wylogowanie lub błąd 401 |
-| `localStorage` | `tutlaw.exam.draft.v1` | Niedokończony egzamin próbny: pytania, odpowiedzi, termin końca, adres konta właściciela | `features/exam/examStorage.ts` | Po wysłaniu egzaminu, po porzuceniu, po wylogowaniu |
-| `localStorage` | `tutlaw.exam.settings.v1` | Ostatnio użyte ustawienia egzaminu (zakres, liczba pytań, czas, próg) | `features/exam/examStorage.ts` | Po wylogowaniu |
+| `localStorage` | `tutlaw.exam.draft.v1` | Niedokończony egzamin próbny: pytania, odpowiedzi, termin końca, próg w punktach z serwera, adres konta właściciela (zapis w wersji 2; wersja 1 sprzed Etapu 28 też się wznawia) | `features/exam/examStorage.ts` | Po wysłaniu egzaminu, po porzuceniu, po wylogowaniu |
+| `localStorage` | `tutlaw.exam.settings.v1` | Ostatnio użyty limit czasu egzaminu (zakres, liczbę pytań i próg ustala format egzaminu, więc ich nie zapamiętujemy; zapis ze starszych wersji ma je jeszcze w sobie i są pomijane) | `features/exam/examStorage.ts` | Po wylogowaniu |
 | `localStorage` | `tutlaw.customTest.v1` | Ostatnio ułożony własny test: zaznaczone akty prawne (albo „wszystko”), rodzaj pytań, liczba pytań, lata egzaminu | `features/customTest/customTestStorage.ts` | Po wylogowaniu |
 | `localStorage` | `tutlaw.nav.collapsed.v1` | Czy panel boczny jest zwinięty (`1`) czy rozwinięty (`0`) | `components/layout/useNavCollapsed.ts` | Po wylogowaniu |
 

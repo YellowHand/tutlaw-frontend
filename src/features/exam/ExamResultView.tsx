@@ -29,7 +29,9 @@ export function ExamResultView({ result, onNewExam }: ExamResultViewProps) {
   const [onlyMistakes, setOnlyMistakes] = useState(true);
   const showMistakesOnly = onlyMistakes && mistakes.length > 0;
   const unanswered = attempt.questionCount - attempt.answeredCount;
-  const needed = pointsNeeded(attempt.questionCount, attempt.passThresholdPercent);
+  // Podejścia sprzed stałego formatu nie mają progu w punktach: dla nich liczymy go z progu w procentach.
+  const needed = attempt.passPoints ?? pointsNeeded(attempt.questionCount, attempt.passThresholdPercent);
+  const missing = attempt.passed ? 0 : Math.max(0, needed - attempt.correctCount);
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-4 sm:p-6">
@@ -56,7 +58,17 @@ export function ExamResultView({ result, onNewExam }: ExamResultViewProps) {
           <div>
             <dt className="text-fg-muted">Próg zaliczenia</dt>
             <dd className="font-medium tabular-nums">
-              {attempt.passThresholdPercent}% (co najmniej {needed} {pluralizePl(needed, { one: "poprawna", few: "poprawne", many: "poprawnych" })})
+              {attempt.passPoints !== null ? (
+                <>
+                  {attempt.passPoints} z {attempt.questionCount} pkt
+                </>
+              ) : (
+                <>
+                  {attempt.passThresholdPercent}% (co najmniej {needed}{" "}
+                  {pluralizePl(needed, { one: "poprawna", few: "poprawne", many: "poprawnych" })})
+                </>
+              )}
+              {missing > 0 && <span className="block text-xs font-normal text-fg-muted">Zabrakło {missing} pkt do zaliczenia.</span>}
             </dd>
           </div>
           <div>

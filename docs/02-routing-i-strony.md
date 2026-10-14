@@ -73,7 +73,7 @@ aplikacji](#menu-aplikacji)).
 | `/app/test/practice` | `TestSessionPage` (tryb `practice`) | Sesja z podanych pytań (`?cardIds=1,2,3`), np. błędy z egzaminu próbnego |
 | `/app/test/custom` | `TestSessionPage` (tryb `custom`) | Sesja „Własnego testu”: pytania wylosowane na ekranie układania (`?cardIds=1,2,3`) |
 | `/app/test/:subjectId` | `TestSessionPage` | Sesja testowa z jednego przedmiotu; `?sourceId=` zawęża do źródła |
-| `/app/exam` | `ExamPage` (`features/exam/ExamPage.tsx`) | Egzamin próbny: ustawienia, przebieg z zegarem, raport i historia |
+| `/app/exam` | `ExamPage` (`features/exam/ExamPage.tsx`) | Egzamin próbny w stałym formacie (150 pytań, zaliczenie od 100 punktów): ustawienia (tylko limit czasu), przebieg z zegarem, raport i historia |
 | `/app/custom-test` | `CustomTestPage` (`features/customTest/CustomTestPage.tsx`) | Własny test: wybór rodzajów i aktów prawnych, rodzaju pytań, lat egzaminu i liczby pytań. To ekran układania, nie sesja, więc menu zostaje |
 | `/app/tests` | `TestsPage` (`features/tests/TestsPage.tsx`) | Testy, poziom 1: znacznik filtra pochodzenia, pasek zaległych powtórek, „Szybki start” (cały materiał, własny test, moje błędy, egzamin), rodzaje |
 | `/app/tests/:categoryId` | `TestCategoryPage` (`features/tests/TestCategoryPage.tsx`) | Testy, poziom 2: przedmioty lub akty prawne rodzaju, przycisk „Test z całego rodzaju” przy tytule |
@@ -158,7 +158,7 @@ Pełna lista wywołań serwera z nazwami funkcji jest w [05](05-warstwa-api-i-da
 | Sesja testowa | Kolejka pytań (zakres, błędy, ćwiczenia, własny test), zapis odpowiedzi, ustawienia (tasowanie), zaległości, „Dodaj do fiszek” |
 | Testy (poziomy 1–3) | Katalog Testów, filtr pochodzenia, liczba błędów i zaległych |
 | Własny test | Katalog Testów (drzewo wyboru), liczniki „Dostępnych: N” (`custom-test/counts`), statystyki według pochodzenia (lista lat), losowanie pytań (`custom-test`) |
-| Egzamin | Katalog Testów, start i zakończenie egzaminu, historia |
+| Egzamin | Katalog Testów (tylko liczba dostępnych pytań), start (bez ciała, serwer losuje 150 pytań) i zakończenie egzaminu (serwer ocenia i ustala próg), historia |
 | Statystyki | Przegląd, statystyki według pochodzenia, opanowanie rozdziałów, najsłabsze karty, lista przedmiotów |
 | Konto | Adres konta, ustawienia nauki, trudne i zawieszone pytania, zmiana hasła, eksport i usunięcie konta |
 | Logowanie i rejestracja | Wywołania `/api/auth/*` |
