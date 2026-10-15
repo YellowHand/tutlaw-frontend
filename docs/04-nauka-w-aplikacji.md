@@ -52,18 +52,23 @@ stateDiagram-v2
 ```
 
 1. Użytkownik widzi pytanie, trzy odpowiedzi i przełącznik **„Nie jestem pewien”** (skrót `G`). Przełącznik zaznacza się
-   **przed** odpowiedzią i znika po jej wybraniu.
+   **przed** odpowiedzią i znika po jej wybraniu. Gdy to jego **pierwsze pytanie w życiu** (`testAnswers === 0` w ustawieniach
+   interfejsu), pod przełącznikiem stoi jednorazowa podpowiedź „Zaznacz, jeśli zgadujesz. Takie pytanie wróci szybciej, nawet
+   przy dobrej odpowiedzi.” (`data-testid="guess-hint"`); po pierwszej odpowiedzi licznik rośnie i podpowiedź już się nie pokazuje.
+   Nad pytaniem, obok strzałek podglądu, jest mały [licznik czasu](#licznik-czasu-przy-pytaniu).
 2. Wybór odpowiedzi blokuje pozostałe i wysyła `POST /api/review/test-answer` z numerem karty, wybraną opcją (A, B lub C), czasem
-   odpowiedzi w sekundach i znacznikiem `guessed`. Czas liczy się od pokazania pytania, a podgląd poprzednich pytań go
-   wstrzymuje.
+   odpowiedzi w sekundach, znacznikiem `guessed` i (w sesji własnego testu) numerem sesji `sessionId`. Czas liczy się od
+   pokazania pytania, ale tylko przy widocznej karcie przeglądarki, a podgląd poprzednich pytań go wstrzymuje. Odpowiedź
+   serwera niesie też `newQuestion` (czy to pierwsze zobaczenie tego pytania), z czego frontend liczy „nowe pytania w tej sesji”.
 3. Odpowiedź serwera (`TestAnswerResult`) steruje wynikiem:
    - poprawna odpowiedź podświetla się na zielono, wybrana błędna na czerwono, pozostałe wyszarzają;
    - nagłówek „Poprawnie!” albo „Niepoprawnie” i zdanie o zapisanej ocenie (tabela niżej);
    - wyjaśnienie (jeśli jest), podstawa prawna i data stanu prawnego (`LegalBasisLine`);
    - podpowiedź o trudnym pytaniu, jeśli `leech` jest prawdą (patrz niżej);
    - informacja o fiszce: „Dodałem fiszkę do tego pytania w Fiszkach.” przy pierwszym pewnym błędzie.
-4. Pod wynikiem są przyciski: **Dodaj do fiszek / Usuń z fiszek**, **Zgłoś błąd**, **Ukryj** (tylko administrator),
-   **Zawieś pytanie** (tylko przy trudnym pytaniu) oraz **Dalej** albo **Zakończ test**.
+4. Pod wynikiem są przyciski: **Dodaj do fiszek / Usuń z fiszek**, **Ukryj** (tylko administrator),
+   **Zawieś pytanie** (tylko przy trudnym pytaniu) oraz **Dalej** albo **Zakończ test**. **Zgłoś błąd** leży w prawym górnym
+   rogu panelu wyniku i pojawia się dopiero po odpowiedzi (patrz [Zgłoś błąd](#zgłoś-błąd)).
 5. Gdy zapis się nie uda (np. brak internetu), odpowiedzi odblokowują się i pojawia się komunikat „Nie udało się zapisać
    odpowiedzi. Spróbuj ponownie.”: nic nie przepada.
 
@@ -112,6 +117,12 @@ Ekran „Brawo!” pokazuje liczbę poprawnych odpowiedzi i, zależnie od sytuac
 Dodatkowe porcje („Rozwiąż jeszcze”, „Powtórz jeszcze”, „Powtórz teraz”) są traktowane jak nowa, mniejsza sesja: informacja o
 zaległościach z początku znika, bo jej już nie dotyczy.
 
+**Podsumowanie sesji** (`features/review/SessionSummary.tsx`, `data-testid="session-summary"`) stoi na ekranie „Brawo!” pod
+wynikiem, w testach i w fiszkach. Ma najwyżej dwa zdania: „Nowe pytania w tej sesji: N” (w fiszkach „Nowe fiszki w tej sesji: N”;
+liczone z `newQuestion` / `newCard` z odpowiedzi serwera, pokazywane tylko gdy N > 0) i „Jutro wróci N powtórek.” albo „Na jutro nie
+masz żadnych powtórek.” (`GET /api/review/due-tomorrow?mode=TEST|FLASHCARD`, liczba powtórek wypadających do końca jutra, razem z tymi, które czekają już teraz). Błąd
+pobrania liczby jutrzejszych powtórek nie psuje ekranu: ten wiersz po prostu się nie pokazuje.
+
 ## Sesja fiszek (`StudySessionPage`)
 
 ```mermaid
@@ -142,13 +153,19 @@ stateDiagram-v2
 - Jeśli zapis oceny się nie uda, karta zostaje na ekranie z odkrytą odpowiedzią i komunikatem; można ocenić ją jeszcze raz.
 - Koniec sesji i przyciski dodatkowe działają jak w teście: „Ucz się jeszcze N fiszek” (max 10 nowych), „Powtórz jeszcze N fiszek”
   (zaległe ponad limit, max 20), „Wróć do Fiszek”, „Przejrzyj powtórki”.
-- Pod kartą są te same przyciski pomocnicze: „Zgłoś błąd”, „Zawieś” (przy trudnej fiszce) i „Ukryj” (administrator).
+- Pod kartą są przyciski pomocnicze „Zawieś” (przy trudnej fiszce) i „Ukryj” (administrator). „Zgłoś błąd” leży w prawym
+  górnym rogu **odwróconej** karty (dopiero po odsłonięciu odpowiedzi), tak samo jak w teście.
+- Nad kartą jest ten sam mały [licznik czasu](#licznik-czasu-przy-pytaniu); w fiszkach pokazuje czas do odsłonięcia odpowiedzi,
+  a na serwer z oceną idzie łączny czas od pokazania karty do oceny (`timeSpentSeconds`, też tylko przy widocznej karcie). Odpowiedź na ocenę niesie `newCard`
+  (pierwsze zobaczenie fiszki), z czego powstaje „Nowe fiszki w tej sesji” na ekranie końcowym.
 
 ## Skróty klawiszowe
 
 Skróty działają na całym oknie, ale **nie** wtedy, gdy użytkownik pisze w polu tekstowym, gdy trzyma `Ctrl`, `Alt` albo
 `Cmd`, ani w obszarach oznaczonych `data-no-shortcuts` (formularz zgłoszenia, przyciski pomocnicze). Reguła jest w
-`features/review/keyboard.ts` (`isTyping`). Podpowiedź skrótów (`KeyboardHint`) pokazuje się tylko na szerokich ekranach.
+`features/review/keyboard.ts` (`isTyping`). Podpowiedź skrótów (`KeyboardHint`) pokazuje się tylko na szerokich ekranach (od `md`);
+na telefonie jej nie ma, a klawiatury i tak nie ma (przy ocenach fiszek i odpowiedziach testu cyfry i litery zostają na
+samych przyciskach).
 
 | Ekran | Klawisze | Działanie |
 |-------|----------|-----------|
@@ -164,6 +181,52 @@ Skróty działają na całym oknie, ale **nie** wtedy, gdy użytkownik pisze w p
 
 W fiszkach, gdy widać przyciski ocen albo podgląd, `Spacja` jest zablokowana i niczego nie robi (żeby nie oceniać przez
 przypadek).
+
+### Podpowiedź skrótów: kiedy znika
+
+Podpowiedź (`features/review/KeyboardHint.tsx`) jest dla początkujących, więc po nauczeniu się skrótów ustępuje:
+
+- **Znika sama po 10 odpowiedziach**, osobno w testach (`testAnswers`) i w fiszkach (`flashcardReviews`). Liczy serwer na koncie,
+  więc nie wraca na innym urządzeniu; frontend po każdej zapisanej odpowiedzi zwiększa swoją kopię licznika
+  (`useCountAnswer`), żeby podpowiedź zniknęła od razu po dziesiątej, bez kolejnego zapytania.
+- Mały przycisk **„×”** obok podpowiedzi chowa ją na stałe w danym trybie (`PUT /api/me/interface`: `testHintHidden` albo
+  `flashcardHintHidden`). Ukrycie działa od razu, nawet gdy zapis na koncie się nie uda.
+- Klawisz **`?`** (albo mały okrągły przycisk „?” w miejscu podpowiedzi) pokazuje ją z powrotem **na chwilę**: w tej wizycie
+  na ekranie, z przyciskiem zamknięcia. Nie zmienia to zapisanego ustawienia.
+- **W Koncie nie ma przełącznika** tej podpowiedzi: celowo, żeby nie rozbudowywać ustawień. Przy braku odpowiedzi serwera
+  (`GET /api/me/interface` zwraca błąd) frontend niczego nie chowa, bo lepiej pokazać podpowiedź niż ją zgubić.
+- Same skróty działają zawsze, niezależnie od tego, czy podpowiedź jest widoczna. Cyfry **1–4** na przyciskach ocen fiszek i litery
+  **A, B, C** na odpowiedziach zostają na przyciskach.
+
+## Licznik czasu przy pytaniu
+
+Przy każdym pytaniu testowym i każdej fiszce stoi mały, dyskretny licznik („0:07”, „1:15”; `QuestionTimer`, `data-testid="question-timer"`).
+Pokazuje, ile użytkownik myśli nad tym pytaniem.
+
+- **Liczy tylko przy widocznej karcie przeglądarki** (`useQuestionClock` + `QuestionClock`): po przełączeniu na inną kartę stoper
+  staje, po powrocie rusza dalej. Zatrzymuje go też odpowiedź, podgląd poprzednich pytań i ekran końcowy. Nowe pytanie albo nowa
+  porcja pytań („Powtórz teraz”) zaczyna od zera.
+- **Ten sam czas idzie na serwer** z odpowiedzią (`timeSpentSeconds`) i jest podstawą statystyki „średni czas na pytanie”.
+- **Kliknięcie licznika go chowa**, a kliknięcie samej ikony pokazuje go z powrotem. Ukrycie zapisuje się na koncie
+  (`PUT /api/me/interface`, pole `questionTimerHidden`), więc obowiązuje na każdym urządzeniu. Domyślnie licznik jest widoczny.
+  Chowanie nie zatrzymuje pomiaru: serwer dostaje czas także wtedy, gdy licznik jest schowany.
+- Czytnik ekranu nie odczytuje kolejnych sekund (czas w przycisku jest `aria-hidden`); przycisk ma opis „Ukryj licznik czasu” /
+  „Pokaż licznik czasu”. Przycisk ma wysokość jak sąsiednie strzałki (44 px na telefonie), żeby rząd się nie przesuwał.
+
+## Czas nauki
+
+To **osobna miara** od czasu odpowiedzi na pojedyncze pytanie: ile w sumie użytkownik spędził na nauce, razem z czytaniem wyjaśnień
+i zastanawianiem się między pytaniami. Mierzy go `StudyTimeTracker` (w `AppShell`, `features/studytime`), a pokazuje sekcja
+„Podsumowanie nauki” w Statystykach.
+
+- Liczy, **gdy bieżący ekran jest ekranem nauki** (`isStudyPath` w `config/navigation.ts`: testy, powtórki, błędy, własny test,
+  fiszki i egzamin), karta przeglądarki jest widoczna i w ciągu ostatnich **3 minut** był jakiś ruch (mysz, klawisz, dotyk,
+  przewijanie). Po 3 minutach bez ruchu liczenie pauzuje do następnego ruchu.
+- Czysta klasa `StudyTimeMeter` nie dotyka przeglądarki, więc jej zasady da się sprawdzić na zmyślonym zegarze. Jedno tyknięcie
+  nie doliczy więcej niż 2 sekundy: po uśpieniu komputera nie dopisują się godziny.
+- Zebrane sekundy idą na serwer co około **30 sekund** (`POST /api/me/study-time`, najwyżej 300 s w jednym zgłoszeniu), przy
+  wyjściu z ekranu nauki i przy zamknięciu strony (`pagehide`, żądanie `keepalive`, `api/keepalive.ts`). Gdy wysłanie się nie
+  uda, sekundy wracają do licznika (najwyżej godzina) i idą przy następnym zgłoszeniu. Serwer zapisuje je w podziale na dni.
 
 ## Zaległości i dzienny limit
 
@@ -204,15 +267,18 @@ odświeżane są liczniki (patrz [05](05-warstwa-api-i-dane.md)).
 
 ## Zgłoś błąd
 
-`ReportCardButton` (przycisk „Zgłoś błąd” pod pytaniem testowym i pod fiszką) otwiera **okno na środku ekranu** (`Dialog`), a nie
-formularz wstawiony pod pytaniem. W oknie: powód (cztery do wyboru: „Zaznaczona odpowiedź jest błędna”, „Przepis się zmienił”,
+`ReportCardButton` otwiera **okno na środku ekranu** (`Dialog`), a nie formularz wstawiony pod pytaniem. Przycisk jest **tylko po
+odpowiedzi**: w teście w prawym górnym rogu panelu wyniku (obok „Poprawnie!” / „Niepoprawnie”, poza obszarem `role="status"`,
+żeby czytnik nie czytał go razem z wynikiem), w fiszkach w prawym górnym rogu odwróconej karty (`variant="corner"`). Przed
+odpowiedzią go nie ma, bo wtedy użytkownik nie widzi jeszcze, co jest poprawne. W oknie: powód (cztery do wyboru: „Zaznaczona odpowiedź jest błędna”, „Przepis się zmienił”,
 „Literówka albo niejasne sformułowanie”, „Coś innego”; żaden nie jest zaznaczony z góry, a „Wyślij zgłoszenie” jest nieaktywne
 bez wyboru) i komentarz do 1000 znaków (przy „Coś innego” wymagany). Wysyła `POST /api/cards/{id}/reports`.
 
 - Esc, „Anuluj” i kliknięcie w tło zamykają okno; **kliknięcie w tło nie zamyka okna, gdy jest w nim wpisany komentarz**
   (nie ginie od przypadkowego kliknięcia). Każde otwarcie zaczyna od pustego formularza.
 - Po wysłaniu okno pokazuje podziękowanie („Dziękujemy! Zgłoszenie zapisane, sprawdzimy tę kartę.”) i przycisk „Zamknij”; po
-  jego zamknięciu w miejscu przycisku zostaje informacja „Zgłoszenie wysłane. Dziękujemy!” (z fokusem, żeby nie przepadł).
+  jego zamknięciu w miejscu przycisku zostaje informacja z fokusem, żeby fokus nie przepadł: w rogu panelu krótka „Zgłoszono.
+Dziękujemy!”, a w wariancie pod kartą (`inline`) pełna „Zgłoszenie wysłane. Dziękujemy!”.
   Przy następnej karcie wszystko zaczyna od zera (`key={cardId}`).
 - Jeśli użytkownik miał już otwarte zgłoszenie tego pytania, serwer je uzupełnia (`updated: true`) i okno mówi o tym osobnym
   zdaniem („Uzupełniliśmy Twoje wcześniejsze zgłoszenie tej karty. Dziękujemy!”).
@@ -297,21 +363,24 @@ są przeliczane wstecz.
 
 ### Okno startowe (`features/onboarding/OnboardingDialog.tsx`)
 
-`OnboardingGate` stoi w `AppShell` i czyta ustawienia nauki. Gdy `examOrigin` jest dokładnie `null` (nowe konto, które nie
-wybrało aplikacji), otwiera okno modalne „Witaj w Tutlaw”. **Wybór aplikacji jest obowiązkowy**: okno można zamknąć tylko
-wybierając aplikację i klikając „Zacznij naukę” (albo wylogowując się).
+`OnboardingGate` stoi w `AppShell` i czyta ustawienia nauki. Gdy `startChoiceMade` jest dokładnie `false` (nowe konto, które nie
+zrobiło wyboru), otwiera okno modalne „Witaj w Tutlaw”. **Wybór jest obowiązkowy**: okno można zamknąć tylko wybierając aplikację
+albo „Jestem studentem” i klikając „Zacznij naukę” (albo wylogowując się).
 
-- Dwie grupy wyboru: „Do jakiego egzaminu się przygotowujesz?” (pięć aplikacji z wierszem terminu) i „Wygląd strony” (Ciemny
-  zaznaczony z góry, Jasny). Z aplikacji biorą się odliczanie, plan dnia i zawężenie pytań w Testach (backend ustawia przy
-  wyborze filtr pochodzenia na wybraną aplikację i pytania autorskie).
-- „Zacznij naukę” jest nieaktywne, dopóki nie wybrano aplikacji, a pod przyciskiem stoi podpowiedź „Wybierz aplikację, żeby
-  przejść dalej.” Okno nie ma przycisku zamknięcia, Esc i kliknięcie w tło nic nie robią (`Dialog` z `dismissible={false}`; gdyby
+- Dwie grupy wyboru: „Do jakiego egzaminu się przygotowujesz?” (pięć aplikacji z wierszem terminu oraz szósta pozycja
+  **„Jestem studentem / jeszcze nie wybrałem”**) i „Wygląd strony” (Ciemny zaznaczony z góry, Jasny). Z aplikacji biorą się
+  odliczanie, plan dnia i zawężenie pytań w Testach (backend ustawia przy wyborze filtr pochodzenia na wybraną aplikację i
+  pytania autorskie). **Student** nie ma aplikacji, terminu ani odliczania, a filtr pytań obejmuje wszystkie pochodzenia
+  (`PUT /api/me/exam` z `{"student": true}`; w ustawieniach wtedy `startChoiceMade = true`, `examOrigin = null`). Tę samą
+  pozycję ma lista „Aplikacja, do której się przygotowuję” w Koncie, więc wybór można zmienić.
+- „Zacznij naukę” jest nieaktywne, dopóki nic nie wybrano, a pod przyciskiem stoi podpowiedź „Wybierz aplikację albo opcję dla
+  studentów, żeby przejść dalej.” Okno nie ma przycisku zamknięcia, Esc i kliknięcie w tło nic nie robią (`Dialog` z `dismissible={false}`; gdyby
   przeglądarka mimo to zamknęła okno, otworzy się z powrotem).
 - Wybór wyglądu działa od razu jako **podgląd** (zmienia całą stronę), ale niczego nie zapisuje. Zapis dzieje się dopiero po
   „Zacznij naukę”: najpierw `PUT /api/me/theme` (tylko gdy wygląd się zmienił), potem `PUT /api/me/exam`. Błąd któregokolwiek
   kroku zostaje w oknie jako komunikat z serwera i można ponowić (gdy zawiedzie zapis wyglądu, aplikacja nie jest wysyłana).
-- Okno nie blokuje aplikacji, gdy nie wiadomo, czy aplikację wybrano: błąd pobrania ustawień, ładowanie albo odpowiedź bez
-  `examOrigin` nie otwierają go. Konta, które aplikację już wybrały, nie widzą okna wcale; stare konta bez wyboru zobaczą je
+- Okno nie blokuje aplikacji, gdy nie wiadomo, czy wybór zrobiono: błąd pobrania ustawień, ładowanie albo odpowiedź bez
+  `startChoiceMade` nie otwierają go. Konta, które aplikację już wybrały, nie widzą okna wcale; stare konta bez wyboru zobaczą je
   przy najbliższym wejściu do aplikacji.
 - Okno jest `Dialog`em, więc skróty klawiszowe sesji pod nim nie działają, a fokus jest uwięziony w oknie.
 
@@ -329,18 +398,47 @@ wybierając aplikację i klikając „Zacznij naukę” (albo wylogowując się)
 
 ## Własny test (`features/customTest`)
 
-Sesja nauki ułożona przez użytkownika: wybiera rodzaje i akty prawne, które pytania (wszystkie, nowe, „Moje błędy”,
-zaległe), opcjonalnie lata egzaminu i liczbę pytań (1–200). Opis ekranu jest w [02](02-routing-i-strony.md). Zasady:
+Sesja nauki ułożona przez użytkownika: wybiera rodzaje i akty prawne, rodzaj pytań (wszystkie, nowe, „Moje błędy”, zaległe) i liczbę
+pytań. Opis ekranu jest w [02](02-routing-i-strony.md). Zasady:
 
 - **To nauka, nie egzamin.** Nie ma progu, wyniku „zdał / nie zdał” ani zegara. Sesja kończy się zwykłym ekranem
   „Brawo! Własny test zakończony.”.
-- **Odpowiedzi liczą się jak w zwykłym teście.** Idą przez `POST /api/review/test-answer`, dostają ocenę pamięci (FSRS), a
-  błędne trafiają do „Moich błędów”.
+- **Odpowiedzi liczą się jak w zwykłym teście.** Idą przez `POST /api/review/test-answer` (z numerem sesji `sessionId`), dostają
+  ocenę pamięci (FSRS), a błędne trafiają do „Moich błędów”.
+- **Liczba pytań to tylko 10, 20, 50, 100 albo 150** (stała `COUNT_CHOICES`; serwer odrzuca inne liczby komunikatem
+  „Wybierz liczbę pytań: 10, 20, 50, 100 albo 150.”). Nie ma pola „Inna liczba” ani wyboru lat egzaminu. Ekran pokazuje
+  **tylko te liczby, które się mieszczą** w dostępnych pytaniach (`countOptions` w `selection.ts`): przy 35 pytaniach są 10 i 20,
+  a na końcu „Wszystkie (35)”; przy mniej niż 10 pytaniach jest jedna opcja „Wszystkie (N)”. „Wszystkie (N)”, gdy N nie jest
+  jedną z liczb, wysyła na serwer najmniejszą dozwoloną liczbę nie mniejszą niż N (dla N do 150), więc serwer daje tyle, ile jest.
+- **Co jest wybrane domyślnie** (`pickCountOption`): zapamiętana liczba, a gdy jej nie ma wśród dostępnych, **największa
+  dostępna nieprzekraczająca zapamiętanej** (kto prosił o 100, a ma 35 pytań, dostaje „Wszystkie (35)”). Bez zapamiętanego
+  wyboru proponujemy 20. Zapamiętywane są rodzaj pytań i liczba (`customTestStorage.ts`).
 - **Dwa kroki.** Ekran pyta serwer o liczby pytań (`GET /api/review/custom-test/counts`), a po „Rozpocznij test”
-  losuje numery (`POST /api/review/custom-test`). Sesja `/app/test/custom?cardIds=…` pobiera te pytania kolejką ćwiczeń.
+  losuje numery i **zapisuje sesję** (`POST /api/review/custom-test` zwraca `cardIds` i `sessionId`). Sesja
+  `/app/test/custom?cardIds=…&sessionId=…` pobiera te pytania kolejką ćwiczeń.
 - **Filtr pochodzenia obowiązuje automatycznie** (serwer), a drzewo wyboru pokazuje tylko działy, w których po filtrze
   jest co rozwiązywać. Zawieszone, ukryte i niedostępne pytania nie wchodzą do testu.
 - **Dzienny limit nowych pytań go nie dotyczy.** Użytkownik sam wybiera, ile pytań chce rozwiązać.
+- W podsumowaniu nad przyciskiem opis zakresu i rodzaju łączą się przecinkiem („Cały materiał, Wszystkie”), bez środkowych kropek.
+
+### Moje testy
+
+Każdy własny test jest **zapisywany w chwili startu**, nie dopiero po ukończeniu (`MyTestsPage`, `MyTestDetailPage`; adresy
+`/app/custom-test/history` i `/app/custom-test/history/:id`, link „Moje testy” na ekranie układania; menu dalej świeci „Testy”).
+
+- **Lista** (`GET /api/custom-tests/sessions`) pokazuje od najnowszego: oznaczenie „Ukończony” albo **„Nieukończony”**, wynik
+  („poprawne / pytania”), nazwę zakresu, rodzaj pytań, datę i czas; przy nieukończonym też „odpowiedzi: N z M”. Test zaczęty
+  i porzucony zostaje na liście. Gdy testów nie ma, jest zaproszenie „Ułóż test”.
+- **Szczegóły** (`GET /api/custom-tests/sessions/{id}`): wynik, rodzaj pytań, data startu, liczba odpowiedzi (i ile z „Nie jestem
+  pewien”), czas odpowiadania oraz lista pytań z odpowiedziami, wyjaśnieniami i oznaczeniem, jak poszły; przełącznik „Wszystkie /
+  Błędne i bez odpowiedzi”. Do nieukończonego testu nie da się wrócić, ekran mówi o tym wprost. Gdy test nie istnieje albo nie
+  należy do użytkownika, ekran pokazuje błąd z linkiem „Wróć do listy testów”.
+- **„Ułóż ponownie z tymi ustawieniami”** otwiera ekran układania ze wstępnie zaznaczonymi tymi samymi działami, rodzajem pytań
+  i liczbą (ustawienia jadą w stanie nawigacji, `CustomTestPrefill`). Działy, których już nie ma w drzewie (np. po zmianie
+  filtra pochodzenia), są pomijane z komunikatem; komunikat jest też, gdy od tamtego czasu zmienił się filtr pochodzenia.
+  Przycisk niczego nie uruchamia sam: użytkownik klika „Rozpocznij test”, więc powstaje nowa sesja.
+- Do **Moich testów nie trafiają** zwykłe powtórki, „Popraw błędy” ani „Powtórz zaległe”; to osobne sesje.
+- W Statystykach („Podsumowanie nauki”) liczba testów to liczba własnych testów, a egzaminy próbne są liczone osobno.
 
 ## Egzamin próbny (`features/exam`)
 

@@ -14,12 +14,24 @@ Wszystkie wywołania idą przez jeden wspólny obiekt `api` (biblioteka axios):
 | Ustawienie | Wartość |
 |------------|---------|
 | Adres serwera (`baseURL`) | Zmienna `VITE_API_BASE_URL` z pliku `.env` (patrz [08](08-konfiguracja-i-uruchomienie.md)) |
-| Nagłówek `Authorization` | Dokładany do **każdego** żądania, jeśli w `localStorage` jest token: `Bearer <token>` |
+| Nagłówek `Authorization` | Dokładany do **każdego** żądania, jeśli w `localStorage` jest token dostępu: `Bearer <token>` |
 | Czas oczekiwania, ponawianie | Brak własnych ustawień. Ponawianie robi tylko React Query (raz) |
-| Obsługa odpowiedzi `401` | Wylogowanie i przejście na `/login`. Szczegóły i wyjątki: [03](03-logowanie-i-sesja.md) |
+| Obsługa odpowiedzi `401` | Najpierw **odświeżenie sesji** tokenem odświeżającym i ponowienie żądania; dopiero gdy się nie uda, wylogowanie i przejście na `/login`. Szczegóły i wyjątki: [03](03-logowanie-i-sesja.md) |
 
-Wywołania do `/api/auth/...` (logowanie, rejestracja, reset hasła) nie wylogowują po `401`, bo błąd tam znaczy „złe dane
-logowania”, a nie „sesja wygasła”.
+Wywołania do `/api/auth/...` (logowanie, rejestracja, reset hasła, odświeżenie) nie wywołują odświeżania ani wylogowania po
+`401`, bo błąd tam znaczy „złe dane logowania” albo „token odświeżający nieważny”, a nie „sesja wygasła”.
+
+### Dwa miejsca poza wspólnym klientem
+
+Wszystko inne idzie przez obiekt `api`. Wyjątki są dwa i oba mają powód:
+
+- **`api/refreshSession.ts`** używa osobnego klienta axios (`bare`) bez interceptorów, żeby własne `401` przy odświeżaniu
+  nie wpadło w pętlę. To tu jest `POST /api/auth/refresh`: jedno wspólne odświeżenie dla wszystkich równoległych żądań w
+  karcie i blokada Web Locks między kartami (bez niej dwie karty zużyłyby ten sam jednorazowy token, a serwer uznałby to
+  za kradzież).
+- **`api/keepalive.ts`** wysyła `fetch` z `keepalive: true`. Dzięki temu wylogowanie (`POST /api/auth/logout`) i ostatnie
+  sekundy czasu nauki (`POST /api/me/study-time`) dochodzą do serwera nawet wtedy, gdy karta się właśnie zamyka albo
+  strona się przeładowuje. `navigator.sendBeacon` odpada, bo nie umie wysłać nagłówka `Authorization`.
 
 ### Wzorzec pliku w `api/`
 
@@ -40,8 +52,8 @@ prośba o reset hasła i ustawienie nowego hasła) jest wpisanych bezpośrednio 
 
 ## Wszystkie wywołania serwera
 
-Frontend używa **54 z 64** endpointów backendu (łącznie 55 wywołań w kodzie, bo `GET /api/statistics/chapters` jest
-wołany z dwóch miejsc). Endpointów, których frontend nie używa, jest 10; lista jest [niżej](#endpointy-których-frontend-nie-używa).
+Frontend używa **63 z 73** endpointów backendu (łącznie 65 wywołań w kodzie, bo `GET /api/statistics/chapters` i
+`POST /api/me/study-time` są wołane z dwóch miejsc). Endpointów, których frontend nie używa, jest 10; lista jest [niżej](#endpointy-których-frontend-nie-używa).
 Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć wyszukiwarką.
 
 ### Konto i logowanie (bez tokenu)
@@ -50,10 +62,12 @@ Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć w
 |-----------|----------------|---------------|
 | `POST /api/auth/register` | `pages/RegisterPage.tsx` | Formularz rejestracji (mail prywatny, mail uczelniany, hasło, zgoda na regulamin) |
 | `GET /api/auth/verify` | `pages/VerifyPage.tsx` | Link aktywacyjny z maila (`/verify?token=`); jedno wywołanie na wejście dzięki `useRef` |
-| `POST /api/auth/login` | `pages/LoginPage.tsx` | Logowanie; odpowiedź zawiera `accessToken` |
+| `POST /api/auth/login` | `pages/LoginPage.tsx` | Logowanie; odpowiedź zawiera `accessToken` i `refreshToken`, oba zapisywane w `localStorage` |
 | `POST /api/auth/resend-verification` | `features/auth/ResendVerification.tsx` | „Wyślij link ponownie” (na ekranach logowania i weryfikacji) |
 | `POST /api/auth/forgot-password` | `pages/ForgotPasswordPage.tsx` | Prośba o link do zmiany hasła |
 | `POST /api/auth/reset-password` | `pages/ResetPasswordPage.tsx` | Ustawienie nowego hasła tokenem z maila |
+| `POST /api/auth/refresh` | `refreshSession` (`api/refreshSession.ts`) | Po `401` na zwykłym żądaniu: wymiana tokenu odświeżającego na nową parę. Wywołuje go interceptor, nie ekran |
+| `POST /api/auth/logout` | `postKeepalive` (`api/keepalive.ts`), wołane z `AuthContext` | „Wyloguj się”: unieważnia sesję na serwerze; wysyłane przez `fetch` z `keepalive`, bez nagłówka `Authorization` (token odświeżający idzie w treści) |
 
 ### Konto zalogowanego
 
@@ -61,7 +75,7 @@ Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć w
 |-----------|----------------|---------------|
 | `GET /api/me` | `fetchMe` (`features/account/api.ts`) | Konto (adres e-mail) i Egzamin (adres jest „właścicielem” zapisanego szkicu egzaminu); klucz `["me"]` |
 | `GET /api/users/me/export` | `fetchAccountExport` | Karta „Pobierz moje dane” w Koncie (plik JSON) |
-| `PUT /api/users/me/password` | `changePassword` | Karta „Zmień hasło”; zwraca nowy token, który zastępuje stary |
+| `PUT /api/users/me/password` | `changePassword` | Karta „Zmień hasło”; zwraca nową parę tokenów, która zastępuje starą |
 | `DELETE /api/users/me` | `deleteAccount` | Karta „Usuń konto”; hasło idzie w treści żądania (`data: { password }`) |
 
 ### Struktura materiału (Fiszki, Testy)
@@ -86,12 +100,15 @@ Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć w
 | `GET /api/review/mistakes-queue` | `getMistakesQueue` | Sesja „Powtórz moje błędy” |
 | `GET /api/review/mistakes-count` | `getMistakesCount` | Przycisk „Moje błędy” (z liczbą) w „Szybkim starcie” na ekranie Testy, wiersz „Moje błędy” w „Do poprawy” na Pulpicie |
 | `GET /api/review/custom-test/counts` | `getCustomTestCounts` (`api/customTest.ts`) | Własny test: „Dostępnych: N” przy każdym rodzaju pytań w wybranym zakresie |
-| `POST /api/review/custom-test` | `drawCustomTest` (`api/customTest.ts`) | Własny test: losowanie numerów pytań po „Rozpocznij test” |
+| `POST /api/review/custom-test` | `drawCustomTest` (`api/customTest.ts`) | Własny test: losowanie numerów pytań po „Rozpocznij test”; odpowiedź ma `sessionId` zapisanego testu. Liczba pytań to 10, 20, 50, 100 albo 150, bez lat egzaminu |
+| `GET /api/custom-tests/sessions` | `listCustomTestSessions` (`api/customTest.ts`) | „Moje testy”: lista zapisanych własnych testów (`/app/custom-test/history`) |
+| `GET /api/custom-tests/sessions/{id}` | `getCustomTestSession` (`api/customTest.ts`) | „Moje testy”: szczegóły testu z odpowiedziami (`/app/custom-test/history/:id`) i przycisk „Ułóż ponownie z tymi ustawieniami” |
+| `GET /api/review/due-tomorrow` | `getDueByTomorrow` (`api/review.ts`) | Podsumowanie na ekranie „Brawo!”: „Jutro wróci N powtórek” |
 | `GET /api/review/queue/new-cards-available` | `getAvailableNewCardsCount` | Przycisk „Dołóż nowe” na końcu sesji |
 | `GET /api/review/queue/backlog` | `getBacklog` | Informacja o zaległościach i przycisk „Powtórz jeszcze” |
 | `GET /api/review/due-count` | `getDueCount` | Odznaki w menu, karta „Na dziś” na Pulpicie (osobno dla pytań i fiszek), ekran Testy |
-| `POST /api/review` | `submitReview` | Ocena fiszki (1–4) |
-| `POST /api/review/test-answer` | `submitTestAnswer` | Odpowiedź w teście (A/B/C, „Nie jestem pewien”) |
+| `POST /api/review` | `submitReview` | Ocena fiszki (1–4); odpowiedź `{ newCard }` zasila podsumowanie sesji |
+| `POST /api/review/test-answer` | `submitTestAnswer` | Odpowiedź w teście (A/B/C, „Nie jestem pewien”), z czasem odpowiedzi i, w sesji własnego testu, z `sessionId`; odpowiedź ma `newQuestion` |
 
 ### Fiszki z pytań, zgłoszenia, ukrywanie, zawieszanie
 
@@ -124,6 +141,7 @@ Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć w
 | `GET /api/statistics/weak-cards` | `fetchWeakCards` | Tabela „Karty, które najłatwiej zapomnisz” |
 | `GET /api/statistics/tests` | `fetchTestStats` | Karta „Ostatnie 30 dni” (Statystyki); Pulpit: „Na dziś” i „Postęp” (liczba rozpoczętych pytań) |
 | `GET /api/statistics/origins` | `fetchOriginStats` | Sekcja „Opanowanie” w Statystykach (według aplikacji i roku egzaminu). Pulpit tego nie pobiera |
+| `GET /api/statistics/learning-summary` | `fetchLearningSummary` | Sekcja „Podsumowanie nauki” w Statystykach: odpowiedzi, egzaminy, własne testy, czas nauki, średnie czasy odpowiedzi |
 
 ### Ustawienia
 
@@ -131,7 +149,10 @@ Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć w
 |-----------|----------------|---------------|
 | `GET /api/me/settings` | `getLearningSettings` | Karta „Ustawienia nauki” w Koncie, Pulpit (wybrana aplikacja, odliczanie, cel na dziś), okno startowe i wygląd strony (`ThemeSync`, `OnboardingGate` w `AppShell`), Statystyki (domyślny zakres), a także jednorazowo przy starcie sesji Testów (czy tasować odpowiedzi) |
 | `PUT /api/me/settings` | `updateLearningSettings` | Zapis ustawień nauki (limity, retencja, tasowanie; bez daty egzaminu i bez wyglądu). `newTestQuestionsPerDay: null` oznacza limit automatyczny |
-| `PUT /api/me/exam` | `chooseExam` (`api/settings.ts`) | Wybór aplikacji, do której użytkownik się przygotowuje: obowiązkowe okno startowe i sekcja „Egzamin” w Koncie. Backend jednorazowo ustawia też filtr pochodzenia |
+| `PUT /api/me/exam` | `chooseExam` (`api/settings.ts`) | Wybór aplikacji, do której użytkownik się przygotowuje, albo „Jestem studentem” (`{ student: true }`): obowiązkowe okno startowe i sekcja „Egzamin” w Koncie. Backend jednorazowo ustawia też filtr pochodzenia |
+| `GET /api/me/interface` | `getInterfaceSettings` (`api/interfaceSettings.ts`) | Ukrycie podpowiedzi skrótów (testy, fiszki), ukrycie licznika czasu i liczba dotychczasowych odpowiedzi (do 10). Gdy się nie uda, podpowiedź i licznik zostają widoczne |
+| `PUT /api/me/interface` | `updateInterfaceSettings` (`api/interfaceSettings.ts`) | Zapis „×” przy podpowiedzi i kliknięcia w licznik czasu |
+| `POST /api/me/study-time` | `sendToServer` (`features/studytime/useStudyTimeTracker.ts`), przy zamykaniu karty `postKeepalive` | Porcje **czasu nauki** (1–300 s) co ok. 30 s na ekranach nauki |
 | `PUT /api/me/theme` | `chooseTheme` (`api/settings.ts`) | Wybór wyglądu strony (`DARK` albo `LIGHT`), zapisany na koncie: okno startowe (razem z wyborem aplikacji) i karta „Wygląd” w Koncie. Zwraca ustawienia nauki |
 | `GET /api/exam-terms` | `getExamTerms` (`api/examTerms.ts`) | Terminy egzaminów pięciu aplikacji: okno startowe (wiersz terminu przy aplikacji), informacja o terminie w Koncie i karta „Terminy egzaminów” |
 | `PUT /api/exam-terms/{origin}` | `updateExamTerm` (`api/examTerms.ts`) | Zapis albo usunięcie terminu (karta administratora w Koncie; serwer sprawdza rolę) |

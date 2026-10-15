@@ -5,7 +5,11 @@ import { getReviewQueue, submitReview, getAvailableNewCardsCount, type ReviewQue
 import { Skeleton } from "../components/ui/Skeleton";
 import { cn } from "../lib/cn";
 import { ROUTES } from "../config/routes";
+import { useCountAnswer, useQuestionTimerSetting } from "../features/interface/hooks";
 import { useRefreshReviewDataOnExit } from "../features/review/hooks";
+import { QuestionTimer } from "../features/review/QuestionTimer";
+import { SessionSummary } from "../features/review/SessionSummary";
+import { useQuestionClock } from "../features/review/useQuestionClock";
 import { isTyping } from "../features/review/keyboard";
 import { LegalBasisLine } from "../features/review/LegalBasisLine";
 import { BacklogFinishNotice, BacklogNotice } from "../features/review/BacklogNotice";
@@ -95,6 +99,8 @@ export function StudySessionPage() {
   const sourceId = searchParams.get("sourceId");
   const navigate = useNavigate();
   useRefreshReviewDataOnExit();
+  const countAnswer = useCountAnswer("flashcard");
+  const timerSetting = useQuestionTimerSetting();
 
   const [queue, setQueue] = useState<ReviewQueueItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -108,6 +114,8 @@ export function StudySessionPage() {
   const [extraError, setExtraError] = useState(false);
   const [availableExtra, setAvailableExtra] = useState<number | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  // Ile fiszek z tej sesji użytkownik ocenił po raz pierwszy w życiu (do podsumowania na końcu).
+  const [newCardCount, setNewCardCount] = useState(0);
   // Fiszki zawieszone w tej sesji: nie wracają na koniec kolejki po „Nie pamiętam".
   const [suspendedIds, setSuspendedIds] = useState<ReadonlySet<number>>(() => new Set());
   // Karty ukryte przez administratora w tej sesji.
@@ -122,9 +130,6 @@ export function StudySessionPage() {
   const [isExtraBatch, setIsExtraBatch] = useState(false);
   // null = bieżąca fiszka; liczba = indeks w history (podgląd tylko do odczytu)
   const [viewIndex, setViewIndex] = useState<number | null>(null);
-  // Ustawiane przy każdym wczytaniu pytania; początkowe 0 nigdy nie trafia do backendu.
-  const cardShownAt = useRef<number>(0);
-  const pausedAtRef = useRef<number | null>(null);
   const fetchedKeyRef = useRef<string | null>(null);
   // Numer ostatniego zapytania o kolejkę: spóźniona odpowiedź na starsze zapytanie jest ignorowana.
   const requestRef = useRef(0);
@@ -134,6 +139,16 @@ export function StudySessionPage() {
   const finished = !loading && !loadError && currentIndex >= queue.length;
   const backlog = useBacklog({ mode: "FLASHCARD", subjectId: numericSubjectId, sourceId: numericSourceId });
   const refetchBacklog = backlog.refetch;
+
+  // Dwa stopery tej samej karty, oba tylko przy widocznej karcie przeglądarki i nie w podglądzie poprzednich fiszek:
+  // widoczny licznik staje po odkryciu odpowiedzi (to jest czas przypominania sobie), a czas wysyłany na serwer
+  // liczy się do oceny, razem z czytaniem odpowiedzi, tak jak dotychczas.
+  const currentCardId = queue[currentIndex]?.cardId ?? null;
+  const cardKey = currentCardId === null ? null : `${currentCardId}:${currentIndex}`;
+  const live = !loading && !loadError && !finished && viewIndex === null;
+  const recallClock = useQuestionClock({ questionKey: cardKey, batch: queue, running: live && !showAnswer });
+  const ratingClock = useQuestionClock({ questionKey: cardKey, batch: queue, running: live, display: false });
+  const readRatingClock = ratingClock.read;
 
   useEffect(() => {
     // Bez subjectId (trasa /app/study) kolejka obejmuje cały materiał użytkownika.
@@ -151,13 +166,12 @@ export function StudySessionPage() {
         setCurrentIndex(0);
         setShowAnswer(false);
         setHistory([]);
+        setNewCardCount(0);
         setViewIndex(null);
         setRateError(false);
         setExtraError(false);
         setIsExtraBatch(false);
-        pausedAtRef.current = null;
         setLoading(false);
-        cardShownAt.current = Date.now();
       })
       .catch((e: unknown) => {
         if (requestRef.current !== requestId) return;
@@ -189,15 +203,16 @@ export function StudySessionPage() {
       setSubmitting(true);
       setRateError(false);
       try {
-        const timeSpentSeconds = Math.max(0, (Date.now() - cardShownAt.current) / 1000);
-        await submitReview(currentCard.cardId, rating, timeSpentSeconds);
+        const timeSpentSeconds = readRatingClock();
+        const result = await submitReview(currentCard.cardId, rating, timeSpentSeconds);
+        countAnswer();
+        if (result.newCard) setNewCardCount((prev) => prev + 1);
 
         setHistory((prev) => [...prev, { card: currentCard, rating }]);
         // „Nie pamiętam": karta wraca na koniec tej samej sesji, zamiast czekać do następnego dnia.
         if (rating === 1 && !suspendedIds.has(currentCard.cardId)) setQueue((prev) => [...prev, currentCard]);
         setShowAnswer(false);
         setCurrentIndex((prev) => prev + 1);
-        cardShownAt.current = Date.now();
       } catch {
         // Karta zostaje na ekranie z odkrytą odpowiedzią: można od razu ocenić ją jeszcze raz.
         setRateError(true);
@@ -205,7 +220,7 @@ export function StudySessionPage() {
         setSubmitting(false);
       }
     },
-    [queue, currentIndex, submitting, suspendedIds]
+    [queue, currentIndex, submitting, suspendedIds, readRatingClock, countAnswer]
   );
 
   // --- Cofanie: tylko podgląd, niczego nie wysyła do backendu ---
@@ -215,19 +230,14 @@ export function StudySessionPage() {
 
     if (viewIndex === null) {
       if (history.length === 0) return;
-      pausedAtRef.current = Date.now();
       setViewIndex(history.length - 1);
     } else if (viewIndex > 0) {
       setViewIndex(viewIndex - 1);
     }
   }, [submitting, viewIndex, history.length]);
 
+  // Czas spędzony w podglądzie nie liczy się do czasu nauki bieżącej fiszki: stopery stoją, gdy viewIndex !== null.
   const resumeLive = useCallback(() => {
-    // Czas spędzony w podglądzie nie liczy się do czasu nauki bieżącej fiszki.
-    if (pausedAtRef.current !== null) {
-      cardShownAt.current += Date.now() - pausedAtRef.current;
-      pausedAtRef.current = null;
-    }
     setViewIndex(null);
   }, []);
 
@@ -309,11 +319,10 @@ export function StudySessionPage() {
       setCurrentIndex(0);
       setShowAnswer(false);
       setHistory([]);
+      setNewCardCount(0);
       setViewIndex(null);
-      pausedAtRef.current = null;
       setAvailableExtra(null);
       setIsExtraBatch(true);
-      cardShownAt.current = Date.now();
     } catch {
       setExtraError(true);
     } finally {
@@ -373,6 +382,8 @@ export function StudySessionPage() {
             Nie udało się pobrać kolejnych fiszek. Spróbuj ponownie.
           </p>
         )}
+
+        {queue.length > 0 && <SessionSummary mode="FLASHCARD" newCount={newCardCount} newLabel="Nowe fiszki w tej sesji" />}
 
         {backlogDeferred > 0 && (
           <BacklogFinishNotice
@@ -439,6 +450,9 @@ export function StudySessionPage() {
           </p>
 
           <div className="flex items-center gap-1">
+            {timerSetting.ready && (
+              <QuestionTimer seconds={recallClock.seconds} hidden={timerSetting.hidden} onToggle={timerSetting.toggle} />
+            )}
             <button
               type="button"
               onClick={goBack}
@@ -528,8 +542,17 @@ export function StudySessionPage() {
             style={{ ...FACE_BASE, transform: "rotateY(180deg)" }}
             className="absolute inset-0 flex flex-col gap-4 rounded-2xl border border-accent-ink/30 bg-surface p-6 sm:p-8"
           >
-            <div className="shrink-0 border-b border-line pb-3">
-              <p className="line-clamp-3 text-sm text-fg-muted">{shownCard.front}</p>
+            <div className="flex shrink-0 items-start justify-between gap-3 border-b border-line pb-3">
+              <p className="line-clamp-3 min-w-0 flex-1 text-sm text-fg-muted">{shownCard.front}</p>
+              {/* „Zgłoś błąd" w prawym górnym rogu odwróconej karty; przycisk (44 px) wystaje w górę, żeby nie powiększać nagłówka. */}
+              {flipped && (
+                <ReportCardButton
+                  key={`report:${shownCard.cardId}:${shownIndex}`}
+                  cardId={shownCard.cardId}
+                  variant="corner"
+                  className="-mr-2 -mt-3 shrink-0"
+                />
+              )}
             </div>
 
             <div className="flex flex-1 flex-col overflow-y-auto">
@@ -610,6 +633,7 @@ export function StudySessionPage() {
 
       {!viewing && (
         <KeyboardHint
+          kind="flashcard"
           hints={
             showAnswer
               ? [
@@ -626,7 +650,6 @@ export function StudySessionPage() {
 
       {(viewing || showAnswer) && (
         <div className="flex flex-wrap items-center gap-x-4 self-start">
-          <ReportCardButton key={`report:${shownCard.cardId}:${shownIndex}`} cardId={shownCard.cardId} />
           <HideCardButton
             key={`hide:${shownCard.cardId}:${shownIndex}`}
             cardId={shownCard.cardId}

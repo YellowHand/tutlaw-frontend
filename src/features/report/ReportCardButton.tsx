@@ -11,6 +11,11 @@ import { REPORT_COMMENT_MAX_LENGTH, REPORT_REASONS } from "./reasons";
 interface ReportCardButtonProps {
   cardId: number;
   className?: string;
+  /**
+   * `inline` (domyślnie): przycisk w rzędzie akcji pod kartą, po wysłaniu pełne podziękowanie.
+   * `corner`: przycisk w rogu panelu wyniku albo karty, po wysłaniu krótkie podziękowanie, które mieści się w rogu.
+   */
+  variant?: "inline" | "corner";
 }
 
 const TOGGLE_CLASS =
@@ -29,7 +34,7 @@ function thanksText(result: ReportResult): string {
  * Skróty klawiszowe sesji (odpowiedzi, Enter, strzałki) działają tu tak samo jak w każdym oknie: nie działają
  * (data-no-shortcuts na przycisku i na oknie).
  */
-export function ReportCardButton({ cardId, className }: ReportCardButtonProps) {
+export function ReportCardButton({ cardId, className, variant = "inline" }: ReportCardButtonProps) {
   const [open, setOpen] = useState(false);
   const [sent, setSent] = useState<ReportResult | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -50,7 +55,7 @@ export function ReportCardButton({ cardId, className }: ReportCardButtonProps) {
         className={cn("flex min-h-11 items-center gap-2 text-sm text-fg-muted outline-none", className)}
       >
         <CheckCircle2 size={16} className="shrink-0 text-success" aria-hidden="true" />
-        Zgłoszenie wysłane. Dziękujemy!
+        {variant === "corner" ? "Zgłoszono. Dziękujemy!" : "Zgłoszenie wysłane. Dziękujemy!"}
       </p>
     );
   }

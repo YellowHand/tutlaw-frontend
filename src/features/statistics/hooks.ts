@@ -1,6 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import type { SessionMode } from "../../api/review";
-import { fetchActivity, fetchChapterMastery, fetchOriginStats, fetchOverview, fetchTestStats, fetchWeakCards } from "./api";
+import {
+  fetchActivity,
+  fetchChapterMastery,
+  fetchLearningSummary,
+  fetchOriginStats,
+  fetchOverview,
+  fetchTestStats,
+  fetchWeakCards,
+} from "./api";
 
 const STALE_TIME = 60_000;
 
@@ -52,6 +60,15 @@ export function useOriginStats() {
   return useQuery({
     queryKey: ["statistics", "origins"],
     queryFn: fetchOriginStats,
+    staleTime: STALE_TIME,
+  });
+}
+
+/** „Podsumowanie nauki". Klucz zaczyna się od „statistics", więc odświeża się razem z resztą po sesji nauki. */
+export function useLearningSummary() {
+  return useQuery({
+    queryKey: ["statistics", "learning-summary"],
+    queryFn: fetchLearningSummary,
     staleTime: STALE_TIME,
   });
 }

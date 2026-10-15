@@ -74,13 +74,17 @@ aplikacji](#menu-aplikacji)).
 | `/app/test/custom` | `TestSessionPage` (tryb `custom`) | Sesja „Własnego testu”: pytania wylosowane na ekranie układania (`?cardIds=1,2,3`) |
 | `/app/test/:subjectId` | `TestSessionPage` | Sesja testowa z jednego przedmiotu; `?sourceId=` zawęża do źródła |
 | `/app/exam` | `ExamPage` (`features/exam/ExamPage.tsx`) | Egzamin próbny w stałym formacie (150 pytań, zaliczenie od 100 punktów): ustawienia (tylko limit czasu), przebieg z zegarem, raport i historia |
-| `/app/custom-test` | `CustomTestPage` (`features/customTest/CustomTestPage.tsx`) | Własny test: wybór rodzajów i aktów prawnych, rodzaju pytań, lat egzaminu i liczby pytań. To ekran układania, nie sesja, więc menu zostaje |
+| `/app/custom-test` | `CustomTestPage` (`features/customTest/CustomTestPage.tsx`) | Własny test: wybór rodzajów i aktów prawnych, rodzaju pytań i liczby pytań (10, 20, 50, 100 albo 150; przy małym zakresie „Wszystkie (N)”). Link „Moje testy”. To ekran układania, nie sesja, więc menu zostaje |
+| `/app/custom-test/history` | `MyTestsPage` (`features/customTest/MyTestsPage.tsx`) | „Moje testy”: lista zapisanych własnych testów, od najnowszego, z oznaczeniem „Nieukończony” i wynikiem |
+| `/app/custom-test/history/:id` | `MyTestDetailPage` (`features/customTest/MyTestDetailPage.tsx`) | Szczegóły zapisanego testu: ustawienia, wynik i wszystkie pytania z odpowiedziami (filtr „Błędne i bez odpowiedzi”). Przycisk „Ułóż ponownie z tymi ustawieniami” otwiera ekran układania z wypełnionym wyborem |
 | `/app/tests` | `TestsPage` (`features/tests/TestsPage.tsx`) | Testy, poziom 1: znacznik filtra pochodzenia, pasek zaległych powtórek, „Szybki start” (cały materiał, własny test, moje błędy, egzamin), rodzaje |
 | `/app/tests/:categoryId` | `TestCategoryPage` (`features/tests/TestCategoryPage.tsx`) | Testy, poziom 2: przedmioty lub akty prawne rodzaju, przycisk „Test z całego rodzaju” przy tytule |
 | `/app/tests/:categoryId/:subjectId` | `TestSubjectPage` (`features/tests/TestSubjectPage.tsx`) | Testy, poziom 3: źródła przedmiotu w wierszach, przycisk „Test ze wszystkich źródeł” przy tytule i „Rozpocznij test” przy źródle |
-| `/app/statistics` | `StatisticsPage` (`features/statistics/StatisticsPage.tsx`) | Statystyki: opanowanie według aplikacji i roku, ostatnie 30 dni, aktywność, fiszki |
+| `/app/statistics` | `StatisticsPage` (`features/statistics/StatisticsPage.tsx`) | Statystyki: „Podsumowanie nauki” (odpowiedzi, egzaminy, własne testy, czas nauki, średni czas odpowiedzi), opanowanie według aplikacji i roku, ostatnie 30 dni, aktywność, fiszki |
 | `/app/account` | `AccountPage` (`features/account/AccountPage.tsx`) | Konto: ustawienia nauki, terminy egzaminów (administrator), trudne i zawieszone pytania, zmiana hasła, pobranie danych, usunięcie konta |
 | `/app/*` | `NotFoundPage` (`features/misc/NotFoundPage.tsx`) | Strona 404 w ramce aplikacji |
+
+Ekrany aplikacji (oprócz stron wejściowych: główna, logowanie, rejestracja i reszta kont) są ładowane **leniwie** (`React.lazy` i `Suspense`): ich kod pobiera się dopiero przy pierwszym wejściu, a w tym czasie widać krótki ekran ładowania (`components/RouteFallback.tsx`). Całość otacza granica błędów `ErrorBoundary` (`components/ErrorBoundary.tsx`): gdy ekran się wywróci, użytkownik widzi „Coś poszło nie tak” i przycisk „Odśwież stronę” zamiast pustej strony, a menu aplikacji zostaje. Przejście na inny adres naprawia widok.
 
 Kolejność tras w `router.tsx` ma znaczenie dla czytelności: trasy stałe (`test/mistakes`, `test/due`, `test/practice`, `test/custom`)
 stoją przed `test/:subjectId`, żeby ich nazwy nie były brane za numer przedmiotu.
@@ -243,29 +247,37 @@ Strona ma **jedną główną akcję** (złoty przycisk), a resztę przycisków c
 
 Ekran układania sesji nauki na adresie `/app/custom-test`; wchodzi się do niego z „Szybkiego startu” na ekranie Testy
 (przycisk „Własny test”). To **nauka, nie egzamin**: nie ma progu zaliczenia ani wyniku „zdał / nie zdał”. Użytkownik
-składa test w czterech krokach na jednym ekranie:
+składa test w trzech krokach na jednym ekranie:
 
 1. **Co** — drzewo rodzajów i aktów prawnych z polami wyboru (rodzaj zaznaczony w całości, częściowo albo wcale;
    domyślnie zaznaczone jest wszystko). Pokazuje tylko działy, w których jest teraz co rozwiązywać (według katalogu
    Testów, czyli z filtrem pochodzenia).
 2. **Które pytania** — wszystkie, nowe, „Moje błędy” albo zaległe, każde z liczbą dostępnych pytań w wybranym zakresie.
-3. **Ile pytań** — 10, 20, 50, 100, 200 albo „Inna liczba” (1–200). Gdy dostępnych jest mniej, test ma tyle, ile jest.
-4. **Lata egzaminu** (opcjonalnie) — „Od roku” i „Do roku” z listy lat, z których są pytania. Pytania autorskie nie mają
-   roku, więc przy wybranych latach nie wchodzą do testu.
+3. **Ile pytań** — tylko 10, 20, 50, 100 albo 150 (bez pola „Inna liczba” i bez wyboru lat egzaminu). Pokazane są wyłącznie
+   liczby, które mieszczą się w dostępnych pytaniach, a gdy nie wypada żadna pełna liczba, na końcu jest „Wszystkie (N)”; przy
+   bardzo małym zakresie jedyną opcją jest „Wszystkie (N)”.
 
 Liczby „Dostępnych: N” przychodzą z serwera po każdej zmianie zakresu (z opóźnieniem 250 ms, żeby szybkie klikanie
 nie dawało serii zapytań). Przycisk „Rozpocznij test” jest nieaktywny, dopóki liczby nie są policzone albo gdy nic nie
 spełnia warunków. Na komputerze podsumowanie z przyciskiem stoi w prawej kolumnie, na telefonie w pasku przyklejonym
 do dołu ekranu.
 
-Start robi dwa kroki: `POST /api/review/custom-test` losuje numery pytań, a ekran otwiera sesję `/app/test/custom?cardIds=…`,
-która pobiera te pytania zwykłą kolejką ćwiczeń (`GET /api/review/practice-queue`). Odpowiedzi w sesji idą tak jak w
-zwykłym teście: dostają ocenę pamięci (FSRS), a błędne trafiają do „Moich błędów”. Ostatni wybór jest zapamiętany w
-przeglądarce (`tutlaw.customTest.v1`, patrz [03](03-logowanie-i-sesja.md)).
+Start robi dwa kroki: `POST /api/review/custom-test` losuje numery pytań i **zapisuje sesję** (odpowiedź ma `cardIds` i
+`sessionId`), a ekran otwiera `/app/test/custom?cardIds=…&sessionId=…`, która pobiera te pytania zwykłą kolejką ćwiczeń
+(`GET /api/review/practice-queue`). Odpowiedzi w sesji idą tak jak w zwykłym teście: dostają ocenę pamięci (FSRS), a błędne
+trafiają do „Moich błędów”. Ostatni wybór jest zapamiętany w przeglądarce (`tutlaw.customTest.v1`, patrz
+[03](03-logowanie-i-sesja.md)). W nagłówku ekranu jest link „Moje testy”.
+
+### Moje testy (`features/customTest`)
+
+Zapisane własne testy: lista na `/app/custom-test/history` (`MyTestsPage`) i szczegóły na `/app/custom-test/history/:id`
+(`MyTestDetailPage`). Test zapisuje się w chwili startu, więc porzucony zostaje na liście z oznaczeniem „Nieukończony”.
+Szczegóły pokazują wynik, liczbę odpowiedzi, czas i pytania z odpowiedziami; przycisk „Ułóż ponownie z tymi ustawieniami” wraca
+na ekran układania z tym samym zakresem, rodzajem pytań i liczbą. Szczegóły zasad: [04](04-nauka-w-aplikacji.md#moje-testy).
 
 ### Statystyki (`features/statistics`)
 
-Trzy części, od góry:
+Cztery części, od góry:
 
 1. **Opanowanie** (`MasterySection`): wybór zakresu „Aplikacja:” (domyślnie wybrany egzamin, jeśli ma pytania, w przeciwnym
    razie „Wszystkie”), pasek i liczby: opanowane, w nauce, nowe, do powtórki i skuteczność, a pod nimi tabela według roku
@@ -273,9 +285,13 @@ Trzy części, od góry:
    21 dni; zwykle potrzeba trzech poprawnych odpowiedzi w terminie (około dwóch tygodni nauki), a błędna albo „Nie jestem
    pewien” cofa je do „W nauce”. Pierwsze dwa tygodnie „0 opanowanych” jest normalne. Ta część ignoruje filtr pochodzenia
    pytań (zakres wybiera się tu).
-2. **Ostatnie 30 dni** (`RecentAnswersCard`) obok **Aktywności** (`ActivityChart`: 28 słupków, seria dni, ostatnie 7 dni
+2. **Podsumowanie nauki** (`LearningSummarySection`, `GET /api/statistics/learning-summary`): liczba odpowiedzi (z podziałem
+   na testy i fiszki), ukończone egzaminy próbne, ukończone własne testy (z linkiem do Moich testów), średni czas na pytanie i na
+   fiszkę oraz **czas nauki**: dziś, ostatnie 7 dni i łącznie. Czas nauki to osobna miara od czasu odpowiedzi (patrz
+   [04](04-nauka-w-aplikacji.md#czas-nauki)). Ta sekcja nie zależy od żadnego filtra.
+3. **Ostatnie 30 dni** (`RecentAnswersCard`) obok **Aktywności** (`ActivityChart`: 28 słupków, seria dni, ostatnie 7 dni
    na tle poprzednich 7), na telefonie jedno pod drugim. Pod pierwszą cichy link „Popraw moje błędy: N”.
-3. **Fiszki** (`FlashcardsSection`): liczby z przeglądu fiszek (zapytanie `overview` z `mode=FLASHCARD`), filtr
+4. **Fiszki** (`FlashcardsSection`): liczby z przeglądu fiszek (zapytanie `overview` z `mode=FLASHCARD`), filtr
    przedmiotu w nagłówku sekcji, po wybraniu przedmiotu opanowanie rozdziałów (`ChapterMasteryList`) i zawsze tabela „Do
    poprawy” (10 kart z największą liczbą błędów). **Tylko ta sekcja zależy od filtra przedmiotu.**
 

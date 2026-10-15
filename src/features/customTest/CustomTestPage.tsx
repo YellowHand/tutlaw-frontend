@@ -1,9 +1,8 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { ChevronDown, ClipboardList, Play } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { ClipboardList, History, Play } from "lucide-react";
 import { drawCustomTest, type CustomTestCounts, type CustomTestKind } from "../../api/customTest";
 import { PageHeader } from "../../components/layout/PageHeader";
-import { Field } from "../../components/ui/Field";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { ErrorState } from "../../components/ui/ErrorState";
 import { Skeleton } from "../../components/ui/Skeleton";
@@ -15,24 +14,24 @@ import { Breadcrumbs } from "../tests/Breadcrumbs";
 import { formatCount } from "../tests/format";
 import { useTestCatalog } from "../tests/hooks";
 import { OriginFilterChip } from "../tests/OriginFilterChip";
-import { isFilterActive, useOriginFilter } from "../tests/originFilter";
+import { describeSelection as describeOriginFilter, isFilterActive, selectedInOrder, useOriginFilter } from "../tests/originFilter";
 import { START_BUTTON } from "../tests/StartButtons";
 import { loadRemembered, saveRemembered } from "./customTestStorage";
-import { useCustomTestCounts, useDebounced, useExamYears } from "./hooks";
+import { useCustomTestCounts, useDebounced } from "./hooks";
 import {
   allSubjectIds,
   buildTree,
+  countOptions,
   describeSelection,
   hasSelection,
   isEverythingSelected,
+  pickCountOption,
   restrictToTree,
+  selectionFromScope,
   toScope,
 } from "./selection";
 import { ScopeTree } from "./ScopeTree";
-
-const COUNT_LIMITS = { min: 1, max: 200 };
-const COUNT_PRESETS = [10, 20, 50, 100, 200];
-const DEFAULT_COUNT = 20;
+import type { CustomTestPrefill } from "./prefill";
 
 interface KindOption {
   kind: CustomTestKind;
@@ -50,29 +49,21 @@ const KIND_OPTIONS: KindOption[] = [
 
 const questionsWord = (n: number) => pluralizePl(n, { one: "pytanie", few: "pytania", many: "pytań" });
 
-function parseCount(raw: string): number | null {
-  const trimmed = raw.trim();
-  const value = Number(trimmed);
-  return trimmed !== "" && Number.isInteger(value) ? value : null;
-}
-
-function describeYears(from: number | null, to: number | null): string | null {
-  if (from === null && to === null) return null;
-  if (from !== null && to !== null) return from === to ? String(from) : `${from}–${to}`;
-  return from !== null ? `od ${from}` : `do ${to}`;
-}
-
 /**
  * Własny test: użytkownik składa sesję nauki sam. Wybiera rodzaje i akty prawne, które pytania (wszystkie, nowe, błędy,
- * zaległe), opcjonalnie lata egzaminu i liczbę pytań. To nauka, nie egzamin: nie ma progu ani wyniku „zdał / nie zdał",
- * a odpowiedzi idą zwykłą drogą testu (ocena pamięci, pomyłki trafiają do „Moich błędów").
+ * zaległe) i liczbę pytań (10, 20, 50, 100 albo 150; przy małym zakresie „Wszystkie"). To nauka, nie egzamin: nie ma progu
+ * ani wyniku „zdał / nie zdał", a odpowiedzi idą zwykłą drogą testu (ocena pamięci, pomyłki trafiają do „Moich błędów").
+ * Każdy test zapisuje się w „Moich testach"; stamtąd można ułożyć go ponownie z tymi samymi ustawieniami (`prefill`).
  */
 export function CustomTestPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const catalogQuery = useTestCatalog();
-  const filterActive = isFilterActive(useOriginFilter().data);
-  const years = useExamYears();
+  const originFilter = useOriginFilter().data;
+  const filterActive = isFilterActive(originFilter);
   const remembered = useMemo(() => loadRemembered(), []);
+  // „Ułóż ponownie z tymi ustawieniami" z Moich testów przekazuje ustawienia w stanie nawigacji.
+  const prefill = useMemo(() => (location.state as { prefill?: CustomTestPrefill } | null)?.prefill ?? null, [location.state]);
 
   const tree = useMemo(() => buildTree(catalogQuery.data), [catalogQuery.data]);
 
@@ -80,28 +71,24 @@ export function CustomTestPage() {
   const [picked, setPicked] = useState<Set<number> | null>(null);
   const selected = useMemo(() => {
     if (picked !== null) return restrictToTree(tree, picked);
+    if (prefill) return selectionFromScope(tree, prefill.categoryIds, prefill.subjectIds).selected;
     if (remembered && !remembered.all) {
       const kept = restrictToTree(tree, remembered.subjectIds);
       if (kept.size > 0) return kept;
     }
     return allSubjectIds(tree);
-  }, [picked, remembered, tree]);
+  }, [picked, prefill, remembered, tree]);
 
-  const [kind, setKind] = useState<CustomTestKind>(remembered?.kind ?? "ALL");
-  const [countInput, setCountInput] = useState(String(remembered?.questionCount ?? DEFAULT_COUNT));
-  const [rawYearFrom, setYearFrom] = useState<number | null>(remembered?.yearFrom ?? null);
-  const [rawYearTo, setYearTo] = useState<number | null>(remembered?.yearTo ?? null);
+  const [kind, setKind] = useState<CustomTestKind>(prefill?.kind ?? remembered?.kind ?? "ALL");
+  // null = użytkownik nie wybierał: bierzemy zapamiętaną liczbę (albo 20) spośród tych, które mieszczą się w zakresie.
+  const [pickedCount, setPickedCount] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Lata pokazujemy i wysyłamy tylko takie, które są na liście (zapamiętany rok bez pytań po prostu odpada).
-  const yearFrom = rawYearFrom !== null && years.includes(rawYearFrom) ? rawYearFrom : null;
-  const yearTo = rawYearTo !== null && years.includes(rawYearTo) ? rawYearTo : null;
-
   const selectionMade = hasSelection(tree, selected);
   const scope = useMemo(
-    () => (tree.length > 0 && selectionMade ? toScope(tree, selected, yearFrom, yearTo) : null),
-    [tree, selected, selectionMade, yearFrom, yearTo]
+    () => (tree.length > 0 && selectionMade ? toScope(tree, selected) : null),
+    [tree, selected, selectionMade]
   );
   const scopeKey = JSON.stringify(scope);
   const debouncedScope = useDebounced(scope, 250);
@@ -111,41 +98,51 @@ export function CustomTestPage() {
 
   const kindOption = KIND_OPTIONS.find((o) => o.kind === kind) ?? KIND_OPTIONS[0];
   const available = counts.data ? kindOption.count(counts.data) : 0;
-  const asked = parseCount(countInput);
-  const countValid = asked !== null && asked >= COUNT_LIMITS.min && asked <= COUNT_LIMITS.max;
-  const willDraw = countValid ? Math.min(asked, available) : 0;
-  const canStart = scope !== null && countsReady && available > 0 && countValid && !starting;
+  // Pokazujemy tylko liczby, które mieszczą się w dostępnych pytaniach; po zmianie zakresu wybór dopasowuje się sam.
+  const options = useMemo(() => (countsReady ? countOptions(available) : []), [countsReady, available]);
+  const wanted: number | "all" | null = prefill ? prefill.requestedCount : (remembered?.questionCount ?? null);
+  const chosen = useMemo(() => {
+    const own = pickedCount !== null ? options.find((o) => o.key === pickedCount) : undefined;
+    return own ?? pickCountOption(options, wanted);
+  }, [options, pickedCount, wanted]);
+  const canStart = scope !== null && countsReady && available > 0 && chosen !== null && !starting;
 
   async function handleStart() {
-    if (!canStart || scope === null || asked === null) return;
+    if (!canStart || scope === null || chosen === null) return;
     setError(null);
     setStarting(true);
     try {
-      const selection = await drawCustomTest(scope, kind, asked);
+      const selection = await drawCustomTest(scope, kind, chosen.sends);
       saveRemembered({
         version: 1,
         all: isEverythingSelected(tree, selected),
         subjectIds: Array.from(selected),
         kind,
-        questionCount: asked,
-        yearFrom,
-        yearTo,
+        questionCount: chosen.all ? "all" : chosen.count,
       });
-      navigate(ROUTES.testCustom(selection.cardIds));
+      navigate(ROUTES.testCustom(selection.cardIds, selection.sessionId));
     } catch (err) {
       setError(serverMessage(err, "Nie udało się ułożyć testu. Spróbuj ponownie."));
       setStarting(false);
     }
   }
 
-  function changeFrom(value: number | null) {
-    setYearFrom(value);
-    if (value !== null && yearTo !== null && value > yearTo) setYearTo(value);
-  }
-
-  function changeTo(value: number | null) {
-    setYearTo(value);
-    if (value !== null && yearFrom !== null && value < yearFrom) setYearFrom(value);
+  // Uwagi przy ustawieniach przeniesionych z zapisanego testu: czego nie da się odtworzyć dokładnie.
+  const prefillNotes: string[] = [];
+  if (prefill && tree.length > 0) {
+    if (selectionFromScope(tree, prefill.categoryIds, prefill.subjectIds).missing > 0) {
+      prefillNotes.push("Część działów z tamtego testu nie jest teraz dostępna, więc ich nie zaznaczyliśmy.");
+    }
+    if (originFilter) {
+      const now = originFilter.all ? null : selectedInOrder(originFilter).join(",");
+      const then = prefill.origins === null ? null : [...prefill.origins].sort().join(",");
+      const sameSet = now === null ? then === null : then !== null && now.split(",").sort().join(",") === then;
+      if (!sameSet) {
+        prefillNotes.push(
+          `Tamten test powstał przy innym filtrze pochodzenia pytań. Teraz obowiązuje: ${describeOriginFilter(originFilter).toLowerCase()}.`
+        );
+      }
+    }
   }
 
   const header = (
@@ -154,7 +151,19 @@ export function CustomTestPage() {
       <PageHeader
         title="Własny test"
         subtitle={`Ułóż sesję z wybranych działów. To nauka, nie egzamin: bez wyniku „zdał / nie zdał".`}
-        actions={<OriginFilterChip />}
+        actions={
+          <>
+            <Link
+              to={ROUTES.myTests}
+              data-testid="my-tests-link"
+              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line bg-surface px-4 text-sm transition-colors hover:bg-surface-2"
+            >
+              <History size={16} aria-hidden="true" className="text-fg-muted" />
+              Moje testy
+            </Link>
+            <OriginFilterChip />
+          </>
+        }
       />
     </>
   );
@@ -201,22 +210,30 @@ export function CustomTestPage() {
     );
   }
 
-  const yearsText = describeYears(yearFrom, yearTo);
-  const summaryLine = [describeSelection(tree, selected), kindOption.label, yearsText && `lata ${yearsText}`]
-    .filter(Boolean)
-    .join(" · ");
+  const summaryLine = [describeSelection(tree, selected), kindOption.label].join(", ");
 
   let status: string;
   if (!selectionMade) status = "Zaznacz co najmniej jeden dział.";
-  else if (!countValid) status = `Liczba pytań: wpisz liczbę od ${COUNT_LIMITS.min} do ${COUNT_LIMITS.max}.`;
   else if (counts.isError && !counts.data) status = "Nie udało się sprawdzić, ile jest pytań.";
   else if (!countsReady) status = "Liczę pytania…";
   else if (available === 0) status = "Brak takich pytań w wybranym zakresie.";
-  else status = willDraw === available && asked > available ? `Wylosuję wszystkie ${formatCount(available)}` : `Wylosuję ${formatCount(willDraw)} z ${formatCount(available)}`;
+  else if (chosen === null) status = "Wybierz liczbę pytań.";
+  else if (chosen.all) status = `Wylosuję wszystkie ${formatCount(available)}`;
+  else status = `Wylosuję ${formatCount(chosen.count)} z ${formatCount(available)}`;
 
   return (
     <div>
       {header}
+
+      {prefillNotes.length > 0 && (
+        <div data-testid="prefill-notes" className="flex flex-col gap-2 px-4 pb-4 sm:px-8">
+          {prefillNotes.map((note) => (
+            <p key={note} className="rounded-xl border border-line bg-surface-2 px-4 py-3 text-sm text-fg-muted">
+              {note}
+            </p>
+          ))}
+        </div>
+      )}
 
       <div className="flex flex-col gap-6 px-4 pb-8 sm:px-8 lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-8">
         <div className="flex min-w-0 flex-col gap-8">
@@ -266,76 +283,36 @@ export function CustomTestPage() {
 
           <fieldset className="flex flex-col gap-3">
             <legend className="mb-2 text-base font-semibold">Ile pytań?</legend>
-            <div className="flex flex-wrap items-end gap-2">
-              {COUNT_PRESETS.map((preset) => (
-                <button
-                  key={preset}
-                  type="button"
-                  onClick={() => setCountInput(String(preset))}
-                  aria-pressed={asked === preset}
-                  className={cn(
-                    "inline-flex min-h-11 min-w-14 items-center justify-center rounded-xl border px-4 text-sm font-medium tabular-nums transition-colors",
-                    asked === preset
-                      ? "border-accent-ink bg-accent/10 text-fg"
-                      : "border-line bg-surface text-fg hover:bg-surface-2"
-                  )}
-                >
-                  {preset}
-                </button>
-              ))}
-              <div className="w-32">
-                <Field
-                  label="Inna liczba"
-                  type="number"
-                  inputMode="numeric"
-                  min={COUNT_LIMITS.min}
-                  max={COUNT_LIMITS.max}
-                  value={countInput}
-                  onChange={(e) => setCountInput(e.target.value)}
-                  aria-invalid={!countValid}
-                />
+            {options.length > 0 ? (
+              <div className="flex flex-wrap gap-2" data-testid="count-options">
+                {options.map((option) => (
+                  <button
+                    key={option.key}
+                    type="button"
+                    onClick={() => setPickedCount(option.key)}
+                    aria-pressed={chosen?.key === option.key}
+                    className={cn(
+                      "inline-flex min-h-11 min-w-14 items-center justify-center rounded-xl border px-4 text-sm font-medium tabular-nums transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink",
+                      chosen?.key === option.key
+                        ? "border-accent-ink bg-accent/10 text-fg"
+                        : "border-line bg-surface text-fg hover:bg-surface-2"
+                    )}
+                  >
+                    {option.label}
+                  </button>
+                ))}
               </div>
-            </div>
-            <p className="text-xs text-fg-muted">
-              Od {COUNT_LIMITS.min} do {COUNT_LIMITS.max}. Gdy jest mniej pytań, dostaniesz wszystkie.
-            </p>
+            ) : (
+              <p className="text-sm text-fg-muted">
+                {!selectionMade
+                  ? "Najpierw zaznacz dział."
+                  : countsReady
+                    ? "W tym zakresie nie ma pytań do ułożenia testu."
+                    : "Liczę pytania…"}
+              </p>
+            )}
+            <p className="text-xs text-fg-muted">Pokazujemy tylko liczby, na które starcza pytań.</p>
           </fieldset>
-
-          {years.length > 0 && (
-            <details className="group rounded-2xl border border-line bg-surface" open={yearsText !== null}>
-              <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-2 [&::-webkit-details-marker]:hidden">
-                <span className="text-sm font-medium">
-                  Lata egzaminu
-                  <span className="ml-2 font-normal text-fg-muted">{yearsText ?? "dowolne"}</span>
-                </span>
-                <ChevronDown size={18} aria-hidden="true" className="text-fg-muted transition-transform group-open:rotate-180" />
-              </summary>
-              <div className="flex flex-col gap-3 px-4 pb-4">
-                <div className="grid grid-cols-2 gap-3 sm:max-w-sm">
-                  <YearSelect label="Od roku" years={years} value={yearFrom} onChange={changeFrom} />
-                  <YearSelect label="Do roku" years={years} value={yearTo} onChange={changeTo} />
-                </div>
-                <p className="text-xs text-fg-muted">
-                  Pytania autorskie nie mają roku egzaminu, więc przy wybranych latach nie wejdą do testu.
-                  {yearsText !== null && (
-                    <>
-                      {" "}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setYearFrom(null);
-                          setYearTo(null);
-                        }}
-                        className="inline-flex min-h-11 items-center text-accent-ink underline underline-offset-2"
-                      >
-                        Wyczyść lata
-                      </button>
-                    </>
-                  )}
-                </p>
-              </div>
-            </details>
-          )}
         </div>
 
         <aside
@@ -385,35 +362,5 @@ export function CustomTestPage() {
         </aside>
       </div>
     </div>
-  );
-}
-
-function YearSelect({
-  label,
-  years,
-  value,
-  onChange,
-}: {
-  label: string;
-  years: number[];
-  value: number | null;
-  onChange: (value: number | null) => void;
-}) {
-  return (
-    <label className="flex flex-col gap-1 text-sm text-fg-muted">
-      {label}
-      <select
-        value={value ?? ""}
-        onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))}
-        className="min-h-11 rounded-xl border border-field bg-surface-2 px-3 text-fg"
-      >
-        <option value="">Dowolny</option>
-        {years.map((year) => (
-          <option key={year} value={year}>
-            {year}
-          </option>
-        ))}
-      </select>
-    </label>
   );
 }

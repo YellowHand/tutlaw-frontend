@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query";
-import { chooseExam, type LearningSettings } from "../../api/settings";
+import { chooseExam, type ExamChoice, type LearningSettings } from "../../api/settings";
 import { formatDatePl } from "../../lib/date";
-import type { QuestionOrigin } from "../../lib/origin";
 import { pluralizePl } from "../../lib/plural";
 import { CUSTOM_TEST_COUNTS_KEY, DUE_COUNT_KEY, MISTAKES_COUNT_KEY } from "../review/hooks";
 import { TEST_CATALOG_KEY } from "../tests/hooks";
@@ -21,11 +20,11 @@ export function refreshAfterExamChosen(queryClient: QueryClient, settings: Learn
   void queryClient.invalidateQueries({ queryKey: CUSTOM_TEST_COUNTS_KEY });
 }
 
-/** Wybór aplikacji, do której użytkownik się przygotowuje (zmiana w Koncie). */
+/** Wybór aplikacji, do której użytkownik się przygotowuje, albo „student" (zmiana w Koncie). */
 export function useChooseExam() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (origin: QuestionOrigin) => chooseExam(origin),
+    mutationFn: (choice: ExamChoice) => chooseExam(choice),
     onSuccess: (settings) => refreshAfterExamChosen(queryClient, settings),
   });
 }

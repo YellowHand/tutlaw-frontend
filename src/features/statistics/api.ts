@@ -1,6 +1,14 @@
 import { api } from "../../api/axiosInstance";
 import type { SessionMode } from "../../api/review";
-import type { ActivityItem, ChapterMastery, OriginStats, OverviewResponse, TestStats, WeakCard } from "./types";
+import type {
+  ActivityItem,
+  ChapterMastery,
+  LearningSummary,
+  OriginStats,
+  OverviewResponse,
+  TestStats,
+  WeakCard,
+} from "./types";
 
 /** Bez trybu backend liczy fiszki i testy razem (strona Statystyki); z trybem tylko wskazany rodzaj kart. */
 export async function fetchOverview(subjectId?: number, mode?: SessionMode): Promise<OverviewResponse> {
@@ -36,5 +44,10 @@ export async function fetchTestStats(): Promise<TestStats> {
 /** Statystyki Testów według pochodzenia pytań (aplikacja) i roku egzaminu. */
 export async function fetchOriginStats(): Promise<OriginStats> {
   const res = await api.get<OriginStats>("/api/statistics/origins");
+  return res.data;
+}
+
+export async function fetchLearningSummary(): Promise<LearningSummary> {
+  const res = await api.get<LearningSummary>("/api/statistics/learning-summary");
   return res.data;
 }

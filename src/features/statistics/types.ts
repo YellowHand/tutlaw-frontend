@@ -87,3 +87,18 @@ export interface OriginStatsEntry {
 export interface OriginStats {
   origins: OriginStatsEntry[];
 }
+
+/** „Podsumowanie nauki": luźne liczby o całej dotychczasowej nauce. Czasy w sekundach. */
+export interface LearningSummary {
+  totalAnswers: number;
+  testAnswers: number;
+  flashcardReviews: number;
+  examsDone: number;
+  customTestsDone: number;
+  studySecondsToday: number;
+  studySecondsLast7Days: number;
+  studySecondsTotal: number;
+  /** Średni czas odpowiedzi na pytanie w teście (pojedyncza odpowiedź najwyżej 120 s); null = brak pomiarów. */
+  averageSecondsPerQuestion: number | null;
+  averageSecondsPerFlashcard: number | null;
+}

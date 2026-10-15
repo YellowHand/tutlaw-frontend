@@ -14,9 +14,8 @@ export interface RememberedCustomTest {
   /** Zaznaczone akty prawne (przedmioty); przy `all` pusta. */
   subjectIds: number[];
   kind: CustomTestKind;
-  questionCount: number;
-  yearFrom: number | null;
-  yearTo: number | null;
+  /** Wybrana liczba pytań (10, 20, 50, 100, 150) albo „all" dla „Wszystkie". */
+  questionCount: number | "all";
 }
 
 export const KINDS: readonly CustomTestKind[] = ["ALL", "NEW", "MISTAKES", "DUE"];
@@ -24,9 +23,6 @@ export const KINDS: readonly CustomTestKind[] = ["ALL", "NEW", "MISTAKES", "DUE"
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
-
-const isYear = (value: unknown): value is number | null =>
-  value === null || (typeof value === "number" && Number.isInteger(value));
 
 export function loadRemembered(): RememberedCustomTest | null {
   try {
@@ -41,11 +37,16 @@ export function loadRemembered(): RememberedCustomTest | null {
       v.subjectIds.every((id) => typeof id === "number") &&
       typeof v.kind === "string" &&
       (KINDS as readonly string[]).includes(v.kind) &&
-      typeof v.questionCount === "number" &&
-      isYear(v.yearFrom) &&
-      isYear(v.yearTo)
+      (typeof v.questionCount === "number" || v.questionCount === "all")
     ) {
-      return v as unknown as RememberedCustomTest;
+      // Pola z latami z wcześniejszej wersji ekranu są ignorowane: lat egzaminu już się nie wybiera.
+      return {
+        version: 1,
+        all: v.all,
+        subjectIds: v.subjectIds as number[],
+        kind: v.kind as CustomTestKind,
+        questionCount: v.questionCount as number | "all",
+      };
     }
     return null;
   } catch {

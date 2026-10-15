@@ -1,6 +1,6 @@
 import { useId, useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { updateLearningSettings, type LearningSettings, type LearningSettingsUpdate } from "../../api/settings";
+import { updateLearningSettings, type ExamChoice, type LearningSettings, type LearningSettingsUpdate } from "../../api/settings";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { ErrorState } from "../../components/ui/ErrorState";
@@ -320,11 +320,14 @@ function ExamChoiceSettings({ settings }: { settings: LearningSettings }) {
   const terms = useExamTerms();
   const choose = useChooseExam();
   const selectId = useId();
-  const [picked, setPicked] = useState<QuestionOrigin | "">(settings.examOrigin ?? "");
+  // Student ma wybór zrobiony, ale bez aplikacji: w polu wyboru stoi „Jestem studentem".
+  const isStudent = settings.examOrigin === null && settings.startChoiceMade === true;
+  const current: ExamChoice | "" = settings.examOrigin ?? (isStudent ? "STUDENT" : "");
+  const [picked, setPicked] = useState<ExamChoice | "">(current);
   const [saved, setSaved] = useState(false);
   const termList = Array.isArray(terms.data) ? terms.data : [];
   const termOf = (origin: QuestionOrigin) => termList.find((t) => t.origin === origin);
-  const changed = picked !== "" && picked !== settings.examOrigin;
+  const changed = picked !== "" && picked !== current;
 
   function optionLabel(origin: QuestionOrigin): string {
     const term = termOf(origin);
@@ -346,19 +349,20 @@ function ExamChoiceSettings({ settings }: { settings: LearningSettings }) {
             id={selectId}
             value={picked}
             onChange={(e) => {
-              setPicked(e.target.value as QuestionOrigin | "");
+              setPicked(e.target.value as ExamChoice | "");
               setSaved(false);
               choose.reset();
             }}
             aria-describedby={`${selectId}-hint`}
             className="min-h-11 min-w-0 max-w-full flex-1 rounded-xl border border-field bg-surface-2 px-3 sm:min-w-72"
           >
-            {settings.examOrigin === null && <option value="">Nie wybrano</option>}
+            {current === "" && <option value="">Nie wybrano</option>}
             {EXAM_APPLICATIONS.map((origin) => (
               <option key={origin} value={origin}>
                 {optionLabel(origin)}
               </option>
             ))}
+            <option value="STUDENT">Jestem studentem / jeszcze nie wybrałem</option>
           </select>
           <Button
             type="button"
@@ -369,12 +373,12 @@ function ExamChoiceSettings({ settings }: { settings: LearningSettings }) {
               choose.mutate(picked, { onSuccess: () => setSaved(true) });
             }}
           >
-            {choose.isPending ? "Zapisuję..." : settings.examOrigin === null ? "Wybierz egzamin" : "Zmień egzamin"}
+            {choose.isPending ? "Zapisuję..." : current === "" ? "Wybierz egzamin" : "Zmień egzamin"}
           </Button>
         </div>
         <p id={`${selectId}-hint`} className="text-xs text-fg-muted">
           Termin egzaminu ustawia administrator, więc tu go nie wpisujesz. Zmiana ustawia też filtr pytań w Testach: wybrana
-          aplikacja i pytania autorskie (filtr możesz potem zmienić osobno).
+          aplikacja i pytania autorskie, a przy opcji dla studentów wszystkie pytania (filtr możesz potem zmienić osobno).
         </p>
       </div>
       {choose.isError && (
@@ -395,7 +399,13 @@ function ExamChoiceSettings({ settings }: { settings: LearningSettings }) {
 /** Jednozdaniowy opis stanu egzaminu: ile dni, czy działa tryb egzaminacyjny, czy termin jest ogłoszony albo już minął. */
 function ExamInfo({ settings }: { settings: LearningSettings }) {
   if (!settings.examOrigin) {
-    return <p className="text-sm text-fg-muted">Bez wybranego egzaminu nie pokażemy odliczania ani dziennego planu.</p>;
+    return (
+      <p className="text-sm text-fg-muted">
+        {settings.startChoiceMade
+          ? "Jako student nie masz odliczania ani dziennego planu. Gdy wybierzesz aplikację, pokażemy termin i plan."
+          : "Bez wybranego egzaminu nie pokażemy odliczania ani dziennego planu."}
+      </p>
+    );
   }
   const application = ORIGIN_LABELS[settings.examOrigin];
 

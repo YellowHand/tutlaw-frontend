@@ -267,11 +267,18 @@ function normEndpoint(method, p) {
   return `${method.toUpperCase()} ${noQuery}`;
 }
 
+// Poza wspólnym klientem `api` są dwa dozwolone miejsca (opisane w 05): `bare` w refreshSession.ts (odświeżanie sesji bez
+// interceptorów, żeby własne 401 nie wpadło w pętlę) i `postKeepalive` (fetch z `keepalive` przy zamykaniu karty).
+const OUTSIDE_API_CLIENT_FILES = new Set(["src/api/keepalive.ts"]);
+
 function collectApiCalls() {
   const calls = [];
-  const re = /\bapi\s*\.\s*(get|post|put|delete|patch)\s*(?:<[^()]*?>)?\s*\(\s*(`[^`]*`|"[^"]*"|'[^']*')/g;
+  const re = /\b(?:api|bare)\s*\.\s*(get|post|put|delete|patch)\s*(?:<[^()]*?>)?\s*\(\s*(`[^`]*`|"[^"]*"|'[^']*')/g;
+  const keepaliveRe = /\bpostKeepalive\s*\(\s*(`[^`]*`|"[^"]*"|'[^']*')/g;
   for (const [file, text] of codeText) {
     for (const m of text.matchAll(re)) calls.push({ file, endpoint: normEndpoint(m[1], m[2].slice(1, -1)) });
+    if (OUTSIDE_API_CLIENT_FILES.has(rel(file))) continue;
+    for (const m of text.matchAll(keepaliveRe)) calls.push({ file, endpoint: normEndpoint("post", m[1].slice(1, -1)) });
   }
   return calls;
 }
@@ -295,6 +302,7 @@ check("wywołania serwera (kod ↔ 05-warstwa-api-i-dane.md)", () => {
 
   // Całe żądania muszą iść przez wspólnego klienta
   for (const [file, src] of codeText) {
+    if (OUTSIDE_API_CLIENT_FILES.has(rel(file))) continue;
     if (/\bfetch\s*\(/.test(src) || /\baxios\s*\.\s*(get|post|put|delete|request)\s*\(/.test(src)) {
       errors.push(`${rel(file)}: żądanie HTTP poza wspólnym klientem api (fetch albo axios.*).`);
     }

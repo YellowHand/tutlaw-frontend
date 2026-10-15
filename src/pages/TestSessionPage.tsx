@@ -15,7 +15,11 @@ import { getLearningSettings } from "../api/settings";
 import { Skeleton } from "../components/ui/Skeleton";
 import { cn } from "../lib/cn";
 import { ROUTES } from "../config/routes";
+import { useCountAnswer, useInterfaceSettings, useQuestionTimerSetting } from "../features/interface/hooks";
 import { useRefreshReviewDataOnExit } from "../features/review/hooks";
+import { QuestionTimer } from "../features/review/QuestionTimer";
+import { SessionSummary } from "../features/review/SessionSummary";
+import { useQuestionClock } from "../features/review/useQuestionClock";
 import { isTyping } from "../features/review/keyboard";
 import { LegalBasisLine } from "../features/review/LegalBasisLine";
 import { BacklogFinishNotice, BacklogNotice } from "../features/review/BacklogNotice";
@@ -131,6 +135,8 @@ interface QuestionBodyProps {
   /** „Nie jestem pewien" – widoczne tylko, zanim użytkownik odpowie. */
   guessed?: boolean;
   onGuessedChange?: (guessed: boolean) => void;
+  /** Jednorazowe wyjaśnienie przełącznika „Nie jestem pewien": tylko przy pierwszym pytaniu w życiu użytkownika. */
+  showGuessHint?: boolean;
   /** Pytania zawieszone w tej sesji (do stanu przycisku „Zawieś pytanie" także w podglądzie). */
   suspendedIds?: ReadonlySet<number>;
   onSuspended?: (cardId: number) => void;
@@ -153,6 +159,7 @@ function QuestionBody({
   onSelect,
   guessed = false,
   onGuessedChange,
+  showGuessHint = false,
   suspendedIds,
   onSuspended,
   flashcardOverrides,
@@ -250,6 +257,11 @@ function QuestionBody({
           Nie jestem pewien
         </button>
       )}
+      {!readOnly && !selected && !result && onGuessedChange && showGuessHint && (
+        <p data-testid="guess-hint" className="-mt-2 max-w-md text-sm text-fg-muted">
+          Zaznacz, jeśli zgadujesz. Takie pytanie wróci szybciej, nawet przy dobrej odpowiedzi.
+        </p>
+      )}
 
       {saveError && (
         <p role="alert" className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
@@ -257,30 +269,41 @@ function QuestionBody({
         </p>
       )}
 
-      {/* Wynik + wyjaśnienie – neutralny panel, kolor tylko w nagłówku */}
+      {/*
+        Wynik + wyjaśnienie – neutralny panel, kolor tylko w nagłówku. „Zgłoś błąd" leży w jego prawym górnym rogu
+        (dopiero po odpowiedzi) i jest poza obszarem role="status", żeby czytnik nie odczytywał go razem z wynikiem.
+      */}
       {result && (
-        <div
-          role="status"
-          className="rounded-2xl border border-line bg-surface-2 p-4 transition-opacity duration-200 starting:opacity-0 sm:p-5"
-        >
-          <p className={cn("mb-1 text-sm font-semibold", result.correct ? "text-success" : "text-danger")}>
-            {result.correct ? "Poprawnie!" : "Niepoprawnie"}
-          </p>
-          <p className="mb-2 text-sm text-fg-muted">
-            {result.correct && !guessed && "Zapisano jako „Znam”."}
-            {result.correct && guessed && "Zaznaczone jako niepewne: zapisano jako „Nie pamiętam”, pytanie wróci w powtórkach."}
-            {!result.correct && "Zapisano jako „Nie pamiętam”: pytanie wróci w powtórkach."}
-          </p>
-          {result.explanation?.trim() && <p className="text-base leading-relaxed text-fg">{result.explanation}</p>}
-          <LegalBasisLine
-            legalBasis={result.legalBasis}
-            validAsOf={result.validAsOf}
-            className="mt-3 text-sm text-fg-muted"
+        <div className="relative">
+          <ReportCardButton
+            key={question.cardId}
+            cardId={question.cardId}
+            variant="corner"
+            className="absolute right-2 top-1 z-10 transition-opacity duration-200 starting:opacity-0 sm:right-3 sm:top-2"
           />
-          {result.leech && <LeechHint kind="test" lapses={result.lapses} className="mt-3 text-sm text-fg-muted" />}
-          {flashcardStatus && (
-            <FlashcardStatusNote status={flashcardStatus} justAdded={result.flashcardUnlocked} className="mt-3" />
-          )}
+          <div
+            role="status"
+            className="rounded-2xl border border-line bg-surface-2 p-4 transition-opacity duration-200 starting:opacity-0 sm:p-5"
+          >
+            <p className={cn("mb-1 text-sm font-semibold", result.correct ? "text-success" : "text-danger")}>
+              {result.correct ? "Poprawnie!" : "Niepoprawnie"}
+            </p>
+            <p className="mb-2 text-sm text-fg-muted">
+              {result.correct && !guessed && "Zapisano jako „Znam”."}
+              {result.correct && guessed && "Zaznaczone jako niepewne: zapisano jako „Nie pamiętam”, pytanie wróci w powtórkach."}
+              {!result.correct && "Zapisano jako „Nie pamiętam”: pytanie wróci w powtórkach."}
+            </p>
+            {result.explanation?.trim() && <p className="text-base leading-relaxed text-fg">{result.explanation}</p>}
+            <LegalBasisLine
+              legalBasis={result.legalBasis}
+              validAsOf={result.validAsOf}
+              className="mt-3 text-sm text-fg-muted"
+            />
+            {result.leech && <LeechHint kind="test" lapses={result.lapses} className="mt-3 text-sm text-fg-muted" />}
+            {flashcardStatus && (
+              <FlashcardStatusNote status={flashcardStatus} justAdded={result.flashcardUnlocked} className="mt-3" />
+            )}
+          </div>
         </div>
       )}
 
@@ -294,7 +317,6 @@ function QuestionBody({
               onStatusChange={onFlashcardStatus}
             />
           )}
-          <ReportCardButton key={question.cardId} cardId={question.cardId} />
           <HideCardButton
             key={`hide:${question.cardId}`}
             cardId={question.cardId}
@@ -338,6 +360,13 @@ function parseCardIds(raw: string | null): number[] {
   return Array.from(new Set(ids)).slice(0, 200);
 }
 
+/** Numer zapisanego własnego testu z adresu (?sessionId=12); brak albo zła wartość = nie zapisujemy do żadnego testu. */
+function parseSessionId(raw: string | null): number | undefined {
+  if (!raw) return undefined;
+  const id = Number(raw);
+  return Number.isInteger(id) && id > 0 ? id : undefined;
+}
+
 export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
   const mistakesMode = mode === "mistakes";
   const customMode = mode === "custom";
@@ -365,8 +394,14 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
   const cardIdsParam = searchParams.get("cardIds");
   const sourceId = searchParams.get("sourceId");
   const categoryId = searchParams.get("categoryId");
+  const customSessionId = customMode ? parseSessionId(searchParams.get("sessionId")) : undefined;
   const navigate = useNavigate();
   useRefreshReviewDataOnExit();
+  const countAnswer = useCountAnswer("test");
+  const interfaceSettings = useInterfaceSettings();
+  // Jednorazowe wyjaśnienie „Nie jestem pewien": tylko dopóki użytkownik nie dał jeszcze żadnej odpowiedzi w testach.
+  const showGuessHint = interfaceSettings.data?.testAnswers === 0;
+  const timerSetting = useQuestionTimerSetting();
 
   const [queue, setQueue] = useState<TestQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -381,13 +416,12 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
   const [extraError, setExtraError] = useState(false);
   const [availableExtra, setAvailableExtra] = useState<number | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  // Ile pytań z tej sesji użytkownik zobaczył po raz pierwszy w życiu (do podsumowania na końcu).
+  const [newQuestionCount, setNewQuestionCount] = useState(0);
   // Po „Rozwiąż jeszcze" / „Powtórz jeszcze" / „Powtórz teraz" sesja jest dodatkową porcją: informacja o zaległościach z początku nie dotyczy.
   const [isExtraBatch, setIsExtraBatch] = useState(false);
   // null = bieżące pytanie; liczba = indeks w history (podgląd tylko do odczytu)
   const [viewIndex, setViewIndex] = useState<number | null>(null);
-  // Ustawiane przy każdym wczytaniu pytania; początkowe 0 nigdy nie trafia do backendu.
-  const questionShownAt = useRef<number>(0);
-  const pausedAtRef = useRef<number | null>(null);
   const fetchedKeyRef = useRef<string | null>(null);
   // Numer ostatniego zapytania o kolejkę: spóźniona odpowiedź na starsze zapytanie jest ignorowana.
   const requestRef = useRef(0);
@@ -421,6 +455,16 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
     enabled: !fixedListMode,
   });
   const refetchBacklog = backlog.refetch;
+
+  // Stoper pytania liczy tylko, gdy pytanie czeka na odpowiedź i karta przeglądarki jest widoczna: stoi po odpowiedzi,
+  // w podglądzie poprzednich pytań i na ekranie końcowym.
+  const currentCardId = queue[currentIndex]?.cardId ?? null;
+  const clock = useQuestionClock({
+    questionKey: currentCardId === null ? null : `${currentCardId}:${currentIndex}`,
+    batch: queue,
+    running: !loading && !loadError && !finished && viewIndex === null && selected === null && result === null,
+  });
+  const readClock = clock.read;
 
   useEffect(() => {
     // Bez subjectId i categoryId (trasa /app/test) test obejmuje cały materiał użytkownika.
@@ -459,10 +503,9 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
         setExtraError(false);
         setIsExtraBatch(false);
         setHistory([]);
+        setNewQuestionCount(0);
         setViewIndex(null);
-        pausedAtRef.current = null;
         setLoading(false);
-        questionShownAt.current = Date.now();
       })
       .catch((e: unknown) => {
         if (requestRef.current !== requestId) return;
@@ -494,7 +537,8 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
       setSaveError(false);
       setSelected(option);
 
-      const timeSpentSeconds = Math.max(0, (Date.now() - questionShownAt.current) / 1000);
+      // Czas przy widocznej karcie przeglądarki, bez podglądu poprzednich pytań.
+      const timeSpentSeconds = readClock();
 
       try {
         // Serwer zna odpowiedzi pod oryginalnymi kluczami, więc literę z ekranu zamieniamy z powrotem.
@@ -502,17 +546,20 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
           currentCard.cardId,
           originalKeyOf(currentCard.order, option),
           timeSpentSeconds,
-          guessed
+          guessed,
+          customSessionId
         );
         setResult(res);
+        countAnswer();
         if (res.correct) setCorrectCount((prev) => prev + 1);
+        if (res.newQuestion) setNewQuestionCount((prev) => prev + 1);
       } catch {
         // Bez tego po błędzie sieci wszystkie odpowiedzi zostałyby zablokowane na stałe.
         setSelected(null);
         setSaveError(true);
       }
     },
-    [queue, currentIndex, selected, guessed]
+    [queue, currentIndex, selected, guessed, readClock, customSessionId, countAnswer]
   );
 
   const handleNext = useCallback(() => {
@@ -526,7 +573,6 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
     setGuessed(false);
     setSaveError(false);
     setCurrentIndex((prev) => prev + 1);
-    questionShownAt.current = Date.now();
   }, [queue, currentIndex, selected, result, guessed]);
 
   // --- Cofanie: tylko podgląd, niczego nie wysyła do backendu ---
@@ -534,19 +580,14 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
   const goBack = useCallback(() => {
     if (viewIndex === null) {
       if (history.length === 0) return;
-      pausedAtRef.current = Date.now();
       setViewIndex(history.length - 1);
     } else if (viewIndex > 0) {
       setViewIndex(viewIndex - 1);
     }
   }, [viewIndex, history.length]);
 
+  // Czas spędzony w podglądzie nie liczy się do czasu odpowiedzi na bieżące pytanie: stoper stoi, gdy viewIndex !== null.
   const resumeLive = useCallback(() => {
-    // Czas spędzony w podglądzie nie liczy się do czasu odpowiedzi na bieżące pytanie.
-    if (pausedAtRef.current !== null) {
-      questionShownAt.current += Date.now() - pausedAtRef.current;
-      pausedAtRef.current = null;
-    }
     setViewIndex(null);
   }, []);
 
@@ -620,11 +661,10 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
       setCorrectCount(0);
       setSaveError(false);
       setHistory([]);
+      setNewQuestionCount(0);
       setViewIndex(null);
-      pausedAtRef.current = null;
       setAvailableExtra(null);
       setIsExtraBatch(true);
-      questionShownAt.current = Date.now();
     } catch {
       setExtraError(true);
     } finally {
@@ -660,10 +700,9 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
     setCorrectCount(0);
     setSaveError(false);
     setHistory([]);
+    setNewQuestionCount(0);
     setViewIndex(null);
-    pausedAtRef.current = null;
     setAvailableExtra(null);
-    questionShownAt.current = Date.now();
   }
 
   const viewEntry = viewIndex !== null ? (history[viewIndex] ?? null) : null;
@@ -781,6 +820,8 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
           </p>
         )}
 
+        {queue.length > 0 && <SessionSummary mode="TEST" newCount={newQuestionCount} newLabel="Nowe pytania w tej sesji" />}
+
         {toReview.length > 0 && (
           <>
             <p className="max-w-md text-sm text-fg-muted">
@@ -861,6 +902,9 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
           </p>
 
           <div className="flex items-center gap-1">
+            {timerSetting.ready && (
+              <QuestionTimer seconds={clock.seconds} hidden={timerSetting.hidden} onToggle={timerSetting.toggle} />
+            )}
             <button
               type="button"
               onClick={goBack}
@@ -937,6 +981,7 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
           onSelect={handleSelect}
           guessed={guessed}
           onGuessedChange={setGuessed}
+          showGuessHint={showGuessHint}
           suspendedIds={suspendedIds}
           onSuspended={handleSuspended}
           flashcardOverrides={flashcardOverrides}
@@ -958,6 +1003,7 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
 
       {!viewing && (
         <KeyboardHint
+          kind="test"
           hints={
             result
               ? [

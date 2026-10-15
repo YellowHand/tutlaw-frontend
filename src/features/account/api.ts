@@ -1,5 +1,10 @@
 import { api } from "../../api/axiosInstance";
 
+export interface TokenPair {
+  accessToken: string;
+  refreshToken: string;
+}
+
 export interface MeResponse {
   email: string;
 }
@@ -16,12 +21,12 @@ export async function fetchAccountExport(): Promise<string> {
 }
 
 /**
- * Zmienia hasło zalogowanego użytkownika (bez zmiany adresu e-mail). Odpowiedź zawiera nowy token:
- * dotychczasowe sesje przestają działać, więc aplikacja podmienia token w tej przeglądarce.
+ * Zmienia hasło zalogowanego użytkownika (bez zmiany adresu e-mail). Odpowiedź zawiera nową parę tokenów:
+ * dotychczasowe sesje przestają działać, więc aplikacja podmienia tokeny w tej przeglądarce.
  */
-export async function changePassword(currentPassword: string, newPassword: string): Promise<string> {
-  const { data } = await api.put<{ accessToken: string }>("/api/users/me/password", { currentPassword, newPassword });
-  return data.accessToken;
+export async function changePassword(currentPassword: string, newPassword: string): Promise<TokenPair> {
+  const { data } = await api.put<TokenPair>("/api/users/me/password", { currentPassword, newPassword });
+  return data;
 }
 
 /** Usuwa konto razem z całą historią nauki. Wymaga hasła. */

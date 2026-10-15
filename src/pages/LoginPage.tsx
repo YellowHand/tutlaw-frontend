@@ -30,7 +30,7 @@ export function LoginPage() {
     setSubmitting(true);
     try {
       const res = await api.post("/api/auth/login", { privateEmail, password });
-      login(res.data.accessToken);
+      login(res.data.accessToken, res.data.refreshToken);
       navigate(from, { replace: true });
     } catch (err) {
       setNeedsActivation(isAxiosError(err) && err.response?.status === 409);

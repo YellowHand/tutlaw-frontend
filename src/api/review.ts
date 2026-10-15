@@ -59,6 +59,8 @@ export interface TestAnswerResult {
   flashcardUnlocked: boolean;
   /** Stan fiszki tego pytania po tej odpowiedzi: czy pokazać „Dodaj do fiszek", „W fiszkach" albo nic. */
   flashcard: FlashcardStatus;
+  /** To była pierwsza odpowiedź na to pytanie, czyli użytkownik zaczął się go uczyć właśnie teraz. */
+  newQuestion: boolean;
 }
 
 /**
@@ -162,25 +164,40 @@ export async function getDueCount(mode: SessionMode = "FLASHCARD"): Promise<numb
   return res.data.dueCount;
 }
 
-export async function submitReview(cardId: number, rating: number, timeSpentSeconds: number): Promise<void> {
-  await api.post("/api/review", { cardId, rating, timeSpentSeconds });
+/** Wynik oceny fiszki: `newCard` = to była pierwsza ocena tej fiszki (zaczęła się uczyć właśnie teraz). */
+export interface ReviewResult {
+  newCard: boolean;
+}
+
+export async function submitReview(cardId: number, rating: number, timeSpentSeconds: number): Promise<ReviewResult> {
+  const res = await api.post<Partial<ReviewResult> | undefined>("/api/review", { cardId, rating, timeSpentSeconds });
+  return { newCard: res.data?.newCard === true };
+}
+
+/** Ile kart danego trybu wróci na powtórkę do końca jutra (razem z tymi, które czekają już teraz). */
+export async function getDueByTomorrow(mode: SessionMode): Promise<number> {
+  const res = await api.get<{ dueCount: number }>("/api/review/due-tomorrow", { params: { mode } });
+  return res.data.dueCount;
 }
 
 /**
  * guessed = true: użytkownik zaznaczył „nie jestem pewien". Poprawna, ale zgadywana
  * odpowiedź wraca wcześniej niż pewna (backend ocenia ją jako „trudną").
+ * sessionId: numer zapisanego własnego testu, do którego należy odpowiedź (tylko w „Własny test").
  */
 export async function submitTestAnswer(
   cardId: number,
   selectedOption: "A" | "B" | "C",
   timeSpentSeconds: number,
-  guessed = false
+  guessed = false,
+  sessionId?: number
 ): Promise<TestAnswerResult> {
   const res = await api.post<TestAnswerResult>("/api/review/test-answer", {
     cardId,
     selectedOption,
     timeSpentSeconds,
     guessed,
+    sessionId,
   });
   return res.data;
 }

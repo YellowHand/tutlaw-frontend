@@ -1,5 +1,8 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { ErrorBoundary } from "../components/ErrorBoundary";
 import { ProtectedRoute } from "../components/ProtectedRoute";
+import { RouteFallback } from "../components/RouteFallback";
 import { AppShell } from "../components/layout/AppShell";
 import { LandingPage } from "../pages/LandingPage";
 import { LoginPage } from "../pages/LoginPage";
@@ -8,72 +11,85 @@ import { CheckEmailPage } from "../pages/CheckEmailPage";
 import { VerifyPage } from "../pages/VerifyPage";
 import { ForgotPasswordPage } from "../pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "../pages/ResetPasswordPage";
-import { TermsPage } from "../features/legal/TermsPage";
-import { PrivacyPage } from "../features/legal/PrivacyPage";
-import { DashboardPage } from "../features/dashboard/DashboardPage";
-import { CategoriesPage } from "../pages/CategoriesPage";
-import { SubjectsPage } from "../pages/SubjectsPage";
-import { SourcesPage } from "../pages/SourcesPage";
-import { ChaptersPage } from "../pages/ChaptersPage";
-import { StudySessionPage } from "../pages/StudySessionPage";
-import { TestSessionPage } from "../pages/TestSessionPage";
-import { ExamPage } from "../features/exam/ExamPage";
-import { CustomTestPage } from "../features/customTest/CustomTestPage";
-import { TestsPage } from "../features/tests/TestsPage";
-import { TestCategoryPage } from "../features/tests/TestCategoryPage";
-import { TestSubjectPage } from "../features/tests/TestSubjectPage";
-import { StatisticsPage } from "../features/statistics/StatisticsPage";
-import { AccountPage } from "../features/account/AccountPage";
 import { NotFoundPage, PublicNotFoundPage } from "../features/misc/NotFoundPage";
+
+// Ekrany aplikacji i dokumenty prawne ładują się dopiero przy pierwszym wejściu, żeby strona główna i logowanie
+// pobierały się szybko. Strony wejściowe (powyżej) zostają w głównym pakiecie.
+const TermsPage = lazy(() => import("../features/legal/TermsPage").then((m) => ({ default: m.TermsPage })));
+const PrivacyPage = lazy(() => import("../features/legal/PrivacyPage").then((m) => ({ default: m.PrivacyPage })));
+const DashboardPage = lazy(() => import("../features/dashboard/DashboardPage").then((m) => ({ default: m.DashboardPage })));
+const CategoriesPage = lazy(() => import("../pages/CategoriesPage").then((m) => ({ default: m.CategoriesPage })));
+const SubjectsPage = lazy(() => import("../pages/SubjectsPage").then((m) => ({ default: m.SubjectsPage })));
+const SourcesPage = lazy(() => import("../pages/SourcesPage").then((m) => ({ default: m.SourcesPage })));
+const ChaptersPage = lazy(() => import("../pages/ChaptersPage").then((m) => ({ default: m.ChaptersPage })));
+const StudySessionPage = lazy(() => import("../pages/StudySessionPage").then((m) => ({ default: m.StudySessionPage })));
+const TestSessionPage = lazy(() => import("../pages/TestSessionPage").then((m) => ({ default: m.TestSessionPage })));
+const ExamPage = lazy(() => import("../features/exam/ExamPage").then((m) => ({ default: m.ExamPage })));
+const CustomTestPage = lazy(() => import("../features/customTest/CustomTestPage").then((m) => ({ default: m.CustomTestPage })));
+const MyTestsPage = lazy(() => import("../features/customTest/MyTestsPage").then((m) => ({ default: m.MyTestsPage })));
+const MyTestDetailPage = lazy(() =>
+  import("../features/customTest/MyTestDetailPage").then((m) => ({ default: m.MyTestDetailPage }))
+);
+const TestsPage = lazy(() => import("../features/tests/TestsPage").then((m) => ({ default: m.TestsPage })));
+const TestCategoryPage = lazy(() => import("../features/tests/TestCategoryPage").then((m) => ({ default: m.TestCategoryPage })));
+const TestSubjectPage = lazy(() => import("../features/tests/TestSubjectPage").then((m) => ({ default: m.TestSubjectPage })));
+const StatisticsPage = lazy(() => import("../features/statistics/StatisticsPage").then((m) => ({ default: m.StatisticsPage })));
+const AccountPage = lazy(() => import("../features/account/AccountPage").then((m) => ({ default: m.AccountPage })));
 
 export function Router() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/check-email" element={<CheckEmailPage />} />
-        <Route path="/verify" element={<VerifyPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/regulamin" element={<TermsPage />} />
-        <Route path="/polityka-prywatnosci" element={<PrivacyPage />} />
+      <ErrorBoundary fullScreen>
+        <Suspense fallback={<RouteFallback />}>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/check-email" element={<CheckEmailPage />} />
+            <Route path="/verify" element={<VerifyPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/regulamin" element={<TermsPage />} />
+            <Route path="/polityka-prywatnosci" element={<PrivacyPage />} />
 
-        <Route element={<ProtectedRoute />}>
-          <Route path="/app" element={<AppShell />}>
-            <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<DashboardPage />} />
+            <Route element={<ProtectedRoute />}>
+              <Route path="/app" element={<AppShell />}>
+                <Route index element={<Navigate to="dashboard" replace />} />
+                <Route path="dashboard" element={<DashboardPage />} />
 
-            <Route path="flashcards" element={<CategoriesPage />} />
-            <Route path="flashcards/:categoryId/subjects" element={<SubjectsPage />} />
-            <Route path="flashcards/:subjectId/sources" element={<SourcesPage />} />
-            <Route path="flashcards/:subjectId/sources/:sourceId/chapters" element={<ChaptersPage />} />
-            {/* Bez :subjectId = sesja z całego materiału użytkownika */}
-            <Route path="study" element={<StudySessionPage />} />
-            <Route path="study/:subjectId" element={<StudySessionPage />} />
-            <Route path="test" element={<TestSessionPage />} />
-            <Route path="test/mistakes" element={<TestSessionPage mode="mistakes" />} />
-            <Route path="test/due" element={<TestSessionPage mode="due" />} />
-            <Route path="test/practice" element={<TestSessionPage mode="practice" />} />
-            <Route path="test/custom" element={<TestSessionPage mode="custom" />} />
-            <Route path="custom-test" element={<CustomTestPage />} />
-            <Route path="exam" element={<ExamPage />} />
-            <Route path="test/:subjectId" element={<TestSessionPage />} />
+                <Route path="flashcards" element={<CategoriesPage />} />
+                <Route path="flashcards/:categoryId/subjects" element={<SubjectsPage />} />
+                <Route path="flashcards/:subjectId/sources" element={<SourcesPage />} />
+                <Route path="flashcards/:subjectId/sources/:sourceId/chapters" element={<ChaptersPage />} />
+                {/* Bez :subjectId = sesja z całego materiału użytkownika */}
+                <Route path="study" element={<StudySessionPage />} />
+                <Route path="study/:subjectId" element={<StudySessionPage />} />
+                <Route path="test" element={<TestSessionPage />} />
+                <Route path="test/mistakes" element={<TestSessionPage mode="mistakes" />} />
+                <Route path="test/due" element={<TestSessionPage mode="due" />} />
+                <Route path="test/practice" element={<TestSessionPage mode="practice" />} />
+                <Route path="test/custom" element={<TestSessionPage mode="custom" />} />
+                <Route path="custom-test" element={<CustomTestPage />} />
+                <Route path="custom-test/history" element={<MyTestsPage />} />
+                <Route path="custom-test/history/:id" element={<MyTestDetailPage />} />
+                <Route path="exam" element={<ExamPage />} />
+                <Route path="test/:subjectId" element={<TestSessionPage />} />
 
-            <Route path="tests" element={<TestsPage />} />
-            <Route path="tests/:categoryId" element={<TestCategoryPage />} />
-            <Route path="tests/:categoryId/:subjectId" element={<TestSubjectPage />} />
+                <Route path="tests" element={<TestsPage />} />
+                <Route path="tests/:categoryId" element={<TestCategoryPage />} />
+                <Route path="tests/:categoryId/:subjectId" element={<TestSubjectPage />} />
 
-            <Route path="statistics" element={<StatisticsPage />} />
-            <Route path="account" element={<AccountPage />} />
+                <Route path="statistics" element={<StatisticsPage />} />
+                <Route path="account" element={<AccountPage />} />
 
-            <Route path="*" element={<NotFoundPage />} />
-          </Route>
-        </Route>
+                <Route path="*" element={<NotFoundPage />} />
+              </Route>
+            </Route>
 
-        <Route path="*" element={<PublicNotFoundPage />} />
-      </Routes>
+            <Route path="*" element={<PublicNotFoundPage />} />
+          </Routes>
+        </Suspense>
+      </ErrorBoundary>
     </BrowserRouter>
   );
 }

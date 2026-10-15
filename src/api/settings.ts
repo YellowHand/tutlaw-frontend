@@ -14,8 +14,13 @@ export interface LearningSettings {
   maxReviewsPerDay: number;
   /** Docelowa szansa przypomnienia sobie karty (0,70–0,97). */
   desiredRetention: number;
-  /** Aplikacja, do której użytkownik się przygotowuje (z niej bierze się termin); null = jeszcze nie wybrał. */
+  /** Aplikacja, do której użytkownik się przygotowuje (z niej bierze się termin); null = student albo jeszcze nie wybrał. */
   examOrigin: QuestionOrigin | null;
+  /**
+   * Czy użytkownik zrobił wybór w oknie startowym: aplikację albo „Jestem studentem". Okno startowe pokazujemy, dopóki
+   * to jest false. Student ma `startChoiceMade = true` i `examOrigin = null`: bez odliczania, planu i zawężenia pytań.
+   */
+  startChoiceMade: boolean;
   /** Termin egzaminu wybranej aplikacji (RRRR-MM-DD, ustawia go administrator) albo null = nieogłoszony / brak wyboru. */
   examDate: string | null;
   shuffleOptions: boolean;
@@ -72,12 +77,17 @@ export async function updateLearningSettings(update: LearningSettingsUpdate): Pr
   return res.data;
 }
 
+/** Wybór w oknie startowym i w Koncie: jedna z aplikacji albo „Jestem studentem / jeszcze nie wybrałem". */
+export type ExamChoice = QuestionOrigin | "STUDENT";
+
 /**
  * Wybór aplikacji, do której użytkownik się przygotowuje. Serwer ustawia przy tym filtr pochodzenia pytań na tę
- * aplikację i pytania autorskie (jednorazowo; później filtr zmienia się osobno).
+ * aplikację i pytania autorskie (jednorazowo; później filtr zmienia się osobno). „STUDENT" nie ma aplikacji, terminu
+ * ani odliczania, a filtr pytań obejmuje wszystkie pochodzenia.
  */
-export async function chooseExam(origin: QuestionOrigin): Promise<LearningSettings> {
-  const res = await api.put<LearningSettings>("/api/me/exam", { origin });
+export async function chooseExam(choice: ExamChoice): Promise<LearningSettings> {
+  const body = choice === "STUDENT" ? { student: true } : { origin: choice };
+  const res = await api.put<LearningSettings>("/api/me/exam", body);
   return res.data;
 }
 

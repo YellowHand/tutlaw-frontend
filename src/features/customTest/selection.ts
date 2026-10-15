@@ -1,4 +1,4 @@
-import type { CustomTestScope } from "../../api/customTest";
+import { COUNT_CHOICES, type CustomTestScope } from "../../api/customTest";
 import type { TestCatalog } from "../../api/tests";
 import { pluralizePl } from "../../lib/plural";
 
@@ -74,12 +74,7 @@ export function restrictToTree(tree: readonly TreeCategory[], ids: Iterable<numb
  * Zakres do wysłania na serwer. Rodzaj zaznaczony w całości idzie jako rodzaj, częściowy jako jego zaznaczone akty.
  * Gdy zaznaczono wszystko, lista jest pusta, a serwer bierze cały materiał (też działy dodane w międzyczasie).
  */
-export function toScope(
-  tree: readonly TreeCategory[],
-  selected: ReadonlySet<number>,
-  yearFrom: number | null,
-  yearTo: number | null
-): CustomTestScope {
+export function toScope(tree: readonly TreeCategory[], selected: ReadonlySet<number>): CustomTestScope {
   const everything = tree.every((category) => categoryState(category, selected) === "checked");
   const categoryIds: number[] = [];
   const subjectIds: number[] = [];
@@ -92,7 +87,7 @@ export function toScope(
       }
     }
   }
-  return { categoryIds, subjectIds, yearFrom, yearTo };
+  return { categoryIds, subjectIds };
 }
 
 /** Czy zaznaczono cokolwiek (pusty wybór nie ma sensu: serwer wziąłby wtedy cały materiał). */
@@ -114,4 +109,84 @@ export function describeSelection(tree: readonly TreeCategory[], selected: Reado
   const positions = pluralizePl(chosen.length, { one: "pozycja", few: "pozycje", many: "pozycji" });
   const kinds = categories === 1 ? "rodzaju" : "rodzajach";
   return `${chosen.length} ${positions} w ${categories} ${kinds}`;
+}
+
+/**
+ * Odtwarza zaznaczenie z zakresu zapisanego testu (rodzaje i akty prawne). Pozycje, których już nie ma w drzewie
+ * (np. po zmianie filtra pochodzenia), odpadają. Zakres pusty = cały materiał. Zwraca też liczbę pominiętych pozycji.
+ */
+export function selectionFromScope(
+  tree: readonly TreeCategory[],
+  categoryIds: readonly number[],
+  subjectIds: readonly number[]
+): { selected: Set<number>; missing: number } {
+  if (categoryIds.length === 0 && subjectIds.length === 0) return { selected: allSubjectIds(tree), missing: 0 };
+  const selected = new Set<number>();
+  let missing = 0;
+  for (const categoryId of categoryIds) {
+    const category = tree.find((c) => c.id === categoryId);
+    if (!category) missing += 1;
+    else category.subjects.forEach((subject) => selected.add(subject.id));
+  }
+  const known = allSubjectIds(tree);
+  for (const subjectId of subjectIds) {
+    if (known.has(subjectId)) selected.add(subjectId);
+    else missing += 1;
+  }
+  return { selected, missing };
+}
+
+/** Jedna z liczb pytań do wyboru. `sends` to liczba wysyłana na serwer (przy „Wszystkie" może być większa od `count`). */
+export interface CountOption {
+  key: string;
+  label: string;
+  /** Ile pytań dostanie użytkownik. */
+  count: number;
+  sends: number;
+  all: boolean;
+}
+
+/**
+ * Liczby pytań do pokazania przy `available` dostępnych pytaniach: tylko takie, które się mieszczą (10, 20, 50, 100, 150).
+ * Gdy wszystkich pytań jest mniej niż 10, jest jedna możliwość: „Wszystkie (N)". Gdy jest ich więcej niż 10, ale mniej niż 150
+ * i nie wypada to na żadną z liczb, dodajemy „Wszystkie (N)" na końcu (serwer da wtedy tyle, ile jest).
+ */
+export function countOptions(available: number): CountOption[] {
+  if (available <= 0) return [];
+  if (available < COUNT_CHOICES[0]) {
+    return [{ key: "all", label: `Wszystkie (${available})`, count: available, sends: available, all: true }];
+  }
+  const options: CountOption[] = COUNT_CHOICES.filter((choice) => choice <= available).map((choice) => ({
+    key: String(choice),
+    label: String(choice),
+    count: choice,
+    sends: choice,
+    all: false,
+  }));
+  const max = COUNT_CHOICES[COUNT_CHOICES.length - 1];
+  if (available <= max && !COUNT_CHOICES.includes(available)) {
+    const sends = COUNT_CHOICES.find((choice) => choice >= available) ?? max;
+    options.push({ key: "all", label: `Wszystkie (${available})`, count: available, sends, all: true });
+  }
+  return options;
+}
+
+/** Liczba pytań, którą proponujemy, gdy użytkownik nic jeszcze nie wybrał. */
+const DEFAULT_COUNT = 20;
+
+/**
+ * Które z dostępnych opcji jest wybrane. Zapamiętana liczba, a gdy jej nie ma, najbliższa jej od dołu (łącznie z „Wszystkie (N)"):
+ * kto prosił o 100 pytań, a jest ich 35, dostaje „Wszystkie (35)". Bez zapamiętanego wyboru proponujemy 20. Dla małego zakresu
+ * zawsze jedyne „Wszystkie".
+ */
+export function pickCountOption(options: readonly CountOption[], wanted: number | "all" | null): CountOption | null {
+  if (options.length === 0) return null;
+  if (wanted === "all") {
+    const all = options.find((o) => o.all);
+    if (all) return all;
+  }
+  const target = typeof wanted === "number" ? wanted : DEFAULT_COUNT;
+  const fits = options.filter((o) => o.count <= target);
+  if (fits.length === 0) return options[0];
+  return fits.reduce((best, o) => (o.count > best.count ? o : best));
 }

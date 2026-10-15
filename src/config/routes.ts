@@ -35,7 +35,11 @@ export const ROUTES = {
   // Własny test: ekran układania (to NIE sesja, więc zostaje z menu) i sesja z wylosowanych pytań.
   customTest: "/app/custom-test",
   testCustomBase: "/app/test/custom",
-  testCustom: (cardIds: readonly number[]) => `/app/test/custom?cardIds=${cardIds.join(",")}`,
+  testCustom: (cardIds: readonly number[], sessionId?: number) =>
+    `/app/test/custom?cardIds=${cardIds.join(",")}${sessionId !== undefined ? `&sessionId=${sessionId}` : ""}`,
+  // „Moje testy": zapisane własne testy (lista i szczegóły). Pod /app/custom-test, więc menu dalej świeci „Testy".
+  myTests: "/app/custom-test/history",
+  myTest: (id: string | number) => `/app/custom-test/history/${id}`,
   // Egzamin próbny: ustawienia, egzamin, raport i historia.
   exam: "/app/exam",
 

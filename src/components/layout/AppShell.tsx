@@ -1,9 +1,13 @@
+import { Suspense } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { X } from "lucide-react";
 import { cn } from "../../lib/cn";
+import { ErrorBoundary } from "../ErrorBoundary";
+import { RouteFallback } from "../RouteFallback";
 import { sessionExitRoute } from "../../config/navigation";
 import { OnboardingGate } from "../../features/onboarding/OnboardingDialog";
 import { ThemeSync } from "../../features/settings/ThemeSync";
+import { StudyTimeTracker } from "../../features/studytime/StudyTimeTracker";
 import { SideNav } from "./SideNav";
 import { BottomNav } from "./BottomNav";
 import { useNavCollapsed } from "./useNavCollapsed";
@@ -41,13 +45,19 @@ export function AppShell() {
           </header>
         )}
         <main className={cn("flex-1 overflow-y-auto", !exitTo && "pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-0")}>
-          <Outlet />
+          {/* Błąd w jednym ekranie nie zabiera menu, a przejście na inny adres próbuje wyrenderować go od nowa. */}
+          <ErrorBoundary resetKey={pathname}>
+            <Suspense fallback={<RouteFallback />}>
+              <Outlet />
+            </Suspense>
+          </ErrorBoundary>
         </main>
       </div>
 
       {!exitTo && <BottomNav className="md:hidden" />}
 
       <ThemeSync />
+      <StudyTimeTracker />
       <OnboardingGate />
     </div>
   );

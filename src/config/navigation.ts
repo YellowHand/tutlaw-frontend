@@ -52,3 +52,11 @@ export function sessionExitRoute(pathname: string): string | null {
   if (matchesPrefix(pathname, ROUTES.testAll)) return ROUTES.tests;
   return null;
 }
+
+/**
+ * Czy adres to ekran nauki, na którym liczymy czas nauki: sesje fiszek i testów (także własny test, błędy, powtórki)
+ * oraz cały ekran egzaminu próbnego z raportem. Listy, Pulpit, Statystyki i Konto się nie liczą.
+ */
+export function isStudyPath(pathname: string): boolean {
+  return sessionExitRoute(pathname) !== null || matchesPrefix(pathname, ROUTES.exam);
+}

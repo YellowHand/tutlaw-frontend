@@ -48,13 +48,19 @@ dla użytkownika (albo pojęcie techniczne), w drugiej wyjaśnienie, w trzeciej 
 | **Tryb sesji** (`SessionMode`) | `FLASHCARD` albo `TEST`: Fiszki i Testy mają osobne liczniki i kolejki | `api/review.ts` |
 | **Tryb skupienia** | Sesja fiszek albo testu bez menu, z przyciskiem „Zakończ sesję” u góry. Włącza się sam po adresie | `sessionExitRoute` w `config/navigation.ts`, [02](02-routing-i-strony.md) |
 | **Ukryta karta** | Karta schowana przez administratora przed wszystkimi użytkownikami | `HideCardButton.tsx` |
-| **Własny test** | Sesja nauki ułożona przez użytkownika: wybrane rodzaje i akty prawne, rodzaj pytań (wszystkie, nowe, błędy, zaległe), lata egzaminu i liczba pytań. To nauka, a nie egzamin: bez progu i wyniku „zdał / nie zdał” | `features/customTest`, [04](04-nauka-w-aplikacji.md) |
+| **Własny test** | Sesja nauki ułożona przez użytkownika: wybrane rodzaje i akty prawne, rodzaj pytań (wszystkie, nowe, błędy, zaległe) i liczba pytań (10, 20, 50, 100, 150 albo „Wszystkie”). Zapisuje się w „Moich testach”. To nauka, a nie egzamin: bez progu i wyniku „zdał / nie zdał” | `features/customTest`, [04](04-nauka-w-aplikacji.md) |
 | **Zaległości** (`backlog`) | Karty po terminie powtórki: ile jest teraz (`dueNow`) i ile nie zmieści się dziś w limicie (`deferred`) | `Backlog` w `api/review.ts` |
 | **Zawieszone pytanie** | Pytanie, które użytkownik wyłączył z nauki. Postęp zostaje, można je przywrócić w Koncie | `suspendCard`, `unsuspendCard` |
-| **Okno startowe** | Obowiązkowe okno po zalogowaniu nowego użytkownika: wybór aplikacji i wyglądu strony. Nie zamyka się bez wyboru aplikacji | `OnboardingDialog.tsx` |
+| **Okno startowe** | Obowiązkowe okno po zalogowaniu nowego użytkownika: wybór aplikacji (albo „Jestem studentem”) i wyglądu strony. Nie zamyka się bez wyboru | `OnboardingDialog.tsx` |
+| **Student** | Wybór w oknie startowym i w Koncie bez aplikacji: bez terminu, odliczania i planu dnia, z pytaniami ze wszystkich pochodzeń (`startChoiceMade = true`, `examOrigin = null`) | `ExamChoice` w `api/settings.ts` |
+| **Moje testy** | Lista zapisanych własnych testów (także nieukończonych) ze szczegółami i przyciskiem „Ułóż ponownie z tymi ustawieniami” | `MyTestsPage.tsx`, `MyTestDetailPage.tsx` |
+| **Licznik czasu przy pytaniu** | Mały zegar przy pytaniu i fiszce; liczy tylko przy widocznej karcie. Kliknięcie go chowa (zapisane na koncie). Ten sam czas idzie na serwer jako czas odpowiedzi | `QuestionTimer.tsx`, `useQuestionClock.ts` |
+| **Czas nauki** | Łączny czas spędzony na ekranach nauki (osobny od czasu odpowiedzi). Liczy się przy widocznej karcie i do 3 minut bez ruchu, na serwer idzie co ok. 30 s | `StudyTimeMeter`, `StudyTimeTracker.tsx` |
+| **Podpowiedź skrótów** | Pasek z klawiszami pod pytaniem. Znika po 10 odpowiedziach (osobno w testach i fiszkach), „×” chowa ją na stałe, klawisz `?` pokazuje z powrotem na chwilę | `KeyboardHint.tsx`, `features/interface/hooks.ts` |
+| **Podsumowanie sesji** | Dwa zdania na ekranie „Brawo!”: nowe pytania (fiszki) w tej sesji i ile powtórek wróci jutro | `SessionSummary.tsx` |
 | **Wygląd** (motyw) | Ciemny (domyślny) albo jasny; zapisany na koncie w backendzie, działa tylko wewnątrz aplikacji (`/app`) | `lib/theme.ts`, `ThemeSync.tsx`, `AppearanceCard.tsx` |
 | **Limit automatyczny** | Tryb limitu nowych pytań dziennie, w którym limit idzie za planem do egzaminu (co najmniej 40, najwyżej 100 dziennie); drugi tryb to własny limit | `newQuestionsLimit.ts`, `LimitNotice.tsx` |
-| **Zgłoś błąd** | Przycisk, który otwiera okno na środku ekranu, w którym użytkownik zgłasza błąd w pytaniu lub fiszce (powody: błędna odpowiedź, nieaktualny przepis, literówka lub niejasne sformułowanie, coś innego) | `ReportCardButton.tsx`, `ReportReason` |
+| **Zgłoś błąd** | Przycisk (dopiero po odpowiedzi, w prawym górnym rogu panelu wyniku albo odwróconej fiszki), który otwiera okno na środku ekranu, w którym użytkownik zgłasza błąd w pytaniu lub fiszce (powody: błędna odpowiedź, nieaktualny przepis, literówka lub niejasne sformułowanie, coś innego) | `ReportCardButton.tsx`, `ReportReason` |
 | **Źródło** (`Source`) | Książka lub zbiór pytań należący do przedmiotu. Ma typ: podręcznik albo pula płaska | `api/sources.ts` |
 
 ## Pojęcia techniczne

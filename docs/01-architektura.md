@@ -47,7 +47,7 @@ port-fe/
     ├── App.tsx             Składa dostawców (providers) i router
     ├── index.css           Tailwind i wszystkie kolory, czcionki, rozmiary tekstu
     ├── app/                providers.tsx (pamięć podręczna + sesja), router.tsx (wszystkie adresy)
-    ├── auth/               Sesja: kontekst z tokenem (AuthContext, context, useAuth)
+    ├── auth/               Sesja: kontekst z tokenem dostępu (AuthContext, context, useAuth)
     ├── api/                Wywołania serwera i typy odpowiedzi, po jednym pliku na zasób
     ├── config/             routes.ts (adresy), navigation.ts (menu), legal.ts (dane administratora serwisu)
     ├── lib/                Małe funkcje pomocnicze: cn, daty, błędy, pochodzenie pytań, odmiana liczebników
@@ -63,22 +63,24 @@ port-fe/
 | `account` | 8 | Ekran Konto: zmiana hasła, pobranie danych, usunięcie konta, wywołania serwera, dane zalogowanego konta (`useMe`) |
 | `admin` | 1 | Przycisk „Ukryj” (tylko dla administratora) |
 | `auth` | 6 | Pola formularzy logowania, „wyślij link ponownie”, odczyt roli z tokenu, czyszczenie sesji |
-| `customTest` | 5 | Własny test: wybór rodzajów i aktów prawnych, rodzaju pytań, lat i liczby pytań; pamięć ostatniego wyboru |
+| `customTest` | 10 | Własny test: wybór rodzajów i aktów prawnych, rodzaju pytań i liczby pytań (10, 20, 50, 100, 150); pamięć ostatniego wyboru; „Moje testy” (lista, szczegóły, ułożenie ponownie z tymi samymi ustawieniami) |
 | `dashboard` | 6 | Pulpit: karta „Na dziś” z jednym głównym przyciskiem, „Postęp”, wynik egzaminu próbnego |
 | `difficult` | 4 | Trudne i zawieszone pytania: podpowiedź, zawieszanie, lista w Koncie |
 | `exam` | 8 | Egzamin próbny: ustawienia, przebieg z zegarem, raport, historia, zapis w przeglądarce |
 | `flashcards` | 2 | Dane do wyboru materiału Fiszek oraz „Dodaj do fiszek” przy pytaniu |
+| `interface` | 1 | Ustawienia interfejsu zapisane na koncie: ukrycie podpowiedzi skrótów klawiszowych i licznika czasu pytania (hooki) |
 | `landing` | 17 | Strona główna: sekcje, teksty, demo pytania, ilustracja |
 | `legal` | 3 | Regulamin i polityka prywatności |
 | `misc` | 1 | Strona 404 |
 | `onboarding` | 1 | Obowiązkowe okno startowe po zalogowaniu: wybór aplikacji i wyglądu strony |
 | `report` | 2 | „Zgłoś błąd”: okno na środku ekranu z powodem i komentarzem |
-| `review` | 10 | Elementy wspólne sesji nauki: skróty klawiszowe, zaległości, podstawa prawna, etykieta pochodzenia |
+| `review` | 15 | Elementy wspólne sesji nauki: skróty klawiszowe i ich podpowiedź, zaległości, podstawa prawna, etykieta pochodzenia, licznik czasu pytania (widoczny czas), podsumowanie sesji na ekranie „Brawo!” |
 | `settings` | 10 | Ustawienia nauki w Koncie (limity dzienne z trybem automatycznym, retencja, wybór egzaminu), wygląd jasny/ciemny (karta, wybór, synchronizacja z kontem), komunikat o tempie nowych pytań, terminy egzaminów dla administratora |
-| `statistics` | 14 | Ekran Statystyki: opanowanie, ostatnie 30 dni, aktywność, fiszki; dane statystyk |
+| `statistics` | 15 | Ekran Statystyki: „Podsumowanie nauki”, opanowanie, ostatnie 30 dni, aktywność, fiszki; dane statystyk |
+| `studytime` | 3 | Czas nauki: licznik na ekranach nauki (tylko przy widocznej karcie, pauza po 3 minutach bez ruchu) i wysyłanie porcji co ok. 30 s |
 | `tests` | 14 | Ekrany Testów (rodzaj, przedmiot, źródło), filtr pochodzenia, tasowanie odpowiedzi |
 
-W repozytorium jest łącznie 176 plików w `src/`.
+W repozytorium jest łącznie 196 plików w `src/`.
 
 ### Dlaczego strony są w dwóch miejscach
 
@@ -106,7 +108,7 @@ flowchart TD
 3. `App.tsx` składa dwóch dostawców i router.
 4. `AppProviders` ustawia pamięć podręczną danych (React Query): dane są „świeże” 60 sekund, a nieudane zapytanie jest
    ponawiane raz. Poszczególne zapytania mogą to zmieniać (patrz [05](05-warstwa-api-i-dane.md)).
-5. `AuthProvider` odczytuje token z `localStorage` (klucz `accessToken`) i udostępnia go całej aplikacji
+5. `AuthProvider` odczytuje token dostępu z `localStorage` (klucz `accessToken`; obok leży `refreshToken`) i udostępnia go całej aplikacji
    (patrz [03](03-logowanie-i-sesja.md)).
 6. `Router` wybiera ekran według adresu (patrz [02](02-routing-i-strony.md)).
 
@@ -129,7 +131,7 @@ sequenceDiagram
         X->>X: dokleja Authorization: Bearer ...
         X->>S: żądanie HTTP
         S-->>X: JSON (albo błąd)
-        X-->>F: dane albo błąd (401 = wylogowanie)
+        X-->>F: dane albo błąd (401 = odświeżenie sesji, a gdy się nie uda, wylogowanie)
         F-->>H: dane z typem
     end
     H-->>K: data, isLoading, isError, refetch
