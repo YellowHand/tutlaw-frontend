@@ -46,7 +46,7 @@ export function SideNav({ variant, onToggle, className }: SideNavProps) {
   if (variant === "rail") {
     return (
       <aside className={cn("w-[84px] shrink-0 flex-col items-center border-r border-line bg-surface py-4", className)}>
-        <Link to={ROUTES.dashboard} aria-label="Tutlaw: pulpit" className="rounded-xl p-2">
+        <Link to={ROUTES.dashboard} aria-label="Gradus iuris: pulpit" className="rounded-xl p-2">
           <Logo variant="monogram" />
         </Link>
 
@@ -107,7 +107,7 @@ export function SideNav({ variant, onToggle, className }: SideNavProps) {
   return (
     <aside className={cn("w-[248px] shrink-0 flex-col border-r border-line bg-surface px-3 py-4", className)}>
       <div className="mb-6 flex items-center justify-between pl-2">
-        <Link to={ROUTES.dashboard} aria-label="Tutlaw: pulpit" className="flex min-h-11 items-center rounded-lg">
+        <Link to={ROUTES.dashboard} aria-label="Gradus iuris: pulpit" className="flex min-h-11 items-center rounded-lg">
           <Logo variant="wordmark" />
         </Link>
         {onToggle && (

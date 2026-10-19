@@ -1,35 +1,48 @@
 import { api } from "./axiosInstance";
-import type { QuestionOrigin } from "../lib/origin";
+import type { SourceKind } from "../lib/source";
 
-export interface ReviewQueueItem {
-  cardId: number;
+/**
+ * Zakres sesji, od najwęższego: źródło (arkusz), akt prawny, dziedzina. Bez żadnego z nich serwer bierze całą pulę
+ * użytkownika. Zakres liczy się razem z pulą (ścieżka, zawężenie do aktów, filtr źródeł).
+ */
+export interface ReviewScope {
+  fieldId?: number;
+  actId?: number;
+  sourceId?: number;
+}
+
+/** Fiszka to tryb pytania: ta sama treść, osobny harmonogram powtórek niż w teście. */
+export interface FlashcardQueueItem {
+  questionId: number;
   front: string;
   back: string;
-  pageNumber: number | null;
-  verbatimQuote: boolean;
-  sourceName: string | null;
+  /** Wyjaśnienie (bywa puste: nie każde pytanie je ma). */
+  explanation: string | null;
   /** Podstawa prawna, np. „art. 415 k.c." (opcjonalna). */
   legalBasis: string | null;
   /** Data RRRR-MM-DD, na którą sprawdzono stan prawny (opcjonalna). */
   validAsOf: string | null;
-  /** Ile razy użytkownik pomylił się w tym pytaniu / go nie pamiętał (stan sprzed tej sesji). */
-  lapses: number;
-  /** Czy pytanie jest już „trudne" (liczba błędów osiągnęła próg), czyli warto zaproponować zawieszenie. */
-  leech: boolean;
-  /** Skąd pochodzi fiszka (kopiowane z pytania); autorskie nie ma roku. */
-  origin: QuestionOrigin;
+  actName: string | null;
+  actShortName: string | null;
+  sourceName: string | null;
+  sourceKind: SourceKind | null;
   examYear: number | null;
+  /** Ile razy użytkownik pomylił się w tej fiszce / jej nie pamiętał (stan sprzed tej sesji). */
+  lapses: number;
+  /** Czy fiszka jest już „trudna" (liczba błędów osiągnęła próg), czyli warto zaproponować zawieszenie. */
+  leech: boolean;
 }
 
 export interface TestQueueItem {
-  cardId: number;
-  front: string;
+  questionId: number;
+  body: string;
   optionA: string;
   optionB: string;
   optionC: string;
+  actName: string | null;
+  actShortName: string | null;
   sourceName: string | null;
-  /** Skąd pochodzi pytanie: autorskie albo egzamin na konkretną aplikację z danego roku. */
-  origin: QuestionOrigin;
+  sourceKind: SourceKind | null;
   examYear: number | null;
 }
 
@@ -65,7 +78,7 @@ export interface TestAnswerResult {
 
 /**
  * Zaległości w wybranym zakresie nauki.
- * - dueNow: ile kart ma teraz minięty termin powtórki,
+ * - dueNow: ile pytań ma teraz minięty termin powtórki,
  * - deferred: ile z nich nie zmieści się dziś w sesji (dzienny limit) i poczeka na kolejne dni,
  * - dailyLimit / doneToday: dzienny limit zaległych powtórek i ile zrobiono już dziś.
  */
@@ -78,46 +91,37 @@ export interface Backlog {
 
 export type SessionMode = "FLASHCARD" | "TEST";
 
-export async function getBacklog(
-  mode: SessionMode,
-  subjectId?: number,
-  sourceId?: number,
-  categoryId?: number
-): Promise<Backlog> {
-  const res = await api.get<Backlog>("/api/review/queue/backlog", {
-    params: { mode, categoryId, subjectId, sourceId },
+export async function getBacklog(mode: SessionMode, scope: ReviewScope = {}): Promise<Backlog> {
+  const res = await api.get<Backlog>("/api/review/queue/backlog", { params: { mode, ...scope } });
+  return res.data;
+}
+
+/**
+ * Kolejka fiszek z podanego zakresu (bez zakresu: z całej puli). Zaległe fiszki idą od tych, które najłatwiej
+ * zapomnieć, do dziennego limitu. extraNewCards dokłada nowe, extraDueReviews dokłada kolejną porcję zaległych
+ * ponad limit („Powtórz jeszcze").
+ */
+export async function getFlashcardQueue(
+  scope: ReviewScope = {},
+  extraNewCards?: number,
+  extraDueReviews?: number
+): Promise<FlashcardQueueItem[]> {
+  const res = await api.get<FlashcardQueueItem[]>("/api/review/flashcard-queue", {
+    params: { ...scope, extraNewCards, extraDueReviews },
   });
   return res.data;
 }
 
 /**
- * subjectId, sourceId i categoryId są opcjonalne (od najwęższego: źródło, przedmiot, kategoria).
- * Bez żadnego backend zwraca kolejkę z całego dostępnego materiału użytkownika (globalne „Powtórki na dziś").
- * Zaległe fiszki idą od tych, które najłatwiej zapomnieć, do dziennego limitu. extraNewCards dokłada nowe,
- * extraDueReviews dokłada kolejną porcję zaległych ponad limit („Powtórz jeszcze").
+ * Kolejka pytań testowych z podanego zakresu. extraNewCards = 0 to sesja bez nowych pytań (same zaległe powtórki).
  */
-export async function getReviewQueue(
-  subjectId?: number,
-  sourceId?: number,
-  extraNewCards?: number,
-  categoryId?: number,
-  extraDueReviews?: number
-): Promise<ReviewQueueItem[]> {
-  const res = await api.get<ReviewQueueItem[]>("/api/review/queue", {
-    params: { categoryId, subjectId, sourceId, extraNewCards, extraDueReviews },
-  });
-  return res.data;
-}
-
 export async function getTestQueue(
-  subjectId?: number,
-  sourceId?: number,
+  scope: ReviewScope = {},
   extraNewCards?: number,
-  categoryId?: number,
   extraDueReviews?: number
 ): Promise<TestQueueItem[]> {
   const res = await api.get<TestQueueItem[]>("/api/review/test-queue", {
-    params: { categoryId, subjectId, sourceId, extraNewCards, extraDueReviews },
+    params: { ...scope, extraNewCards, extraDueReviews },
   });
   return res.data;
 }
@@ -143,38 +147,36 @@ export async function getMistakesQueue(): Promise<TestQueueItem[]> {
 }
 
 /**
- * Ile nowych kart można jeszcze dołożyć w danym trybie. Fiszki i Testy liczą osobno: bez trybu backend
+ * Ile nowych pytań można jeszcze dołożyć w danym trybie. Fiszki i Testy liczą osobno: bez trybu backend
  * liczy fiszki, więc sesja testowa musi podać "TEST".
  */
-export async function getAvailableNewCardsCount(
-  subjectId?: number,
-  sourceId?: number,
-  categoryId?: number,
+export async function getAvailableNewQuestionsCount(
+  scope: ReviewScope = {},
   mode: SessionMode = "FLASHCARD"
 ): Promise<number> {
-  const res = await api.get<{ availableCount: number }>("/api/review/queue/new-cards-available", {
-    params: { categoryId, subjectId, sourceId, mode },
+  const res = await api.get<{ availableCount: number }>("/api/review/queue/new-available", {
+    params: { ...scope, mode },
   });
   return res.data.availableCount;
 }
 
-/** Ile kart w danym trybie (fiszki albo pytania testowe) ma już minięty termin powtórki, bez nowych. */
+/** Ile pytań w danym trybie (fiszki albo testy) ma już minięty termin powtórki, bez nowych. */
 export async function getDueCount(mode: SessionMode = "FLASHCARD"): Promise<number> {
   const res = await api.get<{ dueCount: number }>("/api/review/due-count", { params: { mode } });
   return res.data.dueCount;
 }
 
-/** Wynik oceny fiszki: `newCard` = to była pierwsza ocena tej fiszki (zaczęła się uczyć właśnie teraz). */
+/** Wynik oceny fiszki: `firstReview` = to była pierwsza ocena tej fiszki (zaczęła się uczyć właśnie teraz). */
 export interface ReviewResult {
-  newCard: boolean;
+  firstReview: boolean;
 }
 
-export async function submitReview(cardId: number, rating: number, timeSpentSeconds: number): Promise<ReviewResult> {
-  const res = await api.post<Partial<ReviewResult> | undefined>("/api/review", { cardId, rating, timeSpentSeconds });
-  return { newCard: res.data?.newCard === true };
+export async function submitReview(questionId: number, rating: number, timeSpentSeconds: number): Promise<ReviewResult> {
+  const res = await api.post<Partial<ReviewResult> | undefined>("/api/review", { questionId, rating, timeSpentSeconds });
+  return { firstReview: res.data?.firstReview === true };
 }
 
-/** Ile kart danego trybu wróci na powtórkę do końca jutra (razem z tymi, które czekają już teraz). */
+/** Ile pytań danego trybu wróci na powtórkę do końca jutra (razem z tymi, które czekają już teraz). */
 export async function getDueByTomorrow(mode: SessionMode): Promise<number> {
   const res = await api.get<{ dueCount: number }>("/api/review/due-tomorrow", { params: { mode } });
   return res.data.dueCount;
@@ -186,18 +188,27 @@ export async function getDueByTomorrow(mode: SessionMode): Promise<number> {
  * sessionId: numer zapisanego własnego testu, do którego należy odpowiedź (tylko w „Własny test").
  */
 export async function submitTestAnswer(
-  cardId: number,
+  questionId: number,
   selectedOption: "A" | "B" | "C",
   timeSpentSeconds: number,
   guessed = false,
   sessionId?: number
 ): Promise<TestAnswerResult> {
   const res = await api.post<TestAnswerResult>("/api/review/test-answer", {
-    cardId,
+    questionId,
     selectedOption,
     timeSpentSeconds,
     guessed,
     sessionId,
+  });
+  return res.data;
+}
+
+/** Sesja testowa z podanych pytań (np. błędy z egzaminu, własny test), w podanej kolejności. */
+export async function getPracticeQueue(questionIds: number[]): Promise<TestQueueItem[]> {
+  const res = await api.get<TestQueueItem[]>("/api/review/practice-queue", {
+    // Spring przyjmuje listę po przecinku; axios domyślnie zapisałby tablicę jako questionIds[]=1&questionIds[]=2.
+    params: { questionIds: questionIds.join(",") },
   });
   return res.data;
 }

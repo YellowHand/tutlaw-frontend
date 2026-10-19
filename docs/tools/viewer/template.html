@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Dokumentacja Tutlaw</title>
-<meta name="description" content="Dokumentacja frontendu i backendu aplikacji Tutlaw po polsku: architektura, ekrany, API, baza danych, nauka i algorytm FSRS-6.">
+<title>Dokumentacja Gradus iuris</title>
+<meta name="description" content="Dokumentacja frontendu i backendu aplikacji Gradus iuris po polsku: architektura, ekrany, API, baza danych, nauka i algorytm FSRS-6.">
 <meta name="generator" content="docs/tools/build-viewer.mjs">
 <meta name="docs-hash-frontend" content="@@HASH_FRONTEND@@">
 <meta name="docs-hash-backend" content="@@HASH_BACKEND@@">
@@ -12,7 +12,7 @@
 /* Motyw ustawiany przed pierwszym malowaniem, żeby strona nie migała. */
 (function () {
   var theme = null;
-  try { theme = localStorage.getItem("tutlaw-docs-theme"); } catch (e) {}
+  try { theme = localStorage.getItem("gradus-docs-theme"); } catch (e) {}
   if (theme !== "light" && theme !== "dark") {
     theme = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
   }
@@ -30,9 +30,9 @@
   <button type="button" class="icon-btn" id="menu-btn" aria-label="Pokaż lub ukryj spis dokumentów" aria-expanded="false" aria-controls="nav">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
   </button>
-  <a class="brand" href="#/" aria-label="Dokumentacja Tutlaw, strona startowa">
+  <a class="brand" href="#/" aria-label="Dokumentacja Gradus iuris, strona startowa">
     <span class="brand-mark" aria-hidden="true">T</span>
-    <span>Tutlaw <small>dokumentacja</small></span>
+    <span>Gradus iuris <small>dokumentacja</small></span>
   </a>
   <div class="search" role="search">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>

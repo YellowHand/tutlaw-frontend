@@ -8,9 +8,9 @@ import { Field } from "../../components/ui/Field";
 import { ROUTES } from "../../config/routes";
 import { serverMessage } from "../../lib/errors";
 import { pluralizePl } from "../../lib/plural";
-import { useTestCatalog } from "../tests/hooks";
-import { OriginFilterChip } from "../tests/OriginFilterChip";
-import { isFilterActive, useOriginFilter } from "../tests/originFilter";
+import { PoolChip } from "../pool/PoolChip";
+import { usePool } from "../pool/hooks";
+import { hiddenGroups } from "../pool/summary";
 import { EXAM_PASS_POINTS, EXAM_QUESTION_COUNT, formatClock } from "./format";
 import { loadRememberedSettings, saveRememberedSettings, type ExamDraft } from "./examStorage";
 import { ExamHistory } from "./ExamHistory";
@@ -39,13 +39,13 @@ interface ExamSetupProps {
 }
 
 /**
- * Ekran przed egzaminem. Format jest stały: 150 pytań z całego materiału, zaliczenie od 100 punktów (losuje i liczy
- * serwer), więc do ustawienia zostaje tylko limit czasu. Ćwiczenie z wybranego działu to osobny „Własny test",
+ * Ekran przed egzaminem. Format jest stały: 150 pytań z całej puli ścieżki, zaliczenie od 100 punktów (losuje i liczy
+ * serwer), więc do ustawienia zostaje tylko limit czasu. Egzamin ignoruje zawężenie puli do wybranych aktów (losuje
+ * z wszystkich aktów ścieżki), ale respektuje filtr źródeł. Ćwiczenie z wybranego działu to osobny „Własny test",
  * który niczego nie zalicza.
  */
 export function ExamSetup({ draft, onResume, onDiscard, onStarted }: ExamSetupProps) {
-  const catalogQuery = useTestCatalog();
-  const filterActive = isFilterActive(useOriginFilter().data);
+  const poolQuery = usePool();
   const remembered = useMemo(() => loadRememberedSettings(), []);
 
   const [unlimited, setUnlimited] = useState(remembered !== null && remembered.timeLimitMinutes === null);
@@ -58,9 +58,13 @@ export function ExamSetup({ draft, onResume, onDiscard, onStarted }: ExamSetupPr
   const unlimitedId = useId();
   const formErrorId = useId();
 
-  // Ile pytań testowych można dziś rozwiązać (według katalogu Testów, czyli z filtrem pochodzenia).
-  const catalogKnown = catalogQuery.data !== undefined;
-  const available = (catalogQuery.data?.categories ?? []).reduce((sum, c) => sum + c.questionCount, 0);
+  // Ile pytań jest do wylosowania. Znamy to dokładnie tylko bez zawężenia puli do aktów: z zawężeniem egzamin losuje
+  // z większej puli, a serwer nie podaje jej liczby. Wtedy nie zgadujemy i niczego nie blokujemy.
+  const pool = poolQuery.data;
+  const narrowed = pool?.narrowed ?? false;
+  const filterActive = pool !== undefined && hiddenGroups(pool).length > 0;
+  const catalogKnown = pool !== undefined && !narrowed;
+  const available = catalogKnown ? pool.questionCount : 0;
   const nothingAvailable = catalogKnown && available === 0;
   const shortExam = catalogKnown && available > 0 && available < EXAM_QUESTION_COUNT;
 
@@ -104,14 +108,14 @@ export function ExamSetup({ draft, onResume, onDiscard, onStarted }: ExamSetupPr
       <Card className="p-5 sm:p-6">
         <h2 className="mb-1 text-base font-semibold">Nowy egzamin</h2>
         <p className="mb-4 text-sm text-fg-muted">
-          Stały format, jak na prawdziwym egzaminie: pytania z całego materiału, a odpowiedzi poznasz dopiero na końcu.
+          Stały format, jak na prawdziwym egzaminie: pytania z całej puli Twojej ścieżki, a odpowiedzi poznasz dopiero na końcu.
           Egzamin nie zmienia terminów Twoich powtórek ani statystyk nauki.
         </p>
 
         <ul className="mb-5 grid max-w-xl grid-cols-2 gap-3">
           <li className="rounded-xl border border-line bg-surface-2 px-4 py-3">
             <span className="block text-2xl font-bold tabular-nums">{EXAM_QUESTION_COUNT}</span>
-            <span className="text-sm text-fg-muted">pytań z całego materiału</span>
+            <span className="text-sm text-fg-muted">pytań z całej puli ścieżki</span>
           </li>
           <li className="rounded-xl border border-line bg-surface-2 px-4 py-3">
             <span className="block text-2xl font-bold tabular-nums">{EXAM_PASS_POINTS}</span>
@@ -119,23 +123,25 @@ export function ExamSetup({ draft, onResume, onDiscard, onStarted }: ExamSetupPr
           </li>
         </ul>
 
-        <OriginFilterChip className="mb-2" />
+        <PoolChip className="mb-2" />
         <p className="mb-5 max-w-xl text-xs text-fg-muted">
-          {catalogQuery.isError
+          {poolQuery.isError
             ? "Nie udało się sprawdzić, ile jest dostępnych pytań."
-            : !catalogKnown
+            : pool === undefined
               ? "Sprawdzam, ile jest dostępnych pytań…"
-              : nothingAvailable
-                ? filterActive
-                  ? "Nie ma pytań z wybranych pochodzeń. Zmień filtr powyżej."
-                  : "Nie ma teraz pytań testowych."
-                : shortExam
-                  ? `Do wylosowania jest tylko ${available} ${questionsWord(available)}${
-                      filterActive ? " z wybranych pochodzeń" : ""
-                    }, więc egzamin będzie krótszy, a próg zaliczenia proporcjonalnie niższy.`
-                  : `Do wylosowania: ${available} ${questionsWord(available)} (${
-                      filterActive ? "z wybranych pochodzeń, " : ""
-                    }bez zawieszonych i z nieodblokowanych rozdziałów).`}
+              : narrowed
+                ? "Egzamin losuje z wszystkich aktów Twojej ścieżki, także tych, których nie masz zaznaczonych w puli. Źródła pytań zależą od filtra w oknie „Pula pytań”."
+                : nothingAvailable
+                  ? filterActive
+                    ? "Nie ma pytań z wybranych źródeł. Zmień filtr w oknie „Pula pytań”."
+                    : "Nie ma teraz pytań testowych."
+                  : shortExam
+                    ? `Do wylosowania jest tylko ${available} ${questionsWord(available)}${
+                        filterActive ? " z wybranych źródeł" : ""
+                      }, więc egzamin będzie krótszy, a próg zaliczenia proporcjonalnie niższy.`
+                    : `Do wylosowania: ${available} ${questionsWord(available)}${
+                        filterActive ? " z wybranych źródeł" : ""
+                      } (bez pytań zawieszonych przez Ciebie w testach).`}
         </p>
 
         <form onSubmit={handleSubmit} noValidate className="flex max-w-xl flex-col gap-5" aria-describedby={error ? formErrorId : undefined}>

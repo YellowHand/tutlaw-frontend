@@ -221,8 +221,8 @@ for (const set of SETS) {
 
 // ---------- strona startowa ----------
 const home = `
-<h1>Dokumentacja Tutlaw</h1>
-<p class="lead">Wszystko o aplikacji Tutlaw po polsku: jak jest zbudowana, co robi każdy ekran i endpoint, jak liczone są powtórki i gdzie w kodzie szukać konkretnej rzeczy.</p>
+<h1>Dokumentacja Gradus iuris</h1>
+<p class="lead">Wszystko o aplikacji Gradus iuris po polsku: jak jest zbudowana, co robi każdy ekran i endpoint, jak liczone są powtórki i gdzie w kodzie szukać konkretnej rzeczy.</p>
 <div class="cards">
 ${SETS.map(
   (set) => `  <a class="card" href="#/${set.id}/README">

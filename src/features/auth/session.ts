@@ -2,7 +2,7 @@ import { THEME_STORAGE_KEY } from "../../lib/theme";
 import { clearStoredToken } from "./tokenStorage";
 
 /** Wszystkie klucze localStorage zapisywane przez aplikację (poza tokenem) zaczynają się od tego przedrostka. */
-const APP_KEY_PREFIX = "tutlaw.";
+const APP_KEY_PREFIX = "gradus.";
 
 /**
  * Klucze, które przeżywają wylogowanie. Kopia wyglądu (ciemny/jasny) nie jest daną osobową, a po ponownym zalogowaniu na

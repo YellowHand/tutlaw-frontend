@@ -8,9 +8,9 @@ export interface ReportResult {
   updated: boolean;
 }
 
-/** Zgłoszenie błędu w pytaniu (fiszce albo pytaniu testowym). */
-export async function reportCard(cardId: number, reason: ReportReason, comment: string): Promise<ReportResult> {
-  const res = await api.post<ReportResult>(`/api/cards/${cardId}/reports`, {
+/** Zgłoszenie błędu w pytaniu (w teście albo w jego fiszce). */
+export async function reportQuestion(questionId: number, reason: ReportReason, comment: string): Promise<ReportResult> {
+  const res = await api.post<ReportResult>(`/api/questions/${questionId}/reports`, {
     reason,
     comment: comment.trim() || null,
   });

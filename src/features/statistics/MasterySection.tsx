@@ -5,75 +5,73 @@ import { EmptyState } from "../../components/ui/EmptyState";
 import { ErrorState } from "../../components/ui/ErrorState";
 import { Skeleton } from "../../components/ui/Skeleton";
 import { cn } from "../../lib/cn";
-import { useLearningSettings } from "../settings/hooks";
 import { MasteryExplainer } from "./MasteryExplainer";
-import { useOriginStats } from "./hooks";
+import { useSourceStats } from "./hooks";
 import {
   answersWord,
   formatPercent,
   masterySplit,
-  originGroupLabel,
-  orderedEntries,
+  orderedGroups,
   questionsWord,
+  sourceGroupLabel,
   sumMetrics,
   yearsRange,
   type MasteryScope,
-} from "./originStats";
-import type { OriginMetrics, OriginStatsEntry } from "./types";
+} from "./sourceStats";
+import type { SourceGroupEntry, SourceMetrics } from "./types";
 
 const ALL = "ALL" as const;
 
 /**
- * „Opanowanie pytań": ile pytań jest opanowanych, ile w nauce, a ile nowych, dla jednej aplikacji albo wszystkich
- * razem, z rozbiciem na lata egzaminu i z wyjaśnieniem, co znaczy „opanowane". Nie zależy od filtra pochodzenia z
- * Testów. Domyślnie pokazuje aplikację wybraną w Koncie jako egzamin użytkownika, a bez wyboru wszystkie razem.
+ * „Opanowanie pytań": ile pytań jest opanowanych, ile w nauce, a ile nowych, dla jednej grupy źródeł (moje arkusze,
+ * arkusze innych ścieżek, pytania autorskie) albo całej puli, z rozbiciem na arkusze i z wyjaśnieniem, co znaczy
+ * „opanowane". Nie zależy od filtra źródeł z Testów ani od zawężenia puli do aktów. Domyślnie pokazuje moje arkusze,
+ * a gdy ich nie ma (Student), całą pulę.
  */
 export function MasterySection() {
-  const { data, isLoading, isError, refetch } = useOriginStats();
-  const settings = useLearningSettings();
+  const { data, isLoading, isError, refetch } = useSourceStats();
   const [chosen, setChosen] = useState<MasteryScope | null>(null);
 
   if (isLoading) return <Skeleton className="h-96 w-full" />;
 
-  if (isError || !data || !Array.isArray(data.origins)) {
+  if (isError || !data || !Array.isArray(data.groups)) {
     return (
       <Card>
-        <ErrorState message="Nie udało się pobrać statystyk według aplikacji." onRetry={() => refetch()} />
+        <ErrorState message="Nie udało się pobrać statystyk według źródeł." onRetry={() => refetch()} />
       </Card>
     );
   }
 
-  const entries = orderedEntries(data);
+  const entries = orderedGroups(data);
   const withQuestions = entries.filter((e) => e.stats.totalQuestions > 0);
-  const examOrigin = settings.data?.examOrigin ?? null;
-  const fallback: MasteryScope = examOrigin && withQuestions.some((e) => e.origin === examOrigin) ? examOrigin : ALL;
+  const fallback: MasteryScope = withQuestions.some((e) => e.group === "OWN_SHEETS") ? "OWN_SHEETS" : ALL;
   const scope: MasteryScope =
-    chosen && (chosen === ALL || entries.some((e) => e.origin === chosen)) ? chosen : fallback;
-  const entry = scope === ALL ? null : (entries.find((e) => e.origin === scope) ?? null);
+    chosen && (chosen === ALL || entries.some((e) => e.group === chosen)) ? chosen : fallback;
+  const entry = scope === ALL ? null : (entries.find((e) => e.group === scope) ?? null);
   const metrics = scope === ALL ? sumMetrics(entries) : (entry?.stats ?? null);
 
   return (
-    <Card className="flex flex-col gap-5 p-5 sm:p-6" data-testid="origin-stats">
+    <Card className="flex flex-col gap-5 p-5 sm:p-6" data-testid="source-stats">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">Opanowanie pytań</h2>
           <p className="mt-1 max-w-prose text-sm text-fg-muted">
-            Ile pytań masz już mocno w głowie, ile jest w trakcie nauki, a ile jeszcze nietkniętych. Liczby nie zależą od
-            filtra pochodzenia w Testach.
+            Ile pytań masz już mocno w głowie, ile jest w trakcie nauki, a ile jeszcze nietkniętych. Liczby obejmują całą
+            pulę Twojej ścieżki, niezależnie od filtra źródeł w Testach.
           </p>
         </div>
-        {/* Na telefonie podpis nad listą, a lista na całą szerokość: nazwy aplikacji są długie. */}
+        {/* Na telefonie podpis nad listą, a lista na całą szerokość: nazwy grup są długie. */}
         <label className="flex w-full flex-col gap-1 text-sm sm:w-auto sm:flex-row sm:items-center sm:gap-2">
-          <span className="text-fg-muted">Aplikacja:</span>
+          <span className="text-fg-muted">Źródło:</span>
           <select
             value={scope}
             onChange={(event) => setChosen(event.target.value as MasteryScope)}
             className="min-h-11 w-full min-w-0 rounded-xl border border-field bg-surface-2 px-3 text-sm sm:w-auto"
           >
-            <option value={ALL}>Wszystkie aplikacje ({sumMetrics(entries).totalQuestions})</option>
+            <option value={ALL}>Cała pula ({sumMetrics(entries).totalQuestions})</option>
             {entries.map((item) => (
-              <option key={item.origin} value={item.origin}>
-                {originGroupLabel(item.origin)} ({item.stats.totalQuestions})
+              <option key={item.group} value={item.group}>
+                {sourceGroupLabel(item.group)} ({item.stats.totalQuestions})
               </option>
             ))}
           </select>
@@ -87,23 +85,23 @@ export function MasterySection() {
           description="Gdy pojawią się pytania, zobaczysz tu opanowanie."
         />
       ) : (
-        <div className="flex flex-col gap-6" data-testid="origin-details">
+        <div className="flex flex-col gap-6" data-testid="source-details">
           <MasteryNumbers
             metrics={metrics}
-            title={scope === ALL ? "Wszystkie aplikacje" : originGroupLabel(scope)}
+            title={scope === ALL ? "Cała pula" : sourceGroupLabel(scope)}
             entry={entry}
           />
           <MasteryExplainer />
 
-          {entry && entry.years.length > 0 ? (
-            <YearTable entry={entry} />
+          {entry && entry.group !== "AUTHORED" && entry.sources.length > 0 ? (
+            <SheetTable entry={entry} />
           ) : (
-            <p className="text-sm text-fg-muted" data-testid="origin-no-years">
+            <p className="text-sm text-fg-muted" data-testid="source-no-years">
               {scope === ALL
-                ? "Wybierz jedną aplikację, żeby zobaczyć rozbicie na lata egzaminu."
+                ? "Wybierz jedną grupę źródeł, żeby zobaczyć rozbicie na arkusze egzaminów."
                 : scope === "AUTHORED"
-                  ? "Pytania autorskie nie mają roku egzaminu, więc nie ma rozbicia na lata."
-                  : "Pytania z tej aplikacji nie mają jeszcze podanego roku egzaminu."}
+                  ? "Pytania autorskie nie mają roku egzaminu, więc nie ma rozbicia na arkusze."
+                  : "W tej grupie nie ma jeszcze arkuszy z pytaniami."}
             </p>
           )}
         </div>
@@ -113,12 +111,12 @@ export function MasterySection() {
 }
 
 const SEGMENTS = [
-  { key: "mastered", label: "Opanowane", hint: "pewnie zapamiętane", swatch: "bg-accent", testId: "origin-mature" },
-  { key: "learning", label: "W nauce", hint: "już rozwiązane, jeszcze niepewne", swatch: "bg-accent/45", testId: "origin-learning" },
-  { key: "fresh", label: "Nowe", hint: "jeszcze bez odpowiedzi", swatch: "border border-field bg-surface-2", testId: "origin-fresh" },
+  { key: "mastered", label: "Opanowane", hint: "pewnie zapamiętane", swatch: "bg-accent", testId: "source-mature" },
+  { key: "learning", label: "W nauce", hint: "już rozwiązane, jeszcze niepewne", swatch: "bg-accent/45", testId: "source-learning" },
+  { key: "fresh", label: "Nowe", hint: "jeszcze bez odpowiedzi", swatch: "border border-field bg-surface-2", testId: "source-fresh" },
 ] as const;
 
-function MasteryNumbers({ metrics, title, entry }: { metrics: OriginMetrics; title: string; entry: OriginStatsEntry | null }) {
+function MasteryNumbers({ metrics, title, entry }: { metrics: SourceMetrics; title: string; entry: SourceGroupEntry | null }) {
   const split = masterySplit(metrics);
   const range = entry ? yearsRange(entry) : null;
   const bar = (n: number) => `${(n * 100) / Math.max(1, split.total)}%`;
@@ -158,11 +156,11 @@ function MasteryNumbers({ metrics, title, entry }: { metrics: OriginMetrics; tit
         ))}
       </dl>
 
-      <p className="text-sm text-fg-muted" data-testid="origin-recent">
-        Do powtórki teraz: <span className="font-medium tabular-nums text-fg" data-testid="origin-due">{metrics.dueQuestions}</span>
+      <p className="text-sm text-fg-muted" data-testid="source-recent">
+        Do powtórki teraz: <span className="font-medium tabular-nums text-fg" data-testid="source-due">{metrics.dueQuestions}</span>
         <span className="ml-4">
           Skuteczność:{" "}
-          <span className="font-medium tabular-nums text-fg" data-testid="origin-accuracy">
+          <span className="font-medium tabular-nums text-fg" data-testid="source-accuracy">
             {formatPercent(metrics.accuracyRate)}
           </span>
           {metrics.answers > 0 ? ` (z ${metrics.answers} ${answersWord(metrics.answers)})` : " (brak odpowiedzi)"}
@@ -172,12 +170,12 @@ function MasteryNumbers({ metrics, title, entry }: { metrics: OriginMetrics; tit
   );
 }
 
-function YearTable({ entry }: { entry: OriginStatsEntry }) {
-  const headingId = `origin-years-${entry.origin}`;
+function SheetTable({ entry }: { entry: SourceGroupEntry }) {
+  const headingId = `source-sheets-${entry.group}`;
   return (
     <div>
       <h3 id={headingId} className="mb-2 text-sm font-semibold text-fg-muted">
-        Rok po roku
+        Arkusz po arkuszu
       </h3>
       {/* Na wąskim ekranie tabela przewija się w bok, więc region musi dać się przewinąć klawiaturą (tabIndex). */}
       <div
@@ -186,11 +184,11 @@ function YearTable({ entry }: { entry: OriginStatsEntry }) {
         tabIndex={0}
         className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink"
       >
-        <table className="w-full text-sm" data-testid="origin-years">
+        <table className="w-full text-sm" data-testid="source-years">
           <thead>
             <tr className="border-b border-line text-left text-xs text-fg-muted">
               <th scope="col" className="py-2 pr-4 font-medium">
-                Rok
+                Arkusz
               </th>
               <th scope="col" className="py-2 pr-4 font-medium">
                 Pytania
@@ -213,12 +211,12 @@ function YearTable({ entry }: { entry: OriginStatsEntry }) {
             </tr>
           </thead>
           <tbody>
-            {entry.years.map(({ year, stats }) => {
+            {entry.sources.map(({ id, name, stats }) => {
               const split = masterySplit(stats);
               return (
-                <tr key={year} className="border-b border-line last:border-0">
-                  <th scope="row" className="tabular-nums py-3 pr-4 text-left font-semibold">
-                    {year}
+                <tr key={id} className="border-b border-line last:border-0">
+                  <th scope="row" className="py-3 pr-4 text-left font-semibold">
+                    {name}
                   </th>
                   <td className="tabular-nums py-3 pr-4 text-fg-muted">{split.total}</td>
                   <td className="tabular-nums py-3 pr-4 text-fg-muted">{split.mastered}</td>

@@ -1,16 +1,16 @@
 import { api } from "./axiosInstance";
-import type { QuestionOrigin } from "../lib/origin";
+import type { SourceGroup, SourceKind } from "../lib/source";
 
 /** Które pytania z wybranych działów mają wejść do własnego testu. */
 export type CustomTestKind = "ALL" | "NEW" | "MISTAKES" | "DUE";
 
 /**
- * Zakres własnego testu: suma wskazanych rodzajów (kategorii) i aktów prawnych (przedmiotów).
- * Bez żadnego z nich backend bierze cały dostępny materiał.
+ * Zakres własnego testu: suma wskazanych dziedzin i aktów prawnych z puli użytkownika.
+ * Bez żadnego z nich backend bierze całą pulę.
  */
 export interface CustomTestScope {
-  categoryIds: number[];
-  subjectIds: number[];
+  fieldIds: number[];
+  actIds: number[];
 }
 
 /** Liczby pytań do wyboru. Własnej liczby nie ma (serwer przyjmuje tylko te, a przy małym zakresie „wszystkie"). */
@@ -26,8 +26,8 @@ export interface CustomTestCounts {
 
 export interface CustomTestSelection {
   /** Numery pytań w kolejności sesji. */
-  cardIds: number[];
-  /** Ile pytań spełniało warunki (z nich wylosowano `cardIds`). */
+  questionIds: number[];
+  /** Ile pytań spełniało warunki (z nich wylosowano `questionIds`). */
   available: number;
   requested: number;
   /** Numer zapisanego testu („Moje testy"): odpowiedzi w sesji wysyła się z tym numerem. */
@@ -37,10 +37,10 @@ export interface CustomTestSelection {
 /** Krok 1: podgląd „Dostępnych: N" przy układaniu testu. */
 export async function getCustomTestCounts(scope: CustomTestScope): Promise<CustomTestCounts> {
   const res = await api.get<CustomTestCounts>("/api/review/custom-test/counts", {
-    // Spring przyjmuje listę po przecinku; axios domyślnie zapisałby tablicę jako categoryIds[]=1&categoryIds[]=2.
+    // Spring przyjmuje listę po przecinku; axios domyślnie zapisałby tablicę jako fieldIds[]=1&fieldIds[]=2.
     params: {
-      categoryIds: scope.categoryIds.length > 0 ? scope.categoryIds.join(",") : undefined,
-      subjectIds: scope.subjectIds.length > 0 ? scope.subjectIds.join(",") : undefined,
+      fieldIds: scope.fieldIds.length > 0 ? scope.fieldIds.join(",") : undefined,
+      actIds: scope.actIds.length > 0 ? scope.actIds.join(",") : undefined,
     },
   });
   return res.data;
@@ -66,13 +66,13 @@ export interface CustomTestSessionSummary {
   /** Kiedy odpowiedziano na ostatnie pytanie; null = test nieukończony. */
   finishedAt: string | null;
   finished: boolean;
-  /** Opis zakresu, np. „Kodeks karny i Kodeks cywilny" albo „Cały materiał". */
+  /** Opis zakresu, np. „Kodeks karny i Kodeks cywilny" albo „Cała pula". */
   scopeLabel: string;
   kind: CustomTestKind;
-  categoryIds: number[];
-  subjectIds: number[];
-  /** Filtr pochodzenia pytań obowiązujący, gdy układano test; null = wszystkie pochodzenia. */
-  origins: QuestionOrigin[] | null;
+  fieldIds: number[];
+  actIds: number[];
+  /** Grupy źródeł obowiązujące, gdy układano test; wszystkie trzy, gdy filtr był domyślny. */
+  sourceGroups: SourceGroup[];
   requestedCount: number;
   questionCount: number;
   answeredCount: number;
@@ -84,8 +84,8 @@ export interface CustomTestSessionSummary {
 
 export interface CustomTestSessionQuestion {
   position: number;
-  cardId: number;
-  front: string;
+  questionId: number;
+  body: string;
   optionA: string;
   optionB: string;
   optionC: string;
@@ -98,8 +98,9 @@ export interface CustomTestSessionQuestion {
   explanation: string | null;
   legalBasis: string | null;
   validAsOf: string | null;
+  actName: string | null;
   sourceName: string | null;
-  origin: QuestionOrigin;
+  sourceKind: SourceKind | null;
   examYear: number | null;
 }
 

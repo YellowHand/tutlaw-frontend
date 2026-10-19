@@ -15,7 +15,7 @@ export function useDebounced<T>(value: T, delayMs: number): T {
 
 /**
  * Ile pytań każdego rodzaju jest w zakresie. Poprzednia odpowiedź zostaje na ekranie, dopóki nie przyjdzie nowa
- * (liczby nie migają). staleTime 0: po sesji i po zmianie filtra pochodzenia liczby wracają odświeżone.
+ * (liczby nie migają). staleTime 0: po sesji i po zmianie puli pytań liczby wracają odświeżone.
  */
 export function useCustomTestCounts(scope: CustomTestScope | null) {
   return useQuery({

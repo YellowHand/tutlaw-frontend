@@ -5,7 +5,7 @@
  * Teksty obu dokumentów to wersja robocza i powinien je przejrzeć prawnik.
  */
 export const LEGAL = {
-  serviceName: "Tutlaw",
+  serviceName: "Gradus iuris",
   operatorName: "[uzupełnij: imię i nazwisko lub nazwa administratora]",
   operatorAddress: "[uzupełnij: adres do korespondencji]",
   contactEmail: "[uzupełnij: adres e-mail do kontaktu]",

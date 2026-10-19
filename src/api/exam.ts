@@ -1,16 +1,16 @@
 import { api } from "./axiosInstance";
 import type { TestQueueItem } from "./review";
-import type { QuestionOrigin } from "../lib/origin";
+import type { SourceKind } from "../lib/source";
 
 export type OptionKey = "A" | "B" | "C";
 
 /**
- * Egzamin ma stały format: zawsze 150 pytań z całego materiału, zaliczenie od 100 punktów. Losuje je i ocenia serwer,
+ * Egzamin ma stały format: zawsze 150 pytań z całej puli ścieżki, zaliczenie od 100 punktów. Losuje je i ocenia serwer,
  * użytkownik niczego nie wybiera (poza czasem, który liczy tylko frontend).
  */
 export interface ExamStart {
   scopeLabel: string;
-  /** Ile pytań ma pełny egzamin (150); gdy w materiale jest mniej, pytań jest tyle, ile dostępnych. */
+  /** Ile pytań ma pełny egzamin (150); gdy w puli jest mniej, pytań jest tyle, ile dostępnych. */
   requestedCount: number;
   /** Ile punktów trzeba mieć, żeby zdać ten egzamin: 100, a przy krótszym zestawie proporcjonalnie. */
   passPoints: number;
@@ -18,7 +18,7 @@ export interface ExamStart {
 }
 
 export interface ExamAnswerPayload {
-  cardId: number;
+  questionId: number;
   /** null = pytanie bez odpowiedzi. */
   selectedOption: OptionKey | null;
 }
@@ -62,8 +62,8 @@ export interface ExamSourceBreakdown {
 }
 
 export interface ExamQuestionResult {
-  cardId: number;
-  front: string;
+  questionId: number;
+  body: string;
   optionA: string;
   optionB: string;
   optionC: string;
@@ -75,8 +75,10 @@ export interface ExamQuestionResult {
   legalBasis: string | null;
   validAsOf: string | null;
   sourceName: string | null;
-  origin: QuestionOrigin;
+  sourceKind: SourceKind | null;
   examYear: number | null;
+  actName: string | null;
+  actShortName: string | null;
 }
 
 export interface ExamResult {
@@ -99,14 +101,5 @@ export async function submitExam(payload: ExamSubmitPayload): Promise<ExamResult
 
 export async function getExamHistory(): Promise<ExamAttempt[]> {
   const res = await api.get<ExamAttempt[]>("/api/exams/history");
-  return res.data;
-}
-
-/** Sesja testowa z podanych pytań (np. błędy z egzaminu), w podanej kolejności. */
-export async function getPracticeQueue(cardIds: number[]): Promise<TestQueueItem[]> {
-  const res = await api.get<TestQueueItem[]>("/api/review/practice-queue", {
-    // Spring przyjmuje listę po przecinku; axios domyślnie zapisałby tablicę jako cardIds[]=1&cardIds[]=2.
-    params: { cardIds: cardIds.join(",") },
-  });
   return res.data;
 }

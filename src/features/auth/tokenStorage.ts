@@ -1,4 +1,4 @@
-// Klucz tokenu dostępu jest ten sam co zawsze (bez przedrostka „tutlaw."), żeby nie było żadnej migracji.
+// Klucz tokenu dostępu jest ten sam co zawsze (bez przedrostka „gradus."), żeby nie było żadnej migracji.
 const TOKEN_KEY = "accessToken";
 // Token odświeżający (ważny 30 dni, jednorazowy: każde użycie wydaje nowy). Na razie w localStorage, tak jak token dostępu.
 const REFRESH_KEY = "refreshToken";

@@ -1,4 +1,4 @@
-import type { TestCounts } from "../../api/tests";
+import type { TestActNode, TestCounts } from "../../api/tests";
 import { pluralizePl } from "../../lib/plural";
 
 /**
@@ -9,12 +9,12 @@ import { pluralizePl } from "../../lib/plural";
 export function formatCount(value: number): string {
   return Math.round(value)
     .toString()
-    .replace(/\B(?=(\d{3})+(?!\d))/g, "\u00a0");
+    .replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 }
 
-/** Nic do rozwiązania teraz i nic do odblokowania: pusta pozycja (np. dział, który jeszcze nie ma pytań). */
+/** Nic do rozwiązania teraz: pusta pozycja (np. dziedzina bez aktów w puli albo akt bez pytań z wybranych źródeł). */
 export function isEmpty(counts: TestCounts): boolean {
-  return counts.questionCount === 0 && counts.lockedCount === 0;
+  return counts.questionCount === 0;
 }
 
 export function progressPercent(counts: TestCounts): number {
@@ -23,15 +23,13 @@ export function progressPercent(counts: TestCounts): number {
 }
 
 /**
- * „3 akty prawne", „1 przedmiot". Dla nieznanej etykiety (dodanej później w bazie) bez odmiany: „Ustawy: 3".
+ * „3 akty prawne", „1 akt prawny", „2 zagadnienia". Dziedzina złożona z samych zagadnień (paremie, prawoznawstwo)
+ * mówi o zagadnieniach, a nie o aktach.
  */
-export function describeItems(count: number, itemsLabel: string): string {
-  const label = itemsLabel.trim().toLowerCase();
-  if (label === "akty prawne") {
-    return `${count} ${pluralizePl(count, { one: "akt prawny", few: "akty prawne", many: "aktów prawnych" })}`;
+export function describeActs(acts: readonly Pick<TestActNode, "kind">[]): string {
+  const count = acts.length;
+  if (count > 0 && acts.every((act) => act.kind === "TOPIC")) {
+    return `${count} ${pluralizePl(count, { one: "zagadnienie", few: "zagadnienia", many: "zagadnień" })}`;
   }
-  if (label === "przedmioty") {
-    return `${count} ${pluralizePl(count, { one: "przedmiot", few: "przedmioty", many: "przedmiotów" })}`;
-  }
-  return `${itemsLabel.trim()}: ${count}`;
+  return `${count} ${pluralizePl(count, { one: "akt prawny", few: "akty prawne", many: "aktów prawnych" })}`;
 }

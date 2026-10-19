@@ -1,36 +1,39 @@
 import { api } from "./axiosInstance";
+import type { SessionMode } from "./review";
 
-export interface DifficultCardItem {
-  cardId: number;
-  front: string;
-  sourceName: string | null;
+export interface DifficultQuestionItem {
+  questionId: number;
+  /** Tryb, w którym pytanie jest trudne albo zawieszone: test i fiszka tego samego pytania zawieszają się osobno. */
+  mode: SessionMode;
+  body: string;
+  actName: string | null;
   /** Ile razy użytkownik pomylił się w tym pytaniu albo go nie pamiętał. */
   lapses: number;
   /** Tylko dla zawieszonych (RRRR-MM-DDTGG:MM:SS). */
   suspendedAt: string | null;
 }
 
-export interface DifficultCards {
+export interface DifficultQuestions {
   /** Od ilu błędów pytanie uchodzi za trudne. */
   leechThreshold: number;
-  suspended: DifficultCardItem[];
+  suspended: DifficultQuestionItem[];
   /** Trudne pytania, które nadal są w nauce. */
-  leeches: DifficultCardItem[];
+  leeches: DifficultQuestionItem[];
 }
 
 /** Ile pozycji maksymalnie zwraca serwer w każdej z list. */
 export const DIFFICULT_LIST_LIMIT = 200;
 
-export async function getDifficultCards(): Promise<DifficultCards> {
-  const res = await api.get<DifficultCards>("/api/me/difficult-cards");
+export async function getDifficultQuestions(): Promise<DifficultQuestions> {
+  const res = await api.get<DifficultQuestions>("/api/me/difficult-questions");
   return res.data;
 }
 
-/** Zawiesza pytanie (idempotentnie): przestaje wracać w powtórkach i testach, postęp zostaje. */
-export async function suspendCard(cardId: number): Promise<void> {
-  await api.put(`/api/me/suspended-cards/${cardId}`);
+/** Zawiesza pytanie w jednym trybie (idempotentnie): przestaje wracać w powtórkach tego trybu, postęp zostaje. */
+export async function suspendQuestion(questionId: number, mode: SessionMode): Promise<void> {
+  await api.put(`/api/me/suspended-questions/${questionId}`, null, { params: { mode } });
 }
 
-export async function unsuspendCard(cardId: number): Promise<void> {
-  await api.delete(`/api/me/suspended-cards/${cardId}`);
+export async function unsuspendQuestion(questionId: number, mode: SessionMode): Promise<void> {
+  await api.delete(`/api/me/suspended-questions/${questionId}`, { params: { mode } });
 }

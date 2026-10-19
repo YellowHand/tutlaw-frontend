@@ -12,8 +12,8 @@ export const THEME_LABELS: Record<Theme, string> = {
   LIGHT: "Jasny",
 };
 
-/** Klucz kopii wyglądu. Ma przedrostek `tutlaw.`, ale wylogowanie go zostawia (zob. session.ts): to nie są dane osobowe. */
-export const THEME_STORAGE_KEY = "tutlaw.theme.v1";
+/** Klucz kopii wyglądu. Ma przedrostek `gradus.`, ale wylogowanie go zostawia (zob. session.ts): to nie są dane osobowe. */
+export const THEME_STORAGE_KEY = "gradus.theme.v1";
 
 /** Kolor paska przeglądarki na telefonie (meta theme-color): tło strony w danym wyglądzie. */
 const THEME_COLOR: Record<Theme, string> = {

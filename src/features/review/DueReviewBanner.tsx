@@ -13,7 +13,7 @@ interface DueReviewBannerProps {
 }
 
 /**
- * Główne wejście do codziennej nauki: jedna sesja z fiszkami z całego materiału
+ * Główne wejście do codziennej nauki: jedna sesja z fiszkami z całej puli
  * (zaległe powtórki + dzienna porcja nowych). Używane na pulpicie i na górze ekranu Fiszki.
  */
 export function DueReviewBanner({ className }: DueReviewBannerProps) {

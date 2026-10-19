@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
-import { ChevronRight, Lock } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import type { TestCounts } from "../../api/tests";
 import { Card } from "../../components/ui/Card";
 import { cn } from "../../lib/cn";
@@ -28,11 +28,6 @@ export function ProgressLine({ counts }: { counts: TestCounts }) {
         <span>
           Rozwiązano: {formatCount(counts.solvedCount)} / {formatCount(counts.questionCount)}
         </span>
-        {counts.lockedCount > 0 && (
-          <span className="inline-flex items-center gap-1">
-            <Lock size={12} aria-hidden="true" />+{formatCount(counts.lockedCount)} po przeczytaniu rozdziałów
-          </span>
-        )}
       </p>
     </div>
   );
@@ -72,7 +67,7 @@ function TileBody({
             aria-hidden="true"
           />
         ) : (
-          <span className="rounded-full bg-surface-2 px-2.5 py-1 text-xs text-fg-muted">{emptyLabel ?? "Wkrótce"}</span>
+          <span className="rounded-full bg-surface-2 px-2.5 py-1 text-xs text-fg-muted">{emptyLabel ?? "Brak pytań"}</span>
         )}
       </div>
       <div>
@@ -85,7 +80,7 @@ function TileBody({
 }
 
 /**
- * Kafelek jednego poziomu katalogu Testów. Pusty (bez pytań i bez nic do odblokowania) jest wyszarzony
+ * Kafelek jednego poziomu katalogu Testów. Pusty (bez pytań w puli) jest wyszarzony
  * i nie prowadzi dalej: użytkownik widzi pełny układ, ale nie wchodzi w ślepą uliczkę.
  */
 export function CatalogTile(props: CatalogTileProps) {

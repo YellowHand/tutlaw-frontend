@@ -7,14 +7,14 @@ import { ErrorState } from "../../components/ui/ErrorState";
 import { Skeleton } from "../../components/ui/Skeleton";
 import { serverMessage } from "../../lib/errors";
 import { formatDatePl, startOfToday, toLocalDateKey } from "../../lib/date";
-import { EXAM_APPLICATIONS, ORIGIN_LABELS, type QuestionOrigin } from "../../lib/origin";
 import { pluralizePl } from "../../lib/plural";
 import { useIsAdmin } from "../auth/role";
 import { EXAM_TERMS_KEY, LEARNING_SETTINGS_KEY, useExamTerms } from "./hooks";
 
 /**
  * „Terminy egzaminów" w Koncie, tylko dla administratora (serwer i tak sprawdza rolę przy każdym zapisie). Jedna data na
- * aplikację: od niej zależą odliczanie, tryb egzaminacyjny i plan nowych pytań u wszystkich, którzy tę aplikację wybrali.
+ * aplikację (ścieżkę egzaminacyjną; Student terminu nie ma): od niej zależą odliczanie, tryb egzaminacyjny i plan nowych
+ * pytań u wszystkich, którzy tę ścieżkę wybrali.
  * Pusta data to „termin nieogłoszony". Zmiana działa od razu, ale już wyznaczone terminy powtórek nie są przeliczane.
  */
 export function ExamTermsCard() {
@@ -41,8 +41,6 @@ function ExamTermsEditor() {
     );
   }
 
-  const byOrigin = new Map(data.map((term) => [term.origin, term]));
-
   return (
     <Card data-testid="exam-terms">
       <h2 className="mb-1 text-base font-semibold">Terminy egzaminów</h2>
@@ -51,28 +49,29 @@ function ExamTermsEditor() {
         biorą datę stąd. Puste pole oznacza „termin nieogłoszony".
       </p>
       <ul className="flex flex-col divide-y divide-line">
-        {EXAM_APPLICATIONS.map((origin) => (
-          <ExamTermRow key={origin} origin={origin} term={byOrigin.get(origin) ?? null} />
+        {data.map((term) => (
+          <ExamTermRow key={term.track.id} term={term} />
         ))}
       </ul>
     </Card>
   );
 }
 
-function ExamTermRow({ origin, term }: { origin: QuestionOrigin; term: ExamTerm | null }) {
+function ExamTermRow({ term }: { term: ExamTerm }) {
+  const { track } = term;
   const queryClient = useQueryClient();
   const inputId = useId();
   const today = useMemo(() => toLocalDateKey(startOfToday()), []);
-  const stored = term?.examDate ?? "";
+  const stored = term.examDate ?? "";
   const [value, setValue] = useState(stored);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
   const mutation = useMutation({
-    mutationFn: (examDate: string | null) => updateExamTerm(origin, examDate),
+    mutationFn: (examDate: string | null) => updateExamTerm(track.id, examDate),
     onSuccess: (updated) => {
       queryClient.setQueryData<ExamTerm[]>(EXAM_TERMS_KEY, (old) =>
-        Array.isArray(old) ? old.map((t) => (t.origin === updated.origin ? updated : t)) : old
+        Array.isArray(old) ? old.map((t) => (t.track.id === updated.track.id ? updated : t)) : old
       );
       // Termin wpływa na ustawienia nauki (odliczanie, plan) wszystkich, którzy wybrali tę aplikację, także admina.
       void queryClient.invalidateQueries({ queryKey: LEARNING_SETTINGS_KEY });
@@ -89,19 +88,19 @@ function ExamTermRow({ origin, term }: { origin: QuestionOrigin; term: ExamTerm 
   }
 
   const dirty = value !== stored;
-  const status = !term?.examDate
+  const status = !term.examDate
     ? "termin nieogłoszony"
     : term.daysToExam == null
       ? `${formatDatePl(term.examDate)}, już minął`
       : `${formatDatePl(term.examDate)}, za ${term.daysToExam} ${pluralizePl(term.daysToExam, { one: "dzień", few: "dni", many: "dni" })}`;
 
   return (
-    <li className="flex flex-col gap-2 py-3 sm:flex-row sm:items-end sm:gap-4" data-testid={`exam-term-${origin}`}>
+    <li className="flex flex-col gap-2 py-3 sm:flex-row sm:items-end sm:gap-4" data-testid={`exam-term-${track.slug}`}>
       <div className="min-w-0 sm:flex-1">
         <label htmlFor={inputId} className="block text-sm font-medium text-fg">
-          {ORIGIN_LABELS[origin]}
+          {track.name}
         </label>
-        <p className="text-xs text-fg-muted" data-testid={`exam-term-status-${origin}`}>
+        <p className="text-xs text-fg-muted" data-testid={`exam-term-status-${track.slug}`}>
           Teraz: {status}
         </p>
         {error && (

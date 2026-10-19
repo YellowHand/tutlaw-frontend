@@ -1,7 +1,7 @@
 import { api } from "./axiosInstance";
 import type { FlashcardStatus } from "./review";
 
-/** „Dodaj do fiszek": fiszka tego pytania trafia do Fiszek jako nowa karta. */
+/** „Dodaj do fiszek": fiszka tego pytania trafia do Fiszek jako nowa. */
 export async function addToFlashcards(questionId: number): Promise<FlashcardStatus> {
   const res = await api.post<{ status: FlashcardStatus }>(`/api/questions/${questionId}/flashcard`);
   return res.data.status;
@@ -13,7 +13,12 @@ export async function removeFromFlashcards(questionId: number): Promise<Flashcar
   return res.data.status;
 }
 
-/** Tylko administrator: ukrywa kartę (pytanie albo fiszkę) wszystkim użytkownikom albo ją przywraca. */
-export async function setCardHidden(cardId: number, hidden: boolean): Promise<void> {
-  await api.put(`/api/cards/${cardId}/hidden`, { hidden });
+/** Tylko administrator: ukrywa całe pytanie (test i fiszkę) wszystkim użytkownikom albo je przywraca. */
+export async function setQuestionHidden(questionId: number, hidden: boolean): Promise<void> {
+  await api.put(`/api/questions/${questionId}/hidden`, { hidden });
+}
+
+/** Tylko administrator: ukrywa samą fiszkę pytania (test zostaje) wszystkim użytkownikom albo ją przywraca. */
+export async function setFlashcardHidden(questionId: number, hidden: boolean): Promise<void> {
+  await api.put(`/api/questions/${questionId}/flashcard-hidden`, { hidden });
 }

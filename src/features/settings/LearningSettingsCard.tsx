@@ -1,6 +1,7 @@
 import { useId, useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { updateLearningSettings, type ExamChoice, type LearningSettings, type LearningSettingsUpdate } from "../../api/settings";
+import { updateLearningSettings, type LearningSettings, type LearningSettingsUpdate } from "../../api/settings";
+import type { Track } from "../../api/tracks";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
 import { ErrorState } from "../../components/ui/ErrorState";
@@ -9,12 +10,11 @@ import { Skeleton } from "../../components/ui/Skeleton";
 import { serverMessage } from "../../lib/errors";
 import { pluralizePl } from "../../lib/plural";
 import { formatDatePl } from "../../lib/date";
-import { EXAM_APPLICATIONS, ORIGIN_LABELS, type QuestionOrigin } from "../../lib/origin";
 import { invalidateReviewData } from "../review/hooks";
-import { useChooseExam } from "./examChoice";
-import { LEARNING_SETTINGS_KEY, useExamTerms, useLearningSettings } from "./hooks";
+import { LEARNING_SETTINGS_KEY, useExamTerms, useLearningSettings, useTracks } from "./hooks";
 import { LimitNotice } from "./LimitNotice";
 import { limitIssue, maxPerDay } from "./newQuestionsLimit";
+import { useChooseTrack } from "./trackChoice";
 
 const RETENTION_CHOICES = [
   { value: 0.8, label: "80%: mniej powtórek, więcej zapominania" },
@@ -25,7 +25,7 @@ const RETENTION_CHOICES = [
 ];
 
 const LIMITS = {
-  newCardsPerDay: { min: 0, max: 200, label: "Najwięcej nowych fiszek dziennie", errorName: "Najwięcej nowych fiszek dziennie" },
+  newFlashcardsPerDay: { min: 0, max: 200, label: "Najwięcej nowych fiszek dziennie", errorName: "Najwięcej nowych fiszek dziennie" },
   newTestQuestionsPerDay: { min: 0, max: 500, label: "Najwięcej nowych pytań dziennie", errorName: "Najwięcej nowych pytań dziennie" },
   maxReviewsPerDay: { min: 10, max: 1000, label: "Najwięcej powtórek dziennie", errorName: "Najwięcej powtórek dziennie" },
 } as const;
@@ -34,7 +34,7 @@ const LIMITS = {
 type NewQuestionsMode = "auto" | "manual";
 
 interface FormState {
-  newCardsPerDay: string;
+  newFlashcardsPerDay: string;
   newTestQuestionsMode: NewQuestionsMode;
   newTestQuestionsPerDay: string;
   maxReviewsPerDay: string;
@@ -44,7 +44,7 @@ interface FormState {
 
 function toForm(s: LearningSettings): FormState {
   return {
-    newCardsPerDay: String(s.newCardsPerDay),
+    newFlashcardsPerDay: String(s.newFlashcardsPerDay),
     newTestQuestionsMode: s.newTestQuestionsAuto === false ? "manual" : "auto",
     // Po przełączeniu na własny limit pole zaczyna od tego, co obowiązuje teraz.
     newTestQuestionsPerDay: String(s.newTestQuestionsPerDay),
@@ -69,7 +69,7 @@ function parseLimit(raw: string, key: keyof typeof LIMITS): number | string {
  * a limit nowych pytań jako null tylko wtedy, gdy wybrano „Automatycznie": własny limit, także równy domyślnemu, jest własny.
  */
 function buildUpdate(form: FormState, defaults: LearningSettings["defaults"]): LearningSettingsUpdate | string {
-  const cards = parseLimit(form.newCardsPerDay, "newCardsPerDay");
+  const cards = parseLimit(form.newFlashcardsPerDay, "newFlashcardsPerDay");
   if (typeof cards === "string") return cards;
   let tests: number | null = null;
   if (form.newTestQuestionsMode === "manual") {
@@ -85,7 +85,7 @@ function buildUpdate(form: FormState, defaults: LearningSettings["defaults"]): L
   }
 
   return {
-    newCardsPerDay: cards === defaults.newCardsPerDay ? null : cards,
+    newFlashcardsPerDay: cards === defaults.newFlashcardsPerDay ? null : cards,
     newTestQuestionsPerDay: tests,
     maxReviewsPerDay: reviews === defaults.maxReviewsPerDay ? null : reviews,
     desiredRetention: retention === defaults.desiredRetention ? null : retention,
@@ -93,7 +93,7 @@ function buildUpdate(form: FormState, defaults: LearningSettings["defaults"]): L
   };
 }
 
-/** Ustawienia nauki w Koncie: egzamin (aplikacja), limity dzienne, docelowa retencja i mieszanie odpowiedzi. */
+/** Ustawienia nauki w Koncie: ścieżka (aplikacja albo Student), limity dzienne, docelowa retencja i mieszanie odpowiedzi. */
 export function LearningSettingsCard() {
   const { data, isLoading, isError, refetch } = useLearningSettings();
 
@@ -154,7 +154,7 @@ function LearningSettingsForm({ settings }: { settings: LearningSettings }) {
   function useDefaults() {
     setForm((prev) => ({
       ...prev,
-      newCardsPerDay: String(settings.defaults.newCardsPerDay),
+      newFlashcardsPerDay: String(settings.defaults.newFlashcardsPerDay),
       newTestQuestionsMode: "auto",
       newTestQuestionsPerDay: String(settings.defaults.newTestQuestionsPerDay),
       maxReviewsPerDay: String(settings.defaults.maxReviewsPerDay),
@@ -179,24 +179,24 @@ function LearningSettingsForm({ settings }: { settings: LearningSettings }) {
         Ustawienia nauki
       </h2>
       <p className="mb-4 text-sm text-fg-muted">
-        Do jakiego egzaminu się uczysz oraz ile nowego materiału i powtórek chcesz dziennie. Zmiany działają od następnej
+        Do czego się uczysz oraz ile nowych pytań, fiszek i powtórek chcesz dziennie. Zmiany działają od następnej
         sesji.
       </p>
 
-      <ExamChoiceSettings settings={settings} />
+      <TrackChoiceSettings settings={settings} />
 
       <form onSubmit={handleSubmit} noValidate className="flex max-w-xl flex-col gap-5">
         <fieldset className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
           <legend className="mb-2 text-sm font-medium text-fg">Limity dzienne</legend>
           <Field
-            label={LIMITS.newCardsPerDay.label}
+            label={LIMITS.newFlashcardsPerDay.label}
             type="number"
             inputMode="numeric"
-            min={LIMITS.newCardsPerDay.min}
-            max={LIMITS.newCardsPerDay.max}
-            value={form.newCardsPerDay}
-            onChange={(e) => change("newCardsPerDay", e.target.value)}
-            hint={`Domyślnie ${settings.defaults.newCardsPerDay}`}
+            min={LIMITS.newFlashcardsPerDay.min}
+            max={LIMITS.newFlashcardsPerDay.max}
+            value={form.newFlashcardsPerDay}
+            onChange={(e) => change("newFlashcardsPerDay", e.target.value)}
+            hint={`Domyślnie ${settings.defaults.newFlashcardsPerDay}`}
           />
           <Field
             label={LIMITS.maxReviewsPerDay.label}
@@ -236,7 +236,7 @@ function LearningSettingsForm({ settings }: { settings: LearningSettings }) {
             ))}
           </select>
           <p id={`${retentionId}-hint`} className="text-xs text-fg-muted">
-            Szansa, że przypomnisz sobie kartę w dniu powtórki. Wyższa wartość to krótsze odstępy, czyli więcej powtórek.
+            Szansa, że przypomnisz sobie pytanie w dniu powtórki. Wyższa wartość to krótsze odstępy, czyli więcej powtórek.
           </p>
         </div>
 
@@ -246,13 +246,11 @@ function LearningSettingsForm({ settings }: { settings: LearningSettings }) {
             {plan.planningDays > 0 ? (
               <p className="mt-1 text-fg-muted">
                 Zostało {plan.newTestQuestionsLeft}{" "}
-                {pluralizePl(plan.newTestQuestionsLeft, { one: "nowe pytanie testowe", few: "nowe pytania testowe", many: "nowych pytań testowych" })}{" "}
-                i {plan.newFlashcardsLeft}{" "}
-                {pluralizePl(plan.newFlashcardsLeft, { one: "nowa fiszka", few: "nowe fiszki", many: "nowych fiszek" })}. Ostatnie 14 dni
-                zostawiamy na same powtórki, więc na zaczęcie wszystkiego masz {plan.planningDays}{" "}
+                {pluralizePl(plan.newTestQuestionsLeft, { one: "nowe pytanie testowe", few: "nowe pytania testowe", many: "nowych pytań testowych" })}.
+                Ostatnie 14 dni zostawiamy na same powtórki, więc na zaczęcie wszystkiego masz {plan.planningDays}{" "}
                 {pluralizePl(plan.planningDays, { one: "dzień", few: "dni", many: "dni" })}. Cel na dziś:{" "}
                 <span className="font-medium text-fg">{plan.suggestedTestQuestionsPerDay}</span> nowych pytań testowych (zrobione:{" "}
-                {Number.isFinite(plan.newTestQuestionsToday) ? plan.newTestQuestionsToday : 0}) i <span className="font-medium text-fg">{plan.suggestedFlashcardsPerDay}</span> nowych fiszek.
+                {Number.isFinite(plan.newTestQuestionsToday) ? plan.newTestQuestionsToday : 0}).
               </p>
             ) : (
               <p className="mt-1 text-fg-muted">
@@ -312,75 +310,84 @@ function LearningSettingsForm({ settings }: { settings: LearningSettings }) {
 }
 
 /**
- * „Mój egzamin": aplikacja, do której użytkownik się przygotowuje. Z niej biorą się termin (ustawia go administrator),
- * odliczanie i plan. Zmiana jest osobną czynnością, bo przy okazji ustawia filtr pytań w Testach na wybraną aplikację i
- * pytania autorskie; dlatego ma własny przycisk i ostrzeżenie, a nie zapisuje się razem z limitami.
+ * „Moja ścieżka": aplikacja, do której użytkownik się przygotowuje, albo Student. Od ścieżki zależy pula pytań (własne
+ * arkusze i akty prawne ścieżki), a w aplikacjach także termin egzaminu (ustawia go administrator), odliczanie i plan.
+ * Zmiana jest osobną czynnością, bo przy okazji zdejmuje zawężenie puli do aktów i przywraca domyślny filtr źródeł;
+ * dlatego ma własny przycisk i objaśnienie, a nie zapisuje się razem z limitami.
  */
-function ExamChoiceSettings({ settings }: { settings: LearningSettings }) {
+function TrackChoiceSettings({ settings }: { settings: LearningSettings }) {
+  const tracksQuery = useTracks();
   const terms = useExamTerms();
-  const choose = useChooseExam();
+  const choose = useChooseTrack();
   const selectId = useId();
-  // Student ma wybór zrobiony, ale bez aplikacji: w polu wyboru stoi „Jestem studentem".
-  const isStudent = settings.examOrigin === null && settings.startChoiceMade === true;
-  const current: ExamChoice | "" = settings.examOrigin ?? (isStudent ? "STUDENT" : "");
-  const [picked, setPicked] = useState<ExamChoice | "">(current);
+  const current = settings.track?.id ?? null;
+  const [picked, setPicked] = useState<number | null>(current);
   const [saved, setSaved] = useState(false);
+  const tracks = tracksQuery.data ?? [];
   const termList = Array.isArray(terms.data) ? terms.data : [];
-  const termOf = (origin: QuestionOrigin) => termList.find((t) => t.origin === origin);
-  const changed = picked !== "" && picked !== current;
+  const changed = picked !== null && picked !== current;
 
-  function optionLabel(origin: QuestionOrigin): string {
-    const term = termOf(origin);
-    if (terms.isError || !term) return ORIGIN_LABELS[origin];
-    return `${ORIGIN_LABELS[origin]} (${term.examDate ? formatDatePl(term.examDate) : "termin nieogłoszony"})`;
+  function optionLabel(track: Track): string {
+    if (track.kind !== "EXAM") return track.name;
+    const term = termList.find((t) => t.track.id === track.id);
+    if (terms.isError || !term) return track.name;
+    return `${track.name} (${term.examDate ? formatDatePl(term.examDate) : "termin nieogłoszony"})`;
   }
 
   return (
-    <section aria-labelledby={`${selectId}-title`} className="mb-6 flex max-w-xl flex-col gap-3" data-testid="exam-choice-settings">
+    <section aria-labelledby={`${selectId}-title`} className="mb-6 flex max-w-xl flex-col gap-3" data-testid="track-choice-settings">
       <h3 id={`${selectId}-title`} className="text-sm font-medium text-fg">
-        Mój egzamin
+        Moja ścieżka
       </h3>
       <div className="flex flex-col gap-1">
         <label htmlFor={selectId} className="text-sm text-fg-muted">
-          Aplikacja, do której się przygotowuję
+          Do czego się przygotowuję
         </label>
         <div className="flex flex-wrap items-center gap-2">
           <select
             id={selectId}
-            value={picked}
+            value={picked ?? ""}
             onChange={(e) => {
-              setPicked(e.target.value as ExamChoice | "");
+              setPicked(e.target.value === "" ? null : Number(e.target.value));
               setSaved(false);
               choose.reset();
             }}
+            disabled={tracksQuery.isLoading || tracks.length === 0}
             aria-describedby={`${selectId}-hint`}
             className="min-h-11 min-w-0 max-w-full flex-1 rounded-xl border border-field bg-surface-2 px-3 sm:min-w-72"
           >
-            {current === "" && <option value="">Nie wybrano</option>}
-            {EXAM_APPLICATIONS.map((origin) => (
-              <option key={origin} value={origin}>
-                {optionLabel(origin)}
+            {current === null && <option value="">Nie wybrano</option>}
+            {tracks.map((track) => (
+              <option key={track.id} value={track.id}>
+                {optionLabel(track)}
               </option>
             ))}
-            <option value="STUDENT">Jestem studentem / jeszcze nie wybrałem</option>
           </select>
           <Button
             type="button"
             variant="secondary"
             disabled={!changed || choose.isPending}
             onClick={() => {
-              if (picked === "") return;
+              if (picked === null) return;
               choose.mutate(picked, { onSuccess: () => setSaved(true) });
             }}
           >
-            {choose.isPending ? "Zapisuję..." : current === "" ? "Wybierz egzamin" : "Zmień egzamin"}
+            {choose.isPending ? "Zapisuję..." : current === null ? "Wybierz ścieżkę" : "Zmień ścieżkę"}
           </Button>
         </div>
         <p id={`${selectId}-hint`} className="text-xs text-fg-muted">
-          Termin egzaminu ustawia administrator, więc tu go nie wpisujesz. Zmiana ustawia też filtr pytań w Testach: wybrana
-          aplikacja i pytania autorskie, a przy opcji dla studentów wszystkie pytania (filtr możesz potem zmienić osobno).
+          Termin egzaminu ustawia administrator, więc tu go nie wpisujesz. Zmiana ścieżki zmienia pulę pytań: zdejmuje wybór
+          aktów prawnych i przywraca domyślny filtr źródeł (potem zmienisz je w „Puli pytań").
         </p>
       </div>
+      {tracksQuery.isError && (
+        <p role="alert" className="text-sm text-danger">
+          Nie udało się pobrać listy ścieżek.{" "}
+          <button type="button" onClick={() => void tracksQuery.refetch()} className="underline underline-offset-2">
+            Spróbuj ponownie
+          </button>
+        </p>
+      )}
       {choose.isError && (
         <p role="alert" className="text-sm text-danger">
           {serverMessage(choose.error, "Nie udało się zapisać wyboru. Spróbuj ponownie.")}
@@ -388,7 +395,7 @@ function ExamChoiceSettings({ settings }: { settings: LearningSettings }) {
       )}
       {saved && !choose.isPending && (
         <p role="status" className="text-sm text-success">
-          Zapisano wybór egzaminu.
+          Zapisano wybór ścieżki.
         </p>
       )}
       <ExamInfo settings={settings} />
@@ -398,16 +405,18 @@ function ExamChoiceSettings({ settings }: { settings: LearningSettings }) {
 
 /** Jednozdaniowy opis stanu egzaminu: ile dni, czy działa tryb egzaminacyjny, czy termin jest ogłoszony albo już minął. */
 function ExamInfo({ settings }: { settings: LearningSettings }) {
-  if (!settings.examOrigin) {
+  const { track } = settings;
+  if (!track) {
+    return <p className="text-sm text-fg-muted">Bez wybranej ścieżki nie pokażemy odliczania ani dziennego planu.</p>;
+  }
+  if (track.kind === "STUDENT") {
     return (
       <p className="text-sm text-fg-muted">
-        {settings.startChoiceMade
-          ? "Jako student nie masz odliczania ani dziennego planu. Gdy wybierzesz aplikację, pokażemy termin i plan."
-          : "Bez wybranego egzaminu nie pokażemy odliczania ani dziennego planu."}
+        Jako Student nie masz odliczania ani dziennego planu. Gdy wybierzesz aplikację, pokażemy termin i plan.
       </p>
     );
   }
-  const application = ORIGIN_LABELS[settings.examOrigin];
+  const application = track.shortName;
 
   if (!settings.examDate) {
     return (
@@ -421,7 +430,7 @@ function ExamInfo({ settings }: { settings: LearningSettings }) {
     return (
       <p role="status" className="text-sm text-warning">
         Egzamin ({application}, {formatDatePl(settings.examDate)}) już się odbył, więc tryb egzaminacyjny nie działa. Poczekaj na nowy
-        termin albo wybierz inną aplikację.
+        termin albo wybierz inną ścieżkę.
       </p>
     );
   }
@@ -440,7 +449,6 @@ function ExamInfo({ settings }: { settings: LearningSettings }) {
     </p>
   );
 }
-
 
 interface NewQuestionsLimitFieldProps {
   settings: LearningSettings;

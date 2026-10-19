@@ -47,7 +47,7 @@ export function ExamCard({ className }: { className?: string }) {
           Egzamin próbny
         </h2>
         <p className="text-sm text-fg-muted">
-          {EXAM_QUESTION_COUNT} pytań z całego materiału, zaliczenie od {EXAM_PASS_POINTS} punktów. Zrób go, żeby sprawdzić, na
+          {EXAM_QUESTION_COUNT} pytań z Twojej puli, zaliczenie od {EXAM_PASS_POINTS} punktów. Zrób go, żeby sprawdzić, na
           jakim jesteś poziomie.
         </p>
         <Link to={ROUTES.exam} className={cn(QUIET_BUTTON, "w-fit")}>

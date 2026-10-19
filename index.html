@@ -5,6 +5,8 @@
     <link rel="icon" href="/favicon.ico" sizes="32x32" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="apple-mobile-web-app-title" content="Gradus iuris" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#121214" />
     <!--
@@ -13,18 +15,18 @@
     -->
     <script>
       try {
-        if (/^\/app(\/|$)/.test(location.pathname) && localStorage.getItem("tutlaw.theme.v1") === "LIGHT") {
+        if (/^\/app(\/|$)/.test(location.pathname) && localStorage.getItem("gradus.theme.v1") === "LIGHT") {
           document.documentElement.setAttribute("data-theme", "light");
           document.querySelector('meta[name="theme-color"]').setAttribute("content", "#fbfaf6");
         }
       } catch (e) {}
     </script>
-    <title>Tutlaw: testy na aplikację prawniczą z powtórkami</title>
+    <title>Gradus iuris: testy na aplikację prawniczą z powtórkami</title>
     <meta name="description" content="Testy ABC z egzaminów na aplikacje prawnicze i fiszki z powtórkami (FSRS-6). „Nie jestem pewien” odróżnia wiedzę od zgadywania. Teraz za darmo." />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="pl_PL" />
-    <meta property="og:site_name" content="Tutlaw" />
-    <meta property="og:title" content="Tutlaw: testy na aplikację prawniczą z powtórkami" />
+    <meta property="og:site_name" content="Gradus iuris" />
+    <meta property="og:title" content="Gradus iuris: testy na aplikację prawniczą z powtórkami" />
     <meta property="og:description" content="Testy ABC z egzaminów na aplikacje prawnicze i fiszki z powtórkami (FSRS-6). „Nie jestem pewien” odróżnia wiedzę od zgadywania. Teraz za darmo." />
   </head>
   <body>

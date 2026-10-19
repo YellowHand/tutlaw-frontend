@@ -9,9 +9,9 @@ import { Skeleton } from "../../components/ui/Skeleton";
 import { ROUTES } from "../../config/routes";
 import { cn } from "../../lib/cn";
 import { formatDateTime, formatDuration } from "../exam/format";
-import { ReportCardButton } from "../report/ReportCardButton";
+import { ReportQuestionButton } from "../report/ReportQuestionButton";
 import { LegalBasisLine } from "../review/LegalBasisLine";
-import { OriginLabel } from "../review/OriginLabel";
+import { SourceLabel } from "../review/SourceLabel";
 import { Breadcrumbs } from "../tests/Breadcrumbs";
 import { START_BUTTON } from "../tests/StartButtons";
 import { KIND_LABELS } from "./kindLabels";
@@ -81,11 +81,11 @@ function Detail({ detail }: { detail: CustomTestSessionDetail }) {
 
   function rearrange() {
     const prefill: CustomTestPrefill = {
-      categoryIds: summary.categoryIds,
-      subjectIds: summary.subjectIds,
+      fieldIds: summary.fieldIds,
+      actIds: summary.actIds,
+      sourceGroups: summary.sourceGroups,
       kind: summary.kind,
       requestedCount: summary.requestedCount,
-      origins: summary.origins,
     };
     navigate(ROUTES.customTest, { state: { prefill } });
   }
@@ -150,7 +150,7 @@ function Detail({ detail }: { detail: CustomTestSessionDetail }) {
         </div>
         <ol className="flex flex-col gap-4">
           {shown.map((question) => (
-            <li key={question.cardId}>
+            <li key={question.questionId}>
               <QuestionReview question={question} />
             </li>
           ))}
@@ -211,11 +211,10 @@ function QuestionReview({ question }: { question: CustomTestSessionQuestion }) {
         {question.timeSeconds !== null && (
           <span className="text-xs font-normal tabular-nums text-fg-muted">{formatDuration(question.timeSeconds)}</span>
         )}
-        {question.sourceName && <span className="text-xs font-normal text-fg-muted">{question.sourceName}</span>}
       </p>
 
-      <OriginLabel origin={question.origin} examYear={question.examYear} className="mt-2" />
-      <p className="mt-2 text-base font-semibold leading-snug">{question.front}</p>
+      <SourceLabel actName={question.actName} sourceName={question.sourceName} examYear={question.examYear} className="mt-2" />
+      <p className="mt-2 text-base font-semibold leading-snug">{question.body}</p>
 
       <ul className="mt-3 flex flex-col gap-2">
         {OPTION_KEYS.map((key) => {
@@ -264,7 +263,7 @@ function QuestionReview({ question }: { question: CustomTestSessionQuestion }) {
       />
       {!unanswered && (
         <div className="mt-1">
-          <ReportCardButton cardId={question.cardId} />
+          <ReportQuestionButton questionId={question.questionId} />
         </div>
       )}
     </article>

@@ -18,7 +18,7 @@ startuje i którędy płyną dane od serwera do ekranu.
 | **axios** | ^1.20.0 | Klient HTTP z dokładaniem tokenu i obsługą wygasłej sesji |
 | **lucide-react** | ^1.54.0 | Ikony |
 | **clsx** | ^2.1.1 | Składanie nazw klas (funkcja `cn`) |
-| **@fontsource-variable/manrope**, **@fontsource/newsreader** | ^5.3.0 | Czcionki dołączone do paczki: Manrope w całej aplikacji, Newsreader (waga 500) na stronie głównej |
+| **@fontsource-variable/manrope**, **@fontsource/newsreader** | ^5.3.0 | Czcionki dołączone do paczki: Manrope w całej aplikacji, Newsreader (waga 500) na stronie głównej, a jego kursywa 500 w logo |
 
 Kontrola jakości: **ESLint** (`npm run lint`, reguły `typescript-eslint`, `react-hooks`, `react-refresh`) i kompilator
 TypeScript (`tsc -b`, uruchamiany przed każdym buildem). Testów automatycznych w repozytorium nie ma
@@ -40,7 +40,7 @@ port-fe/
 ├── tsconfig*.json          Ustawienia TypeScript (app: katalog src, node: vite.config.ts)
 ├── .env, .env.example      VITE_API_BASE_URL dla pracy lokalnej
 ├── .env.production         VITE_API_BASE_URL dla buildu produkcyjnego (do uzupełnienia)
-├── public/                 Pliki serwowane bez zmian: favicon, ikona dla iPhone'a
+├── public/                 Pliki serwowane bez zmian: favicon, ikony na telefon, manifest, obraz podglądu linku
 ├── docs/                   Ta dokumentacja
 └── src/
     ├── main.tsx            Punkt wejścia: czcionka, style, <App />
@@ -50,9 +50,9 @@ port-fe/
     ├── auth/               Sesja: kontekst z tokenem dostępu (AuthContext, context, useAuth)
     ├── api/                Wywołania serwera i typy odpowiedzi, po jednym pliku na zasób
     ├── config/             routes.ts (adresy), navigation.ts (menu), legal.ts (dane administratora serwisu)
-    ├── lib/                Małe funkcje pomocnicze: cn, daty, błędy, pochodzenie pytań, odmiana liczebników
+    ├── lib/                Małe funkcje pomocnicze: cn, daty, błędy, źródła pytań, odmiana liczebników
     ├── components/         Wspólne klocki: ui/ (przyciski, okna), layout/ (menu, nagłówki), icons/ (toga)
-    ├── pages/              Strony: logowanie i konto, wybór materiału Fiszek, sesje Fiszek i Testów, strona główna
+    ├── pages/              Strony: logowanie i konto, sesje Fiszek i Testów, strona główna
     └── features/           Funkcje: każdy podkatalog to jeden temat (egzamin, statystyki, testy, ...)
 ```
 
@@ -61,30 +61,31 @@ port-fe/
 | Katalog | Pliki | Za co odpowiada |
 |---------|-------|-----------------|
 | `account` | 8 | Ekran Konto: zmiana hasła, pobranie danych, usunięcie konta, wywołania serwera, dane zalogowanego konta (`useMe`) |
-| `admin` | 1 | Przycisk „Ukryj” (tylko dla administratora) |
+| `admin` | 1 | Przyciski „Ukryj pytanie” i „Ukryj fiszkę” (tylko dla administratora) |
 | `auth` | 6 | Pola formularzy logowania, „wyślij link ponownie”, odczyt roli z tokenu, czyszczenie sesji |
-| `customTest` | 10 | Własny test: wybór rodzajów i aktów prawnych, rodzaju pytań i liczby pytań (10, 20, 50, 100, 150); pamięć ostatniego wyboru; „Moje testy” (lista, szczegóły, ułożenie ponownie z tymi samymi ustawieniami) |
+| `customTest` | 10 | Własny test: wybór dziedzin i aktów prawnych, rodzaju pytań i liczby pytań (10, 20, 50, 100, 150); pamięć ostatniego wyboru; „Moje testy” (lista, szczegóły, ułożenie ponownie z tymi samymi ustawieniami) |
 | `dashboard` | 6 | Pulpit: karta „Na dziś” z jednym głównym przyciskiem, „Postęp”, wynik egzaminu próbnego |
 | `difficult` | 4 | Trudne i zawieszone pytania: podpowiedź, zawieszanie, lista w Koncie |
 | `exam` | 8 | Egzamin próbny: ustawienia, przebieg z zegarem, raport, historia, zapis w przeglądarce |
-| `flashcards` | 2 | Dane do wyboru materiału Fiszek oraz „Dodaj do fiszek” przy pytaniu |
+| `flashcards` | 2 | Ekran Fiszki (powtórki na dziś i nauka z wybranego zakresu) oraz „Dodaj do fiszek” przy pytaniu |
 | `interface` | 1 | Ustawienia interfejsu zapisane na koncie: ukrycie podpowiedzi skrótów klawiszowych i licznika czasu pytania (hooki) |
 | `landing` | 17 | Strona główna: sekcje, teksty, demo pytania, ilustracja |
 | `legal` | 3 | Regulamin i polityka prywatności |
 | `misc` | 1 | Strona 404 |
-| `onboarding` | 1 | Obowiązkowe okno startowe po zalogowaniu: wybór aplikacji i wyglądu strony |
+| `onboarding` | 1 | Obowiązkowe okno startowe po zalogowaniu: wybór ścieżki (aplikacja albo Student) i wyglądu strony |
+| `pool` | 4 | Pula pytań: znacznik przy tytule, okno wyboru aktów prawnych, przedmiotów Studenta i grup źródeł, hooki i opis puli |
 | `report` | 2 | „Zgłoś błąd”: okno na środku ekranu z powodem i komentarzem |
-| `review` | 15 | Elementy wspólne sesji nauki: skróty klawiszowe i ich podpowiedź, zaległości, podstawa prawna, etykieta pochodzenia, licznik czasu pytania (widoczny czas), podsumowanie sesji na ekranie „Brawo!” |
-| `settings` | 10 | Ustawienia nauki w Koncie (limity dzienne z trybem automatycznym, retencja, wybór egzaminu), wygląd jasny/ciemny (karta, wybór, synchronizacja z kontem), komunikat o tempie nowych pytań, terminy egzaminów dla administratora |
-| `statistics` | 15 | Ekran Statystyki: „Podsumowanie nauki”, opanowanie, ostatnie 30 dni, aktywność, fiszki; dane statystyk |
+| `review` | 16 | Elementy wspólne sesji nauki: zakres sesji z adresu (`useScopeParams`), skróty klawiszowe i ich podpowiedź, zaległości, podstawa prawna, etykieta źródła, licznik czasu pytania (widoczny czas), podsumowanie sesji na ekranie „Brawo!” |
+| `settings` | 10 | Ustawienia nauki w Koncie (limity dzienne z trybem automatycznym, retencja, wybór ścieżki), wygląd jasny/ciemny (karta, wybór, synchronizacja z kontem), komunikat o tempie nowych pytań, terminy egzaminów dla administratora |
+| `statistics` | 15 | Ekran Statystyki: opanowanie pytań według źródła, opanowanie aktów prawnych, „Podsumowanie nauki”, ostatnie 30 dni, aktywność, fiszki; dane statystyk |
 | `studytime` | 3 | Czas nauki: licznik na ekranach nauki (tylko przy widocznej karcie, pauza po 3 minutach bez ruchu) i wysyłanie porcji co ok. 30 s |
-| `tests` | 14 | Ekrany Testów (rodzaj, przedmiot, źródło), filtr pochodzenia, tasowanie odpowiedzi |
+| `tests` | 12 | Ekrany Testów (dziedzina, akt prawny, sekcja „Według źródła”), „Szybki start”, zaległe powtórki, tasowanie odpowiedzi |
 
-W repozytorium jest łącznie 196 plików w `src/`.
+W repozytorium jest łącznie 194 pliki w `src/`.
 
 ### Dlaczego strony są w dwóch miejscach
 
-Komponenty „cały ekran” leżą w dwóch katalogach: część w `src/pages/` (logowanie, wybór materiału Fiszek, sesje
+Komponenty „cały ekran” leżą w dwóch katalogach: część w `src/pages/` (logowanie, sesje
 nauki, strona główna), część w `src/features/<temat>/` (Pulpit, Testy, Egzamin, Statystyki, Konto, strony prawne i 404).
 Historycznie `pages/` było pierwsze, a nowsze ekrany trafiały do `features/`. Reguła praktyczna: **szukaj ekranu w
 tabeli w [02](02-routing-i-strony.md)**, tam jest dokładna ścieżka każdego z nich.

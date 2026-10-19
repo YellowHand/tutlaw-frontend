@@ -18,10 +18,9 @@ import { NotFoundPage, PublicNotFoundPage } from "../features/misc/NotFoundPage"
 const TermsPage = lazy(() => import("../features/legal/TermsPage").then((m) => ({ default: m.TermsPage })));
 const PrivacyPage = lazy(() => import("../features/legal/PrivacyPage").then((m) => ({ default: m.PrivacyPage })));
 const DashboardPage = lazy(() => import("../features/dashboard/DashboardPage").then((m) => ({ default: m.DashboardPage })));
-const CategoriesPage = lazy(() => import("../pages/CategoriesPage").then((m) => ({ default: m.CategoriesPage })));
-const SubjectsPage = lazy(() => import("../pages/SubjectsPage").then((m) => ({ default: m.SubjectsPage })));
-const SourcesPage = lazy(() => import("../pages/SourcesPage").then((m) => ({ default: m.SourcesPage })));
-const ChaptersPage = lazy(() => import("../pages/ChaptersPage").then((m) => ({ default: m.ChaptersPage })));
+const FlashcardsPage = lazy(() =>
+  import("../features/flashcards/FlashcardsPage").then((m) => ({ default: m.FlashcardsPage }))
+);
 const StudySessionPage = lazy(() => import("../pages/StudySessionPage").then((m) => ({ default: m.StudySessionPage })));
 const TestSessionPage = lazy(() => import("../pages/TestSessionPage").then((m) => ({ default: m.TestSessionPage })));
 const ExamPage = lazy(() => import("../features/exam/ExamPage").then((m) => ({ default: m.ExamPage })));
@@ -31,8 +30,7 @@ const MyTestDetailPage = lazy(() =>
   import("../features/customTest/MyTestDetailPage").then((m) => ({ default: m.MyTestDetailPage }))
 );
 const TestsPage = lazy(() => import("../features/tests/TestsPage").then((m) => ({ default: m.TestsPage })));
-const TestCategoryPage = lazy(() => import("../features/tests/TestCategoryPage").then((m) => ({ default: m.TestCategoryPage })));
-const TestSubjectPage = lazy(() => import("../features/tests/TestSubjectPage").then((m) => ({ default: m.TestSubjectPage })));
+const TestFieldPage = lazy(() => import("../features/tests/TestFieldPage").then((m) => ({ default: m.TestFieldPage })));
 const StatisticsPage = lazy(() => import("../features/statistics/StatisticsPage").then((m) => ({ default: m.StatisticsPage })));
 const AccountPage = lazy(() => import("../features/account/AccountPage").then((m) => ({ default: m.AccountPage })));
 
@@ -57,13 +55,9 @@ export function Router() {
                 <Route index element={<Navigate to="dashboard" replace />} />
                 <Route path="dashboard" element={<DashboardPage />} />
 
-                <Route path="flashcards" element={<CategoriesPage />} />
-                <Route path="flashcards/:categoryId/subjects" element={<SubjectsPage />} />
-                <Route path="flashcards/:subjectId/sources" element={<SourcesPage />} />
-                <Route path="flashcards/:subjectId/sources/:sourceId/chapters" element={<ChaptersPage />} />
-                {/* Bez :subjectId = sesja z całego materiału użytkownika */}
+                <Route path="flashcards" element={<FlashcardsPage />} />
+                {/* Zakres sesji (dziedzina, akt, źródło) jest w adresie: ?fieldId=, ?actId=, ?sourceId=; bez niego cała pula */}
                 <Route path="study" element={<StudySessionPage />} />
-                <Route path="study/:subjectId" element={<StudySessionPage />} />
                 <Route path="test" element={<TestSessionPage />} />
                 <Route path="test/mistakes" element={<TestSessionPage mode="mistakes" />} />
                 <Route path="test/due" element={<TestSessionPage mode="due" />} />
@@ -73,11 +67,9 @@ export function Router() {
                 <Route path="custom-test/history" element={<MyTestsPage />} />
                 <Route path="custom-test/history/:id" element={<MyTestDetailPage />} />
                 <Route path="exam" element={<ExamPage />} />
-                <Route path="test/:subjectId" element={<TestSessionPage />} />
 
                 <Route path="tests" element={<TestsPage />} />
-                <Route path="tests/:categoryId" element={<TestCategoryPage />} />
-                <Route path="tests/:categoryId/:subjectId" element={<TestSubjectPage />} />
+                <Route path="tests/:fieldId" element={<TestFieldPage />} />
 
                 <Route path="statistics" element={<StatisticsPage />} />
                 <Route path="account" element={<AccountPage />} />

@@ -7,20 +7,21 @@ import type { TestQueueItem } from "../../api/review";
  * pierwotny termin zakończenia. Wszystkie operacje są w try/catch: bez dostępu do pamięci egzamin działa,
  * tylko bez wznawiania.
  */
-const DRAFT_KEY = "tutlaw.exam.draft.v1";
-const SETTINGS_KEY = "tutlaw.exam.settings.v1";
+// v2: pytania mają numery i treść z bazy po przebudowie (questionId, body); zapisy z v1 mają inne numery i są pomijane.
+const DRAFT_KEY = "gradus.exam.draft.v2";
+const SETTINGS_KEY = "gradus.exam.settings.v1";
 
 export interface ExamDraft {
-  version: 2;
+  version: 3;
   /** Adres konta, żeby cudzy niedokończony egzamin nie pojawił się po zmianie użytkownika w tej samej przeglądarce. */
   owner: string;
   scopeLabel: string;
   requestedCount: number;
-  /** Próg zaliczenia w punktach z serwera; null przy zapisie sprzed stałego formatu egzaminu (wtedy go nie pokazujemy). */
+  /** Próg zaliczenia w punktach z serwera. */
   passPoints: number | null;
   timeLimitMinutes: number | null;
   questions: TestQueueItem[];
-  /** cardId → wybrana odpowiedź (klucz z bazy). */
+  /** questionId → wybrana odpowiedź (klucz z bazy). */
   answers: Record<string, OptionKey>;
   flagged: number[];
   currentIndex: number;
@@ -38,8 +39,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function isQuestion(value: unknown): value is TestQueueItem {
   return (
     isRecord(value) &&
-    typeof value.cardId === "number" &&
-    typeof value.front === "string" &&
+    typeof value.questionId === "number" &&
+    typeof value.body === "string" &&
     typeof value.optionA === "string" &&
     typeof value.optionB === "string" &&
     typeof value.optionC === "string"
@@ -47,8 +48,7 @@ function isQuestion(value: unknown): value is TestQueueItem {
 }
 
 /**
- * Sprawdza kształt zapisanych danych: uszkodzony zapis jest po prostu pomijany. Zapis w wersji 1 (z czasów, gdy
- * egzamin miał własny zakres i próg) da się wznowić: serwer i tak sam ocenia i ustala próg, więc te pola są odrzucane.
+ * Sprawdza kształt zapisanych danych: uszkodzony albo starszy zapis jest po prostu pomijany.
  */
 function parseDraft(raw: string, owner: string): ExamDraft | null {
   let value: unknown;
@@ -57,7 +57,7 @@ function parseDraft(raw: string, owner: string): ExamDraft | null {
   } catch {
     return null;
   }
-  if (!isRecord(value) || (value.version !== 1 && value.version !== 2) || value.owner !== owner) return null;
+  if (!isRecord(value) || value.version !== 3 || value.owner !== owner) return null;
   if (!Array.isArray(value.questions) || value.questions.length === 0 || !value.questions.every(isQuestion)) return null;
   if (!isRecord(value.answers) || !Object.values(value.answers).every((o) => typeof o === "string" && OPTION_KEYS.includes(o))) {
     return null;
@@ -69,11 +69,11 @@ function parseDraft(raw: string, owner: string): ExamDraft | null {
   if (value.deadlineMs !== null && typeof value.deadlineMs !== "number") return null;
   const index = Math.min(Math.max(0, Math.trunc(value.currentIndex)), value.questions.length - 1);
   return {
-    version: 2,
+    version: 3,
     owner,
     scopeLabel: value.scopeLabel,
     requestedCount: value.requestedCount,
-    passPoints: value.version === 2 && typeof value.passPoints === "number" ? value.passPoints : null,
+    passPoints: typeof value.passPoints === "number" ? value.passPoints : null,
     timeLimitMinutes: value.timeLimitMinutes,
     questions: value.questions,
     answers: value.answers as Record<string, OptionKey>,

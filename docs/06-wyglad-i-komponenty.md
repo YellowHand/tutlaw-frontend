@@ -33,7 +33,7 @@ Aplikacja ma **dwa wyglądy: ciemny (domyślny) i jasny**. Wybiera go użytkowni
 urządzeniu. Jasny wygląd to atrybut `data-theme="light"` na `<html>`, który nadpisuje tokeny kolorów (blok
 `:root[data-theme="light"]` w `index.css`, kolory „papieru” jak w dokumentacji). Ustawia go tylko `ThemeSync` (w `AppShell`),
 więc **tylko wewnątrz `/app`**: strona główna, logowanie, rejestracja i strony prawne są zawsze ciemne. Od pierwszej klatki
-atrybut ustawia skrypt w `index.html` z kopii w przeglądarce (klucz `tutlaw.theme.v1`, opis w [03](03-logowanie-i-sesja.md)),
+atrybut ustawia skrypt w `index.html` z kopii w przeglądarce (klucz `gradus.theme.v1`, opis w [03](03-logowanie-i-sesja.md)),
 a gdy ustawienia z serwera dotrą, wygrywa konto. Tabela niżej podaje wartości ciemnego wyglądu; jasny zmienia tylko te,
 które są podane w kolumnie „Jasny”.
 
@@ -71,7 +71,7 @@ których używa wyłącznie strona główna (`fg-soft`, `accent-hover`, `band`, 
 | Czcionka | Gdzie | Jak ładowana |
 |----------|-------|--------------|
 | **Manrope** (zmienna, wszystkie wagi) | Cała aplikacja i strona główna. Zmienna `--font-sans` | `import "@fontsource-variable/manrope"` w `main.tsx` |
-| **Newsreader** (tylko waga 500) | Wyłącznie nagłówki wyróżnione na stronie głównej. Zmienna `--font-display` (klasa `font-display`) | `import "@fontsource/newsreader/500.css"` w `pages/LandingPage.tsx`, więc ładuje się tylko wraz ze stroną główną |
+| **Newsreader** (tylko waga 500) | Nagłówki wyróżnione na stronie głównej oraz słowo „iuris” w logo (kursywa). Zmienna `--font-display` (klasa `font-display`) | Prosta: `import "@fontsource/newsreader/500.css"` w `pages/LandingPage.tsx` (tylko ze stroną główną). Kursywa: `import "@fontsource/newsreader/500-italic.css"` w `components/layout/Logo.tsx`, więc ładuje się w całej aplikacji. Przeglądarka pobiera tylko plik z potrzebnymi znakami (łacińskimi), ok. 25 KB |
 
 Obie czcionki są dołączone do paczki z pakietów npm (`@fontsource…`), więc **aplikacja nie łączy się z Google Fonts
 ani z żadnym innym zewnętrznym serwerem czcionek** (ważne dla prywatności i działania offline w sieci lokalnej).
@@ -103,7 +103,7 @@ flowchart LR
   zasłaniała końca ekranu.
 - Postać menu wybierają klasy w `AppShell`: `hidden xl:flex` (panel), `hidden md:flex xl:hidden` (wąski pasek) i
   `md:hidden` (dolna belka). Panel można zwinąć do wąskiego paska przyciskiem u góry; wybór pamięta `useNavCollapsed`
-  (klucz `tutlaw.nav.collapsed.v1`, patrz [03](03-logowanie-i-sesja.md)).
+  (klucz `gradus.nav.collapsed.v1`, patrz [03](03-logowanie-i-sesja.md)).
 - Menu jest zdefiniowane raz w `config/navigation.ts` (`NAV_ITEMS`): Pulpit, Testy, Fiszki, Statystyki, Konto.
   `BottomNav` pokazuje całą listę, a `SideNav` listę `SIDE_NAV_ITEMS` (te same pozycje bez Konta, bo Konto jest w bloku
   użytkownika na dole panelu). Reguła aktywnej pozycji (`isNavItemActive`) leży w tym samym pliku i jest wspólna dla obu
@@ -142,7 +142,7 @@ najwyżej 24 rem z logo nad nią.
 
 `AppShell` (szkielet z menu), `SideNav` (panel boczny i wąski pasek), `BottomNav` (dolna belka na telefonie),
 `useNavCollapsed` (zapamiętane zwinięcie panelu), `NavBadge`, `LogoutButton` (odmiany `icon` i `text`), `PageHeader`,
-`AuthLayout`, `Logo` (odmiany `wordmark` z napisem i `monogram` z literą T w złotym kwadracie).
+`AuthLayout`, `Logo` (odmiany `wordmark` z napisem i `monogram`: pięć stopni w złotym kwadracie; napis „Gradus” pogrubiony, „iuris” kursywą szeryfową; zasady zapisu i pliki marki w [`brand/README.md`](brand/README.md)).
 
 ### Ikony
 
@@ -195,5 +195,5 @@ są w plikach `selectors.ts` i `*.tsx` w `features/statistics` i `features/dashb
 | Wygląd przycisków | `components/ui/Button.tsx` (`VARIANT_CLASSES`). Uwaga: część ekranów ma własne klasy przycisków wpisane w miejscu użycia |
 | Szerokości, przy których zmienia się postać menu | `AppShell.tsx` (`xl:flex`, `md:flex`, `xl:hidden`, `md:hidden`) |
 | Logo | `components/layout/Logo.tsx` |
-| Ikonę karty w przeglądarce | `public/favicon.svg`, `favicon.ico`, `apple-touch-icon.png` |
+| Ikonę karty w przeglądarce i ikony na telefon | `public/favicon.svg`, `favicon.ico`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `site.webmanifest` (pliki źródłowe i zasady: `docs/brand/`) |
 | Tytuł i opis strony (karta przeglądarki, podgląd w komunikatorach) | `index.html` |

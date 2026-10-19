@@ -9,59 +9,62 @@ dla użytkownika (albo pojęcie techniczne), w drugiej wyjaśnienie, w trzeciej 
 
 | Pojęcie | Co znaczy | W kodzie i w dokumentacji |
 |---------|-----------|---------------------------|
-| **Akt prawny** | W części kategorii (np. kodeksy) „przedmiot” nazywa się aktem prawnym. Nazwę zawartości kategorii podaje serwer w polu `itemsLabel` („Przedmioty”, „Akty prawne”) | `Category.itemsLabel` w `api/categories.ts` |
-| **Aplikacja** (prawnicza) | Nie program, tylko **aplikacja prawnicza**: szkolenie zawodowe po studiach (adwokacka, radcowska, sędziowska, prokuratorska, notarialna, komornicza). Z jej egzaminów pochodzą pytania | Sześć wartości `QuestionOrigin` w `lib/origin.ts` |
-| **Dodaj do fiszek** | Przycisk pod odpowiedzią w teście: tworzy z pytania fiszkę w dziale Fiszki | `QuestionFlashcardActions.tsx`, [04](04-nauka-w-aplikacji.md) |
-| **Dzienny limit** | Ile nowych kart i ile zaległych powtórek aplikacja podaje jednego dnia. Ustawia go użytkownik w Koncie, pilnuje serwer | `LearningSettings`, [04](04-nauka-w-aplikacji.md) |
-| **Egzamin próbny** | Egzamin w stałym formacie: 150 pytań z całego materiału, zaliczenie od 100 punktów (próg ustala serwer), z zegarem, bez podpowiedzi w trakcie i z raportem na końcu. Oddzielny od zwykłych Testów. Ćwiczenie jednego działu to nie egzamin, tylko **Własny test** | `features/exam`, [04](04-nauka-w-aplikacji.md) |
-| **Fiszka** | Karta z przodem (pytanie) i tyłem (odpowiedź), którą użytkownik sam ocenia czterema przyciskami | Sesja: `pages/StudySessionPage.tsx` |
-| **Fiszki** (z wielkiej litery) | Dział aplikacji z fiszkami i podręcznikami | `/app/flashcards`, [02](02-routing-i-strony.md) |
-| **FSRS-6** | Algorytm powtórek interwałowych (21 parametrów), który wylicza, kiedy pytanie ma wrócić. Działa **tylko w backendzie**; frontend pokazuje wynik | Dokumentacja backendu |
-| **Karta** (`card`) | Wspólna nazwa pytania testowego i fiszki w danych serwera. W interfejsie mówi się „pytanie” albo „fiszka” | `cardId` w całym `api/` |
-| **Krucha wiedza** | Poprawne odpowiedzi z zaznaczonym „Nie jestem pewien”: trafione, ale nie pewne | Statystyki Testów, [04](04-nauka-w-aplikacji.md) |
-| **Nie jestem pewien** | Pole wyboru, które zaznacza się **przed** odpowiedzią, gdy się zgaduje. Poprawna, ale niepewna odpowiedź jest traktowana jak „Nie pamiętam” | Pole `guessed` w `submitTestAnswer`; klawisz `G` |
-| **Nowa karta** | Karta, której użytkownik jeszcze nie widział. Ile nowych dochodzi dziennie, określa limit | `newCardsPerDay`, `newTestQuestionsPerDay` |
-| **Ocena fiszki** | Cztery przyciski: 1 Nie pamiętam, 2 Trudne, 3 Znam, 4 Łatwe. Liczba (1–4) idzie do serwera | `submitReview` w `api/review.ts` |
-| **Opanowanie** (rozdziału) | Procent kart rozdziału, które są już „opanowane” (serwer liczy tak karty o stabilności powyżej 21 dni) | `ChapterMastery.masteryPercentage` |
-| **Pewna pomyłka** | Błędna odpowiedź **bez** zaznaczenia „Nie jestem pewien”: użytkownik był przekonany, że wie. Najgorsza kombinacja; pytanie wraca szybko i trafia do fiszek | `flashcardUnlocked` w `TestAnswerResult` |
-| **Pochodzenie** (`origin`) | Skąd jest pytanie: aplikacja adwokacka i radcowska, sędziowska i prokuratorska, notarialna, uzupełniająca sędziowska, komornicza albo autorskie | `lib/origin.ts`, filtr w [04](04-nauka-w-aplikacji.md) |
-| **Podręcznik** (`TEXTBOOK`) | Źródło podzielone na rozdziały. Pytania z rozdziału są dostępne w Testach dopiero po oznaczeniu go jako przeczytany | `SourceType` w `api/sources.ts` |
-| **Podstawa prawna** | Przepis, na którym opiera się pytanie, np. „art. 415 k.c.”; pokazywana po odpowiedzi | `legalBasis`; `features/review/LegalBasisLine.tsx` |
-| **Powtórka** | Ponowne rozwiązanie albo ocena karty po terminie wyznaczonym przez algorytm | `getDueCount`, odznaki w menu |
-| **Powtórz jeszcze** | Przycisk na końcu sesji: dokłada porcję zaległych powtórek ponad dzienny limit (20) | `EXTRA_DUE_BATCH` w `features/review/useBacklog.ts` |
-| **Powtórz moje błędy** | Specjalna sesja z pytań, na które ostatnia odpowiedź w teście była błędna. Wchodzi się z niej przyciskiem „Moje błędy” w „Szybkim starcie” na ekranie Testy | Tryb `mistakes`, `/app/test/mistakes` |
-| **Przeczytany** (rozdział) | Oznaczenie, które odblokowuje pytania z rozdziału podręcznika | `Chapter.isRead`, `setChapterProgress` |
-| **Pula płaska** (`FLAT_POOL`) | Źródło bez rozdziałów: po prostu zbiór pytań (np. z egzaminu). Dostępna od razu, nie wymaga „przeczytania” | `SourceType` |
-| **Pytanie autorskie** (`AUTHORED`) | Pytanie napisane na potrzeby Tutlaw, nie pochodzące z egzaminu. Nie ma roku | `QuestionOrigin` |
-| **Pytanie testowe** | Pytanie ABC z trzema odpowiedziami i dokładnie jedną poprawną | `TestQueueItem` |
-| **Retencja** (docelowa) | Szansa, z jaką chcesz pamiętać kartę w chwili powtórki (70–97%). Wyższa retencja to częstsze powtórki | `desiredRetention` w ustawieniach nauki |
-| **Retencja podniesiona** | W ostatnich 30 dniach przed egzaminem serwer sam podnosi retencję do co najmniej 95% | `effectiveRetention`, `retentionBoosted` |
-| **Rok egzaminu** (`examYear`) | Rok, z którego jest pytanie egzaminacyjne; pytania autorskie go nie mają | `originLabel()` w `lib/origin.ts` |
-| **Rozdział** | Część podręcznika. Użytkownik oznacza, które przeczytał | `Chapter` w `api/chapters.ts` |
-| **Sesja** | Jedno podejście do nauki: kolejka kart pobrana z serwera i przerobiona po kolei | `StudySessionPage`, `TestSessionPage` |
-| **Sesja dodatkowa** | Dokładanie kart po zakończeniu głównej sesji: „Powtórz jeszcze” (zaległe) albo „Rozwiąż jeszcze” (nowe, 10) | [04](04-nauka-w-aplikacji.md) |
-| **Stan prawny** (`validAsOf`) | Data, na którą sprawdzono zgodność pytania z przepisami | `legalDate.ts` w `features/review` |
-| **Szybki start** | Rząd cichych przycisków na ekranie Testy: „Cały materiał”, „Własny test”, „Moje błędy” (tylko gdy są błędy) i „Egzamin próbny” | `features/tests/QuickStart.tsx`, [02](02-routing-i-strony.md) |
-| **Szkic egzaminu** | Zapis trwającego egzaminu w przeglądarce (pytania, odpowiedzi, termin końca, próg w punktach z serwera). Dzięki niemu odświeżenie strony nie kasuje egzaminu | `tutlaw.exam.draft.v1`, `features/exam/examStorage.ts` |
-| **Testy** (z wielkiej litery) | Dział aplikacji z pytaniami ABC | `/app/tests`, [02](02-routing-i-strony.md) |
-| **Trudne pytanie** (`leech`) | Pytanie, w którym liczba błędów osiągnęła próg ustalony przez serwer. Aplikacja proponuje je zawiesić | `DifficultCards.leechThreshold` |
-| **Tryb sesji** (`SessionMode`) | `FLASHCARD` albo `TEST`: Fiszki i Testy mają osobne liczniki i kolejki | `api/review.ts` |
-| **Tryb skupienia** | Sesja fiszek albo testu bez menu, z przyciskiem „Zakończ sesję” u góry. Włącza się sam po adresie | `sessionExitRoute` w `config/navigation.ts`, [02](02-routing-i-strony.md) |
-| **Ukryta karta** | Karta schowana przez administratora przed wszystkimi użytkownikami | `HideCardButton.tsx` |
-| **Własny test** | Sesja nauki ułożona przez użytkownika: wybrane rodzaje i akty prawne, rodzaj pytań (wszystkie, nowe, błędy, zaległe) i liczba pytań (10, 20, 50, 100, 150 albo „Wszystkie”). Zapisuje się w „Moich testach”. To nauka, a nie egzamin: bez progu i wyniku „zdał / nie zdał” | `features/customTest`, [04](04-nauka-w-aplikacji.md) |
-| **Zaległości** (`backlog`) | Karty po terminie powtórki: ile jest teraz (`dueNow`) i ile nie zmieści się dziś w limicie (`deferred`) | `Backlog` w `api/review.ts` |
-| **Zawieszone pytanie** | Pytanie, które użytkownik wyłączył z nauki. Postęp zostaje, można je przywrócić w Koncie | `suspendCard`, `unsuspendCard` |
-| **Okno startowe** | Obowiązkowe okno po zalogowaniu nowego użytkownika: wybór aplikacji (albo „Jestem studentem”) i wyglądu strony. Nie zamyka się bez wyboru | `OnboardingDialog.tsx` |
-| **Student** | Wybór w oknie startowym i w Koncie bez aplikacji: bez terminu, odliczania i planu dnia, z pytaniami ze wszystkich pochodzeń (`startChoiceMade = true`, `examOrigin = null`) | `ExamChoice` w `api/settings.ts` |
-| **Moje testy** | Lista zapisanych własnych testów (także nieukończonych) ze szczegółami i przyciskiem „Ułóż ponownie z tymi ustawieniami” | `MyTestsPage.tsx`, `MyTestDetailPage.tsx` |
-| **Licznik czasu przy pytaniu** | Mały zegar przy pytaniu i fiszce; liczy tylko przy widocznej karcie. Kliknięcie go chowa (zapisane na koncie). Ten sam czas idzie na serwer jako czas odpowiedzi | `QuestionTimer.tsx`, `useQuestionClock.ts` |
+| **Akt prawny** (`ACT`, `TOPIC`) | Ustawa, kodeks albo zagadnienie, do którego należy każde pytanie. Zagadnienie bez ustawy (np. paremie łacińskie, prawoznawstwo) to akt typu `TOPIC`. Akty są pogrupowane w dziedziny; w „Puli pytań” użytkownik zaznacza, z których się uczy | `ActKind`, `PoolAct` w `api/pool.ts`, [04](04-nauka-w-aplikacji.md#pula-pytań-użytkownika) |
+| **Aplikacja** (prawnicza) | Nie program, tylko **aplikacja prawnicza**: szkolenie zawodowe po studiach (adwokacka i radcowska, sędziowska i prokuratorska, uzupełniająca sędziowska, notarialna, komornicza). Każda ma własne arkusze egzaminacyjne, listę aktów i termin egzaminu. W kodzie to ścieżka typu `EXAM` | `Track`, `TrackKind` w `api/tracks.ts` |
+| **Arkusz** | Zestaw pytań z egzaminu jednej aplikacji w danym roku, np. „Notarialna 2024”. Pytania autorskie to osobne źródło „Pytania autorskie” | `SourceKind` (`EXAM_SHEET`, `AUTHORED`) w `lib/source.ts` |
 | **Czas nauki** | Łączny czas spędzony na ekranach nauki (osobny od czasu odpowiedzi). Liczy się przy widocznej karcie i do 3 minut bez ruchu, na serwer idzie co ok. 30 s | `StudyTimeMeter`, `StudyTimeTracker.tsx` |
+| **Dodaj do fiszek** | Przycisk pod odpowiedzią w teście: dodaje fiszkę tego pytania do działu Fiszki (przycisk „Usuń z fiszek” cofa ręczne dodanie) | `QuestionFlashcardActions.tsx`, [04](04-nauka-w-aplikacji.md) |
+| **Dziedzina** | Najwyższy poziom podziału materiału (jedenaście dziedzin, np. prawo karne i proces karny). Każdy widzi wszystkie dziedziny, ale w każdej tylko akty swojej puli | `PoolField` w `api/pool.ts`, `features/tests/TestFieldPage.tsx` |
+| **Dzienny limit** | Ile nowych fiszek i pytań testowych oraz ile zaległych powtórek aplikacja podaje jednego dnia (osobno w fiszkach i w testach). Ustawia go użytkownik w Koncie, pilnuje serwer | `LearningSettings`, [04](04-nauka-w-aplikacji.md) |
+| **Egzamin próbny** | Egzamin w stałym formacie: 150 pytań z całej puli ścieżki (bez zawężenia do wybranych aktów, z filtrem źródeł), zaliczenie od 100 punktów (próg ustala serwer), z zegarem, bez podpowiedzi w trakcie i z raportem na końcu. Oddzielny od zwykłych Testów. Ćwiczenie jednego działu to nie egzamin, tylko **Własny test** | `features/exam`, [04](04-nauka-w-aplikacji.md) |
+| **Filtr źródeł** | Ustawienie w oknie „Pula pytań”: trzy grupy źródeł (Moje arkusze, Arkusze innych ścieżek, Pytania autorskie), z których pochodzą pytania w Testach i na egzaminie. Fiszek nie dotyczy | `SourceGroup` w `lib/source.ts`, `updateSourceFilter` w `api/pool.ts` |
+| **Fiszka** | **Tryb pytania**, a nie osobna karta: ta sama treść z przodem (pytanie) i tyłem (odpowiedź), którą użytkownik ocenia czterema przyciskami. Ma własny harmonogram powtórek, niezależny od testu tego samego pytania | `pages/StudySessionPage.tsx`, `FlashcardQueueItem` w `api/review.ts` |
+| **Fiszki** (z wielkiej litery) | Dział aplikacji z fiszkami. Zaczyna pusty: fiszki pojawiają się po pewnym błędzie w teście albo po „Dodaj do fiszek” | `/app/flashcards`, [02](02-routing-i-strony.md) |
+| **FSRS-6** | Algorytm powtórek interwałowych (21 parametrów), który wylicza, kiedy pytanie ma wrócić. Działa **tylko w backendzie**; frontend pokazuje wynik | Dokumentacja backendu |
+| **Grupa źródeł** (`SourceGroup`) | Jedna z trzech grup, na które filtr dzieli pytania: `OWN_SHEETS` (arkusze wybranej ścieżki), `OTHER_SHEETS` (arkusze innych ścieżek, z aktów Twojej puli) i `AUTHORED` (pytania autorskie) | `SOURCE_GROUP_LABELS` w `lib/source.ts` |
+| **Krucha wiedza** | Poprawne odpowiedzi z zaznaczonym „Nie jestem pewien”: trafione, ale nie pewne | Statystyki Testów, [04](04-nauka-w-aplikacji.md) |
+| **Licznik czasu przy pytaniu** | Mały zegar przy pytaniu i fiszce; liczy tylko przy widocznej karcie. Kliknięcie go chowa (zapisane na koncie). Ten sam czas idzie na serwer jako czas odpowiedzi | `QuestionTimer.tsx`, `useQuestionClock.ts` |
+| **Limit automatyczny** | Tryb limitu nowych pytań dziennie, w którym limit idzie za planem do egzaminu (co najmniej 40, najwyżej 100 dziennie); drugi tryb to własny limit | `newQuestionsLimit.ts`, `LimitNotice.tsx` |
+| **Moje testy** | Lista zapisanych własnych testów (także nieukończonych) ze szczegółami i przyciskiem „Ułóż ponownie z tymi ustawieniami” | `MyTestsPage.tsx`, `MyTestDetailPage.tsx` |
+| **Nie jestem pewien** | Pole wyboru, które zaznacza się **przed** odpowiedzią, gdy się zgaduje. Poprawna, ale niepewna odpowiedź jest traktowana jak „Nie pamiętam” | Pole `guessed` w `submitTestAnswer`; klawisz `G` |
+| **Nowe pytanie** | Pytanie, którego użytkownik jeszcze nie widział w danym trybie (w teście albo w fiszkach). Ile nowych dochodzi dziennie, określa limit | `newFlashcardsPerDay`, `newTestQuestionsPerDay` |
+| **Ocena fiszki** | Cztery przyciski: 1 Nie pamiętam, 2 Trudne, 3 Znam, 4 Łatwe. Liczba (1–4) idzie do serwera | `submitReview` w `api/review.ts` |
+| **Okno startowe** | Obowiązkowe okno po zalogowaniu nowego użytkownika: wybór ścieżki (aplikacja albo Student) i wyglądu strony. Nie zamyka się bez wyboru | `OnboardingDialog.tsx` |
+| **Opanowanie** (aktu prawnego) | Procent pytań aktu, które są już „opanowane” (serwer liczy tak pytania o stabilności powyżej 21 dni) | `ActMastery.masteryPercentage` w `features/statistics/types.ts` |
+| **Paremia** | Łacińska sentencja prawnicza. W Gradus iuris to zwykłe pytania ABC (autorskie) w zagadnieniu typu `TOPIC`, a nie osobny rodzaj treści | `ActKind` w `api/pool.ts` |
+| **Pewna pomyłka** | Błędna odpowiedź **bez** zaznaczenia „Nie jestem pewien”: użytkownik był przekonany, że wie. Najgorsza kombinacja; pytanie wraca szybko i trafia do fiszek | `flashcardUnlocked` w `TestAnswerResult` |
 | **Podpowiedź skrótów** | Pasek z klawiszami pod pytaniem. Znika po 10 odpowiedziach (osobno w testach i fiszkach), „×” chowa ją na stałe, klawisz `?` pokazuje z powrotem na chwilę | `KeyboardHint.tsx`, `features/interface/hooks.ts` |
 | **Podsumowanie sesji** | Dwa zdania na ekranie „Brawo!”: nowe pytania (fiszki) w tej sesji i ile powtórek wróci jutro | `SessionSummary.tsx` |
+| **Podstawa prawna** | Przepis, na którym opiera się pytanie, np. „art. 415 k.c.”; pokazywana po odpowiedzi | `legalBasis`; `features/review/LegalBasisLine.tsx` |
+| **Powtórka** | Ponowne rozwiązanie albo ocena pytania po terminie wyznaczonym przez algorytm | `getDueCount`, odznaki w menu |
+| **Powtórz jeszcze** | Przycisk na końcu sesji: dokłada porcję zaległych powtórek ponad dzienny limit (20) | `EXTRA_DUE_BATCH` w `features/review/useBacklog.ts` |
+| **Powtórz moje błędy** | Specjalna sesja z pytań, na które ostatnia odpowiedź w teście była błędna. Wchodzi się z niej przyciskiem „Moje błędy” w „Szybkim starcie” na ekranie Testy | Tryb `mistakes`, `/app/test/mistakes` |
+| **Przedmiot** | Podział aktów prawnych dla Studenta. Wybór przedmiotu w „Puli pytań” zaznacza jego akty; pytania należą do aktów, a nie do przedmiotów | `Course` w `api/courses.ts` |
+| **Pula pytań** | Pytania, z których uczy się użytkownik: akty jego ścieżki (u Studenta przedmioty), po opcjonalnym zawężeniu do wybranych aktów i z filtrem źródeł. Liczy ją serwer, a frontend pokazuje ją znacznikiem „Pula pytań” i oknem wyboru | `Pool` w `api/pool.ts`, `features/pool`, [04](04-nauka-w-aplikacji.md#pula-pytań-użytkownika) |
+| **Pytanie autorskie** | Pytanie napisane na potrzeby Gradus iuris (np. paremie łacińskie), nie pochodzące z egzaminu. Ma źródło „Pytania autorskie” i nie ma roku | `SourceKind` (`AUTHORED`) |
+| **Pytanie testowe** | Pytanie ABC z trzema odpowiedziami i dokładnie jedną poprawną. To samo pytanie ma też swój tryb fiszki | `TestQueueItem` w `api/review.ts` |
+| **Retencja** (docelowa) | Szansa, z jaką chcesz pamiętać pytanie w chwili powtórki (70–97%). Wyższa retencja to częstsze powtórki | `desiredRetention` w ustawieniach nauki |
+| **Retencja podniesiona** | W ostatnich 30 dniach przed egzaminem serwer sam podnosi retencję do co najmniej 95% | `effectiveRetention`, `retentionBoosted` |
+| **Rok egzaminu** (`examYear`) | Rok, z którego jest arkusz egzaminacyjny; pytania autorskie go nie mają. Podpis pytania składa się z nazwy źródła i roku | `sourceLabel()` w `lib/source.ts` |
+| **Sesja** | Jedno podejście do nauki: kolejka pytań pobrana z serwera i przerobiona po kolei | `StudySessionPage`, `TestSessionPage` |
+| **Sesja dodatkowa** | Dokładanie pytań po zakończeniu głównej sesji: „Powtórz jeszcze” (zaległe) albo „Rozwiąż jeszcze” (nowe, 10) | [04](04-nauka-w-aplikacji.md) |
+| **Stan prawny** (`validAsOf`) | Data, na którą sprawdzono zgodność pytania z przepisami | `legalDate.ts` w `features/review` |
+| **Student** | Ścieżka bez aplikacji (typ `STUDENT`): bez terminu, odliczania i planu dnia. Pulę składa z przedmiotów i aktów z całego banku pytań | `TrackKind` w `api/tracks.ts` |
+| **Szkic egzaminu** | Zapis trwającego egzaminu w przeglądarce (pytania, odpowiedzi, termin końca, próg w punktach z serwera). Dzięki niemu odświeżenie strony nie kasuje egzaminu | `gradus.exam.draft.v2`, `features/exam/examStorage.ts` |
+| **Szybki start** | Rząd cichych przycisków na ekranie Testy: „Cała pula”, „Własny test”, „Moje błędy” (tylko gdy są błędy) i „Egzamin próbny” | `features/tests/QuickStart.tsx`, [02](02-routing-i-strony.md) |
+| **Ścieżka** (`Track`) | Wybór użytkownika w oknie startowym i w Koncie: jedna z pięciu aplikacji albo Student. Od ścieżki zależy pula pytań, a w aplikacjach także termin egzaminu, odliczanie i plan dnia | `Track`, `chooseTrack` w `api/settings.ts` |
+| **Testy** (z wielkiej litery) | Dział aplikacji z pytaniami ABC: dziedzina, potem akt prawny, z którego od razu zaczyna się sesja | `/app/tests`, [02](02-routing-i-strony.md) |
+| **Trudne pytanie** (`leech`) | Pytanie, w którym liczba błędów osiągnęła próg ustalony przez serwer. Aplikacja proponuje je zawiesić | `DifficultQuestions.leechThreshold` w `api/difficult.ts` |
+| **Tryb sesji** (`SessionMode`) | `FLASHCARD` albo `TEST`: Fiszki i Testy mają osobne liczniki, kolejki i harmonogramy tego samego pytania | `api/review.ts` |
+| **Tryb skupienia** | Sesja fiszek albo testu bez menu, z przyciskiem „Zakończ sesję” u góry. Włącza się sam po adresie | `sessionExitRoute` w `config/navigation.ts`, [02](02-routing-i-strony.md) |
+| **Ukryte pytanie**, **ukryta fiszka** | Pytanie (albo sama jego fiszka) schowane przez administratora przed wszystkimi użytkownikami | `HideQuestionButton.tsx` |
 | **Wygląd** (motyw) | Ciemny (domyślny) albo jasny; zapisany na koncie w backendzie, działa tylko wewnątrz aplikacji (`/app`) | `lib/theme.ts`, `ThemeSync.tsx`, `AppearanceCard.tsx` |
-| **Limit automatyczny** | Tryb limitu nowych pytań dziennie, w którym limit idzie za planem do egzaminu (co najmniej 40, najwyżej 100 dziennie); drugi tryb to własny limit | `newQuestionsLimit.ts`, `LimitNotice.tsx` |
-| **Zgłoś błąd** | Przycisk (dopiero po odpowiedzi, w prawym górnym rogu panelu wyniku albo odwróconej fiszki), który otwiera okno na środku ekranu, w którym użytkownik zgłasza błąd w pytaniu lub fiszce (powody: błędna odpowiedź, nieaktualny przepis, literówka lub niejasne sformułowanie, coś innego) | `ReportCardButton.tsx`, `ReportReason` |
-| **Źródło** (`Source`) | Książka lub zbiór pytań należący do przedmiotu. Ma typ: podręcznik albo pula płaska | `api/sources.ts` |
+| **Własny test** | Sesja nauki ułożona przez użytkownika: wybrane dziedziny i akty prawne z puli, rodzaj pytań (wszystkie, nowe, błędy, zaległe) i liczba pytań (10, 20, 50, 100, 150 albo „Wszystkie”). Zapisuje się w „Moich testach”. To nauka, a nie egzamin: bez progu i wyniku „zdał / nie zdał” | `features/customTest`, [04](04-nauka-w-aplikacji.md) |
+| **Zaległości** (`backlog`) | Pytania po terminie powtórki: ile jest teraz (`dueNow`) i ile nie zmieści się dziś w limicie (`deferred`) | `Backlog` w `api/review.ts` |
+| **Zawężenie puli** | Trwały wybór aktów, do których użytkownik ogranicza swoją pulę. Zaznaczenie wszystkich aktów oznacza brak zawężenia. Nie dotyczy egzaminu próbnego; zmiana ścieżki je zdejmuje | `updatePoolActs` w `api/pool.ts`, `PoolDialog.tsx` |
+| **Zawieszone pytanie** | Pytanie, które użytkownik wyłączył z nauki w jednym trybie (testy albo fiszki osobno). Postęp zostaje, można je przywrócić w Koncie | `suspendQuestion`, `unsuspendQuestion` w `api/difficult.ts` |
+| **Zgłoś błąd** | Przycisk (dopiero po odpowiedzi, w prawym górnym rogu panelu wyniku albo odwróconej fiszki), który otwiera okno na środku ekranu, w którym użytkownik zgłasza błąd w pytaniu (powody: błędna odpowiedź, nieaktualny przepis, literówka lub niejasne sformułowanie, coś innego) | `ReportQuestionButton.tsx`, `ReportReason` |
+| **Źródło** (`Source`) | Skąd pochodzi pytanie: arkusz egzaminu jednej aplikacji w danym roku albo „Pytania autorskie”. Źródła są w trzech grupach (zob. **Grupa źródeł**) | `SourceKind`, `sourceLabel()` w `lib/source.ts` |
 
 ## Pojęcia techniczne
 
@@ -71,7 +74,7 @@ dla użytkownika (albo pojęcie techniczne), w drugiej wyjaśnienie, w trzeciej 
 | **axios** | Biblioteka do wysyłania żądań HTTP do serwera | `api/axiosInstance.ts`, [05](05-warstwa-api-i-dane.md) |
 | **Dolna belka** (`BottomNav`) | Menu na telefonie: pięć pozycji przyklejonych do dołu ekranu, w zasięgu kciuka | `components/layout/BottomNav.tsx`, [06](06-wyglad-i-komponenty.md) |
 | **Dostawca** (`provider`) | Komponent otaczający aplikację, który udostępnia coś wszystkim ekranom (dane, sesję) | `app/providers.tsx` |
-| **Znacznik filtra** (`OriginFilterChip`) | Mały przycisk przy tytule w Testach, który pokazuje wybrane pochodzenia pytań i po kliknięciu otwiera okno wyboru | `features/tests/OriginFilterChip.tsx`, [04](04-nauka-w-aplikacji.md) |
+| **Znacznik puli** (`PoolChip`) | Mały przycisk przy tytule w Testach, który pokazuje, z czego się uczysz (ścieżka, zawężenie, filtr źródeł) i po kliknięciu otwiera okno „Pula pytań” | `features/pool/PoolChip.tsx`, [04](04-nauka-w-aplikacji.md#pula-pytań-użytkownika) |
 | **Hook** | Funkcja Reacta zaczynająca się od `use`, np. `useQuery`, `useDueCount` | `features/*/hooks.ts` |
 | **Interceptor** | Funkcja axiosa, która „przechwytuje” każde żądanie lub odpowiedź: dokłada token albo wylogowuje po 401 | [03](03-logowanie-i-sesja.md) |
 | **JWT** | Token logowania: podpisany napis z identyfikatorem konta, rolą i terminem ważności | [03](03-logowanie-i-sesja.md) |

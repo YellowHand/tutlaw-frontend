@@ -1,10 +1,9 @@
-import type { QuestionOrigin } from "../../lib/origin";
 import { deepNbsp } from "./typography";
 import type { DemoAnswer, DemoOutcomeId } from "./demo";
 
 /**
  * Wszystkie teksty strony głównej w jednym miejscu. Fakty o produkcie (tryby, reguły "Nie jestem pewien",
- * FSRS-6, filtr pochodzenia, eksport danych) odpowiadają temu, co aplikacja naprawdę robi. Bez liczb o
+ * FSRS-6, pula pytań i filtr źródeł, eksport danych) odpowiadają temu, co aplikacja naprawdę robi. Bez liczb o
  * użytkownikach, zdawalności i liczbie pytań: dopisujemy je dopiero, gdy będą prawdziwe.
  * Przy zmianie tekstów twarde spacje (nbsp) dodaje deepNbsp(), więc piszemy zwyczajnie.
  */
@@ -22,10 +21,19 @@ export const COPY = deepNbsp({
     member: "Przejdź do aplikacji",
     login: "Zaloguj się",
   },
+  // Ścieżki do wyboru (te same, co w bazie); slug wskazuje kolory togi.
+  tracks: [
+    { slug: "adwokacka-radcowska", label: "Adwokacka i radcowska" },
+    { slug: "sedziowska-prokuratorska", label: "Sędziowska i prokuratorska" },
+    { slug: "uzupelniajaca-sedziowska", label: "Uzupełniająca sędziowska" },
+    { slug: "notarialna", label: "Notarialna" },
+    { slug: "komornicza", label: "Komornicza" },
+    { slug: "student", label: "Student" },
+  ],
   accountDeleted: "Twoje konto i wszystkie powiązane z nim dane zostały usunięte. Dziękujemy za korzystanie z serwisu.",
   hero: {
     title: "Testy, które pamiętają, co ci umyka.",
-    lead: "Rozwiązuj pytania ABC z egzaminów na aplikacje prawnicze. Tutlaw zapisuje, co zgadłeś, a co naprawdę wiesz, i sam układa powtórki.",
+    lead: "Rozwiązuj pytania ABC z egzaminów na aplikacje prawnicze. Gradus zapisuje, co zgadłeś, a co naprawdę wiesz, i sam układa powtórki.",
     howLink: "Zobacz, jak to działa",
     fine: "Bez karty płatniczej.",
     haveAccount: "Masz już konto?",
@@ -33,7 +41,7 @@ export const COPY = deepNbsp({
   demo: {
     section: {
       title: "Wypróbuj na jednym pytaniu",
-      lead: "Wybierz odpowiedź i zobacz, co Tutlaw z nią zrobi. Potem spróbuj jeszcze raz z zaznaczonym „Nie jestem pewien”: wynik będzie inny.",
+      lead: "Wybierz odpowiedź i zobacz, co Gradus z nią zrobi. Potem spróbuj jeszcze raz z zaznaczonym „Nie jestem pewien”: wynik będzie inny.",
     },
     // Nazwa grupy dla czytników ekranu (nad kartą jest już nagłówek sekcji, więc nie pokazujemy jej drugi raz).
     caption: "Przykładowe pytanie ABC z przełącznikiem „Nie jestem pewien”",
@@ -49,19 +57,19 @@ export const COPY = deepNbsp({
     ] satisfies { id: DemoAnswer; text: string }[],
     tagCorrect: "Poprawna odpowiedź",
     tagYours: "Twoja odpowiedź",
-    idle: "Wybierz odpowiedź, a pokażemy, co Tutlaw z nią zrobi. Spróbuj też z zaznaczonym „Nie jestem pewien”.",
+    idle: "Wybierz odpowiedź, a pokażemy, co Gradus z nią zrobi. Spróbuj też z zaznaczonym „Nie jestem pewien”.",
     outcomes: {
       "ok-sure": {
         title: "Dobrze i pewnie.",
-        text: "Tutlaw zapisuje pytanie jako znane i wróci do niego po dłuższej przerwie. Kiedy dokładnie, wylicza algorytm FSRS-6.",
+        text: "Gradus zapisuje pytanie jako znane i wróci do niego po dłuższej przerwie. Kiedy dokładnie, wylicza algorytm FSRS-6.",
       },
       "ok-unsure": {
         title: "Dobrze, ale niepewnie.",
-        text: "Trafiony strzał to jeszcze nie wiedza. Tutlaw traktuje to pytanie jak niezapamiętane i szybko do niego wróci.",
+        text: "Trafiony strzał to jeszcze nie wiedza. Gradus traktuje to pytanie jak niezapamiętane i szybko do niego wróci.",
       },
       "bad-sure": {
         title: "Pewna pomyłka.",
-        text: "Byłeś przekonany, że wiesz, a to najgorsza kombinacja. Pytanie szybko wraca do powtórek, a Tutlaw dodaje je do fiszek.",
+        text: "Byłeś przekonany, że wiesz, a to najgorsza kombinacja. Pytanie szybko wraca do powtórek, a Gradus odblokowuje jego fiszkę.",
       },
       "bad-unsure": {
         title: "Pomyłka, ale wiedziałeś, że nie wiesz.",
@@ -77,7 +85,7 @@ export const COPY = deepNbsp({
     title: "Zapominanie da się przewidzieć. Powtórki też.",
     paragraphs: [
       "Bez powtórek pamięć słabnie z dnia na dzień, a przed egzaminem okazuje się, że sporo przerobionego materiału gdzieś wyparowało.",
-      "Tutlaw wraca do pytania tuż przed momentem, w którym by ci umknęło. Każda kolejna przerwa jest dłuższa, więc z czasem powtarzasz coraz mniej, a pamiętasz coraz dłużej.",
+      "Gradus wraca do pytania tuż przed momentem, w którym by ci umknęło. Każda kolejna przerwa jest dłuższa, więc z czasem powtarzasz coraz mniej, a pamiętasz coraz dłużej.",
       "Terminy wylicza FSRS-6, nowoczesny algorytm powtórek interwałowych: osobno dla każdego pytania, na podstawie twoich odpowiedzi.",
     ],
     chartLabel:
@@ -94,8 +102,8 @@ export const COPY = deepNbsp({
     lead: "Uczysz się z pytań egzaminacyjnych i nie prowadzisz osobnego kalendarza powtórek.",
     tests: {
       title: "Testy ABC z jedną dobrą odpowiedzią",
-      text: "Pytania z egzaminów na pięć aplikacji prawniczych oraz pytania autorskie. Przy każdym widzisz pochodzenie, a przy pytaniach egzaminacyjnych także rok. Uczysz się z całego materiału, z wybranego przedmiotu albo tylko z nowych pytań.",
-      chipsLead: "Wybierasz, z czego się uczysz:",
+      text: "Pytania z egzaminów na pięć aplikacji prawniczych oraz pytania autorskie, w tym paremie łacińskie. Każde jest podpięte do aktu prawnego, więc ten sam kodeks ćwiczysz z arkuszy wszystkich aplikacji. Przy pytaniu widzisz akt i źródło (arkusz z rokiem). Uczysz się z całej puli, z wybranej dziedziny, z aktu prawnego albo tylko z nowych pytań.",
+      chipsLead: "Wybierasz swoją ścieżkę:",
     },
     unsure: {
       title: "„Nie jestem pewien” działa jak uczciwy sędzia",
@@ -108,22 +116,22 @@ export const COPY = deepNbsp({
     },
     flashcards: {
       title: "Fiszki z twoich pomyłek",
-      text: "Pewna pomyłka w teście sama zamienia się w fiszkę. Każde inne pytanie dodasz jednym kliknięciem. Fiszki powtarzasz tym samym algorytmem, więc nie ma drugiego kalendarza.",
+      text: "Pewna pomyłka w teście sama odblokowuje fiszkę tego pytania. Każde inne pytanie dodasz do fiszek jednym kliknięciem. Fiszka ma własny harmonogram FSRS-6, osobny od testu, więc nie ma drugiego kalendarza do prowadzenia.",
     },
     exam: {
       title: "Egzamin próbny",
-      text: "Losowe pytania z wybranego zakresu, wynik i raport na końcu. Błędne pytania możesz od razu przećwiczyć.",
+      text: "Losowe pytania z Twojej puli, wynik i raport na końcu. Błędne pytania możesz od razu przećwiczyć.",
     },
     stats: {
       title: "Wiesz, gdzie naprawdę stoisz",
-      text: "Skuteczność według aplikacji i roku egzaminu, ostatnie 30 dni i liczba opanowanych pytań. Osobno liczymy pewne błędy i kruchą wiedzę, czyli poprawne odpowiedzi z zaznaczonym „Nie jestem pewien”.",
-      sampleTitle: "Skuteczność według aplikacji",
+      text: "Skuteczność według aktów prawnych i źródeł pytań, ostatnie 30 dni i liczba opanowanych pytań. Osobno liczymy pewne błędy i kruchą wiedzę, czyli poprawne odpowiedzi z zaznaczonym „Nie jestem pewien”.",
+      sampleTitle: "Skuteczność według aktów prawnych",
       sampleBadge: "Przykładowe dane",
       sample: [
-        { origin: "ADVOCATE_LEGAL_ADVISER", label: "Adwokacka i radcowska", value: 78 },
-        { origin: "JUDGE_PROSECUTOR", label: "Sędziowska i prokuratorska", value: 64 },
-        { origin: "NOTARY", label: "Notarialna", value: 52 },
-      ] satisfies { origin: QuestionOrigin; label: string; value: number }[],
+        { label: "Kodeks cywilny", value: 78 },
+        { label: "Kodeks karny", value: 64 },
+        { label: "Prawo o notariacie", value: 52 },
+      ] satisfies { label: string; value: number }[],
       confidentMistakes: { label: "Pewne błędy", value: "6" },
       fragile: { label: "Krucha wiedza", value: "11" },
     },
@@ -134,7 +142,7 @@ export const COPY = deepNbsp({
       { title: "Załóż konto", text: "Podajesz e-mail i hasło, potwierdzasz adres i gotowe. Bez karty płatniczej." },
       {
         title: "Rozwiązuj i zaznaczaj, czego nie jesteś pewien",
-        text: "Wybierasz zakres: cały materiał, przedmiot albo tylko nowe pytania. Zgadujesz? Zaznacz to przed odpowiedzią.",
+        text: "Wybierasz ścieżkę (jedną z pięciu aplikacji albo Student) i zakres: całą pulę, dziedzinę, akt prawny albo tylko nowe pytania. Zgadujesz? Zaznacz to przed odpowiedzią.",
       },
       {
         title: "Wracaj, gdy przyjdzie czas",
@@ -147,13 +155,13 @@ export const COPY = deepNbsp({
     lead: "Krótko o tym, skąd są pytania, jak działa „Nie jestem pewien” i ile to kosztuje.",
     items: [
       {
-        q: "Czy Tutlaw naprawdę jest darmowy?",
+        q: "Czy Gradus naprawdę jest darmowy?",
         a: "Tak. Obecnie korzystasz z całej aplikacji bez opłat i bez podawania karty płatniczej.",
       },
       {
         q: "Skąd pochodzą pytania?",
-        a: "Z egzaminów na aplikacje prawnicze (lista poniżej) oraz z pytań autorskich. Baza jest uzupełniana, a pozycje, do których pytań jeszcze nie ma, są oznaczone jako „Wkrótce”.",
-        origins: true,
+        a: "Z egzaminów na aplikacje prawnicze oraz z pytań autorskich, w tym z paremii łacińskich. Każde pytanie jest podpięte do aktu prawnego, więc ta sama ustawa łączy arkusze różnych aplikacji. Baza jest uzupełniana. Ścieżki do wyboru są poniżej.",
+        tracks: true,
       },
       {
         q: "Co znaczy „Nie jestem pewien”?",
@@ -164,8 +172,8 @@ export const COPY = deepNbsp({
         a: "To algorytm powtórek interwałowych, nowocześniejszy od klasycznego SM-2. Na podstawie historii twoich odpowiedzi szacuje, jak mocno pamiętasz dane pytanie, i wyznacza termin kolejnej powtórki.",
       },
       {
-        q: "Czy mogę uczyć się tylko z jednej aplikacji?",
-        a: "Tak. W Testach ustawiasz filtr pochodzenia pytań: jedna aplikacja, kilka albo wszystkie. Filtr zapamiętuje się na koncie, więc działa też na innym urządzeniu.",
+        q: "Czy mogę uczyć się tylko do jednej aplikacji?",
+        a: "Tak. Wybierasz ścieżkę, a Gradus układa pulę z jej arkuszy i aktów prawnych. W „Puli pytań” możesz ją zawęzić do wybranych aktów oraz włączyć lub wyłączyć arkusze innych aplikacji i pytania autorskie. Ustawienia zapamiętują się na koncie, więc działają też na innym urządzeniu.",
       },
       {
         q: "Czy działa na telefonie?",
@@ -194,6 +202,6 @@ export const COPY = deepNbsp({
   footer: {
     terms: "Regulamin",
     privacy: "Polityka prywatności",
-    note: "© 2026 Tutlaw. Materiały służą do nauki i nie stanowią porady prawnej.",
+    note: "© 2026 Gradus iuris. Materiały służą do nauki i nie stanowią porady prawnej.",
   },
 });

@@ -97,7 +97,7 @@ dla skryptów; wymaga to zmian w CORS i wdrożenia (frontend i backend pod jedn�
 | Funkcja | Co kasuje | Kiedy jest używana |
 |---------|-----------|--------------------|
 | `clearStoredToken()` | Tylko tokeny: `accessToken` i `refreshToken` | Wygasła sesja (odświeżenie odrzucone) |
-| `clearSession()` | Tokeny oraz **wszystkie klucze zaczynające się od `tutlaw.`** (szkic egzaminu, zapamiętane ustawienia egzaminu, ostatni własny test, wybór zwiniętego panelu), **poza kopią wyglądu** `tutlaw.theme.v1` (patrz niżej) | Przycisk „Wyloguj się” i usunięcie konta |
+| `clearSession()` | Tokeny oraz **wszystkie klucze zaczynające się od `gradus.`** (szkic egzaminu, zapamiętane ustawienia egzaminu, ostatni własny test, wybór zwiniętego panelu), **poza kopią wyglądu** `gradus.theme.v1` (patrz niżej) | Przycisk „Wyloguj się” i usunięcie konta |
 
 Przycisk „Wyloguj się” (`LogoutButton`; w panelu bocznym, a na telefonie na ekranie Konto) wywołuje `logout()` z kontekstu (`clearSession()` i token w stanie na `null`),
 a potem przenosi na stronę główną przez `window.location.href`, czyli również z pełnym przeładowaniem. Efekt: na
@@ -109,11 +109,11 @@ wspólnym komputerze nie zostają ślady po poprzednim użytkowniku (w szkicu eg
 |-------|-------|----|--------------|-------------|
 | `localStorage` | `accessToken` | Krótki token dostępu (JWT, 30 minut) | `AuthProvider.login`, odświeżanie sesji (`api/refreshSession.ts`) | Wylogowanie lub odrzucone odświeżenie |
 | `localStorage` | `refreshToken` | Token odświeżający (30 dni, jednorazowy: po każdym użyciu serwer wydaje nowy) | `AuthProvider.login`, odświeżanie sesji | Wylogowanie lub odrzucone odświeżenie |
-| `localStorage` | `tutlaw.exam.draft.v1` | Niedokończony egzamin próbny: pytania, odpowiedzi, termin końca, próg w punktach z serwera, adres konta właściciela (zapis w wersji 2; wersja 1 sprzed Etapu 28 też się wznawia) | `features/exam/examStorage.ts` | Po wysłaniu egzaminu, po porzuceniu, po wylogowaniu |
-| `localStorage` | `tutlaw.exam.settings.v1` | Ostatnio użyty limit czasu egzaminu (zakres, liczbę pytań i próg ustala format egzaminu, więc ich nie zapamiętujemy; zapis ze starszych wersji ma je jeszcze w sobie i są pomijane) | `features/exam/examStorage.ts` | Po wylogowaniu |
-| `localStorage` | `tutlaw.customTest.v1` | Ostatnio ułożony własny test: zaznaczone akty prawne (albo „wszystko”), rodzaj pytań, liczba pytań (10, 20, 50, 100 albo 150 lub „wszystkie”). Zapis ze starszych wersji ma jeszcze lata egzaminu; są pomijane | `features/customTest/customTestStorage.ts` | Po wylogowaniu |
-| `localStorage` | `tutlaw.nav.collapsed.v1` | Czy panel boczny jest zwinięty (`1`) czy rozwinięty (`0`) | `components/layout/useNavCollapsed.ts` | Po wylogowaniu |
-| `localStorage` | `tutlaw.theme.v1` | Kopia wyglądu strony z konta (`DARK` albo `LIGHT`). Źródłem prawdy jest serwer (`PUT /api/me/theme`); kopia służy tylko temu, żeby od pierwszej klatki, zanim serwer odpowie, strona miała dobry kolor (skrypt w `index.html` czyta ten sam klucz, tylko na ścieżkach `/app`). Gdy ustawienia z serwera dotrą, wygrywa konto i kopia się odświeża | `features/settings/ThemeSync.tsx`, `lib/theme.ts` | **Przeżywa wylogowanie** (to nie jest dana osobowa; wyjątek wpisany w `features/auth/session.ts`), znika dopiero z ręcznym wyczyszczeniem danych przeglądarki |
+| `localStorage` | `gradus.exam.draft.v2` | Niedokończony egzamin próbny: pytania (z numerami `questionId` z bazy), odpowiedzi, termin końca, próg w punktach z serwera, adres konta właściciela (wersja zapisu 3). Szkice z poprzedniej wersji klucza (`v1`) mają numery pytań sprzed przebudowy bazy, więc nie są wczytywane | `features/exam/examStorage.ts` | Po wysłaniu egzaminu, po porzuceniu, po wylogowaniu |
+| `localStorage` | `gradus.exam.settings.v1` | Ostatnio użyty limit czasu egzaminu (zakres, liczbę pytań i próg ustala format egzaminu, więc ich nie zapamiętujemy; zapis ze starszych wersji ma je jeszcze w sobie i są pomijane) | `features/exam/examStorage.ts` | Po wylogowaniu |
+| `localStorage` | `gradus.customTest.v2` | Ostatnio ułożony własny test: zaznaczone akty prawne (albo „wszystko”), rodzaj pytań, liczba pytań (10, 20, 50, 100 albo 150 lub „wszystkie”). Poprzednia wersja klucza (`v1`) pamiętała przedmioty, których numery po przebudowie nic nie znaczą, więc jest pomijana | `features/customTest/customTestStorage.ts` | Po wylogowaniu |
+| `localStorage` | `gradus.nav.collapsed.v1` | Czy panel boczny jest zwinięty (`1`) czy rozwinięty (`0`) | `components/layout/useNavCollapsed.ts` | Po wylogowaniu |
+| `localStorage` | `gradus.theme.v1` | Kopia wyglądu strony z konta (`DARK` albo `LIGHT`). Źródłem prawdy jest serwer (`PUT /api/me/theme`); kopia służy tylko temu, żeby od pierwszej klatki, zanim serwer odpowie, strona miała dobry kolor (skrypt w `index.html` czyta ten sam klucz, tylko na ścieżkach `/app`). Gdy ustawienia z serwera dotrą, wygrywa konto i kopia się odświeża | `features/settings/ThemeSync.tsx`, `lib/theme.ts` | **Przeżywa wylogowanie** (to nie jest dana osobowa; wyjątek wpisany w `features/auth/session.ts`), znika dopiero z ręcznym wyczyszczeniem danych przeglądarki |
 
 Aplikacja nie używa `sessionStorage`, plików cookie ani IndexedDB. Każdy odczyt i zapis jest w `try/catch`: gdy
 pamięć jest niedostępna (np. tryb prywatny), aplikacja działa dalej, tylko bez zapamiętywania.
@@ -126,7 +126,7 @@ szkicu egzaminu ani zapamiętanych ustawień (patrz tamże).
 
 Token zawiera pole `role` (`STUDENT` albo `ADMIN`). Funkcja `roleFromToken()` dekoduje środkową część tokenu (zwykłe
 base64, bez sprawdzania podpisu) i zwraca rolę, a hook `useIsAdmin()` mówi, czy to `ADMIN`. Służy to **wyłącznie do
-pokazania lub ukrycia przycisków** dla administratora, dziś jedynego: „Ukryj” (`features/admin/HideCardButton.tsx`).
+pokazania lub ukrycia elementów** dla administratora: przycisków „Ukryj pytanie” i „Ukryj fiszkę” (`features/admin/HideQuestionButton.tsx`) oraz karty „Terminy egzaminów” w Koncie (`features/settings/ExamTermsCard.tsx`).
 Prawdziwa kontrola jest w serwerze przy każdym żądaniu, więc podrobienie roli w przeglądarce niczego nie daje.
 
 Zmiana roli w bazie działa dopiero po następnym odświeżeniu sesji (do 30 minut) albo ponownym zalogowaniu, bo rola siedzi w tokenie dostępu.
@@ -194,7 +194,7 @@ nie ma, tekst zastępczy podany przez ekran. Jeśli serwer w ogóle nie odpowied
 ## Pobranie danych i usunięcie konta (RODO)
 
 - **Pobierz moje dane** (`ExportCard`): `GET /api/users/me/export` → plik JSON zapisywany na dysku użytkownika
-  (`saveTextFile`, nazwa `tutlaw-moje-dane-RRRR-MM-DD.json`). Dane nie są nigdzie indziej wysyłane.
+  (`saveTextFile`, nazwa `gradus-iuris-moje-dane-RRRR-MM-DD.json`). Dane nie są nigdzie indziej wysyłane.
 - **Usuń konto** (`DeleteAccountCard`): wymaga hasła i zaznaczenia „Rozumiem, że usunięcia konta i danych nie można
   cofnąć”. `DELETE /api/users/me` z hasłem w treści. Po sukcesie `clearSession()` i przejście na `/?konto=usuniete`,
   gdzie strona główna pokazuje potwierdzenie.

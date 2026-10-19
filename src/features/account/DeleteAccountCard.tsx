@@ -38,8 +38,8 @@ export function DeleteAccountCard() {
       <div>
         <h2 className="text-lg font-semibold text-danger">Usuń konto</h2>
         <p className="mt-1 text-sm text-fg-muted">
-          Usuniemy na stałe Twoje konto i wszystko, co z nim związane: adresy e-mail, postępy w rozdziałach, stan
-          fiszek, terminy powtórek i historię odpowiedzi. Tego nie da się cofnąć. Jeśli chcesz zachować swoje dane,
+          Usuniemy na stałe Twoje konto i wszystko, co z nim związane: adresy e-mail, wybraną ścieżkę i pulę pytań, stan
+          pytań w testach i fiszkach, terminy powtórek i historię odpowiedzi. Tego nie da się cofnąć. Jeśli chcesz zachować swoje dane,
           najpierw pobierz je powyżej. Kopie zapasowe wygasają w ciągu {LEGAL.backupRetention}.
         </p>
       </div>

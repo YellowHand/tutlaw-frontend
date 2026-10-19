@@ -1,7 +1,7 @@
 import { useState } from "react";
 
-/** Wybór „panel zwinięty” zapamiętany w przeglądarce. Klucz ma przedrostek `tutlaw.`, więc wylogowanie go czyści. */
-const COLLAPSED_KEY = "tutlaw.nav.collapsed.v1";
+/** Wybór „panel zwinięty” zapamiętany w przeglądarce. Klucz ma przedrostek `gradus.`, więc wylogowanie go czyści. */
+const COLLAPSED_KEY = "gradus.nav.collapsed.v1";
 
 function readCollapsed(): boolean {
   try {

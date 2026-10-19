@@ -26,6 +26,9 @@ innym porcie, bo 5173 jest zajęty, logowanie przestanie działać z powodu CORS
 
 Kolejność uruchamiania: najpierw baza i backend (patrz jego `docs/05-konfiguracja-i-uruchomienie.md`), potem `npm run dev`.
 
+Na świeżej bazie aplikacja działa, ale **nie ma w niej jeszcze pytań**: akty prawne i pytania wczytuje się skryptami SQL (opis w
+tym samym dokumencie backendu, część „Wczytywanie treści skryptami SQL”). Dopóki ich nie wczytasz, Testy pokażą puste dziedziny.
+
 ## Zmienne środowiskowe
 
 Frontend czyta **jedną** zmienną, `VITE_API_BASE_URL`: adres backendu, do którego idą wszystkie wywołania `/api/...`

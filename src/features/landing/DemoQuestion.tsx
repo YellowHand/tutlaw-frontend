@@ -24,7 +24,7 @@ function Tag({ tone, children }: { tone: "ok" | "yours"; children: string }) {
 }
 
 /**
- * Działające przykładowe pytanie ABC (sekcja "Wypróbuj" pod hero). Pokazuje na żywo, co Tutlaw robi z
+ * Działające przykładowe pytanie ABC (sekcja "Wypróbuj" pod hero). Pokazuje na żywo, co Gradus iuris robi z
  * odpowiedzią pewną i niepewną. Reguły w demo.ts, teksty w copy.ts.
  */
 export function DemoQuestion() {

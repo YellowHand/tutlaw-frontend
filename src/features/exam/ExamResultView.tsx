@@ -8,8 +8,8 @@ import { ROUTES } from "../../config/routes";
 import { cn } from "../../lib/cn";
 import { pluralizePl } from "../../lib/plural";
 import { LegalBasisLine } from "../review/LegalBasisLine";
-import { OriginLabel } from "../review/OriginLabel";
-import { ReportCardButton } from "../report/ReportCardButton";
+import { SourceLabel } from "../review/SourceLabel";
+import { ReportQuestionButton } from "../report/ReportQuestionButton";
 import { START_BUTTON } from "../tests/StartButtons";
 import { formatDateTime, formatDuration, formatPercent, pointsNeeded } from "./format";
 
@@ -108,7 +108,7 @@ export function ExamResultView({ result, onNewExam }: ExamResultViewProps) {
 
         <div className="flex flex-wrap items-center gap-3">
           {mistakes.length > 0 && (
-            <Link to={ROUTES.testPractice(mistakes.map((q) => q.cardId))} className={START_BUTTON}>
+            <Link to={ROUTES.testPractice(mistakes.map((q) => q.questionId))} className={START_BUTTON}>
               <Play size={16} aria-hidden="true" />
               Przerób błędne i pominięte ({mistakes.length})
             </Link>
@@ -183,7 +183,7 @@ export function ExamResultView({ result, onNewExam }: ExamResultViewProps) {
         <ol className="flex flex-col gap-4">
           {questions.map((q, i) =>
             showMistakesOnly && q.correct ? null : (
-              <li key={q.cardId}>
+              <li key={q.questionId}>
                 <ReviewItem number={i + 1} question={q} />
               </li>
             )
@@ -238,8 +238,13 @@ function ReviewItem({ number, question }: { number: number; question: ExamQuesti
         {question.sourceName && <span className="text-xs font-normal text-fg-muted">{question.sourceName}</span>}
       </p>
 
-      <OriginLabel origin={question.origin} examYear={question.examYear} className="mt-2" />
-      <p className="mt-2 text-base font-semibold leading-snug">{question.front}</p>
+      <SourceLabel
+        actName={question.actName}
+        sourceName={question.sourceName}
+        examYear={question.examYear}
+        className="mt-2"
+      />
+      <p className="mt-2 text-base font-semibold leading-snug">{question.body}</p>
 
       <ul className="mt-3 flex flex-col gap-2">
         {OPTION_KEYS.map((key) => {
@@ -291,7 +296,7 @@ function ReviewItem({ number, question }: { number: number; question: ExamQuesti
         className={cn("text-sm text-fg-muted", explanation !== "" ? "mt-2" : "mt-3")}
       />
       <div className="mt-1">
-        <ReportCardButton cardId={question.cardId} />
+        <ReportQuestionButton questionId={question.questionId} />
       </div>
     </article>
   );

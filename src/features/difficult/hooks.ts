@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { getDifficultCards } from "../../api/difficult";
+import { getDifficultQuestions } from "../../api/difficult";
 
-export const DIFFICULT_CARDS_KEY = ["difficult-cards"] as const;
+export const DIFFICULT_QUESTIONS_KEY = ["difficult-questions"] as const;
 
-export function useDifficultCards() {
-  return useQuery({ queryKey: DIFFICULT_CARDS_KEY, queryFn: getDifficultCards, staleTime: 30_000 });
+export function useDifficultQuestions() {
+  return useQuery({ queryKey: DIFFICULT_QUESTIONS_KEY, queryFn: getDifficultQuestions, staleTime: 30_000 });
 }

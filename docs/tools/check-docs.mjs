@@ -378,8 +378,8 @@ check("pamięć przeglądarki (localStorage ↔ 03-logowanie-i-sesja.md)", () =>
       errors.push(`${rel(file)}: użycie sessionStorage, indexedDB albo ciasteczek; dokumentacja 03 mówi, że ich nie ma.`);
     }
   }
-  // klucze z przedrostkiem tutlaw. zapisywane przez stałą APP_KEY_PREFIX nie są kluczami samymi w sobie
-  keys.delete("tutlaw.");
+  // klucze z przedrostkiem gradus. zapisywane przez stałą APP_KEY_PREFIX nie są kluczami samymi w sobie
+  keys.delete("gradus.");
   const docKeys = new Set();
   for (const row of tableRows(doc("03-logowanie-i-sesja.md"))) {
     if (row.cells[0] === "`localStorage`") {

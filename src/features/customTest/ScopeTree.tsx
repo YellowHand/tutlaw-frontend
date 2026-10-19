@@ -3,17 +3,17 @@ import { ChevronDown } from "lucide-react";
 import { cn } from "../../lib/cn";
 import { formatCount } from "../tests/format";
 import {
-  categoryState,
+  fieldState,
   isEverythingSelected,
-  toggleCategory,
-  toggleSubject,
+  toggleField,
+  toggleAct,
   type CheckState,
-  type TreeCategory,
+  type TreeField,
 } from "./selection";
 
 const ROW = "flex min-h-11 flex-1 cursor-pointer items-center gap-3 rounded-xl px-2 py-1 transition-colors hover:bg-surface-2";
 
-/** Pole wyboru z trzecim stanem „część zaznaczona" (rodzaj, w którym zaznaczono tylko niektóre akty prawne). */
+/** Pole wyboru z trzecim stanem „część zaznaczona" (dziedzina, w której zaznaczono tylko niektóre akty prawne). */
 function TriCheckbox({ state, onChange }: { state: CheckState; onChange: () => void }) {
   const ref = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -40,7 +40,7 @@ function QuestionCount({ value }: { value: number }) {
 }
 
 interface ScopeTreeProps {
-  tree: readonly TreeCategory[];
+  tree: readonly TreeField[];
   selected: ReadonlySet<number>;
   onChange: (next: Set<number>) => void;
   onSelectAll: () => void;
@@ -48,18 +48,18 @@ interface ScopeTreeProps {
 }
 
 /**
- * Wybór działów do własnego testu: rodzaje (z polem wyboru i rozwijaniem) z aktami prawnymi w środku.
- * Rodzaj zaznaczony w całości = wszystkie jego akty; po rozwinięciu można zostawić tylko niektóre.
+ * Wybór zakresu własnego testu: dziedziny (z polem wyboru i rozwijaniem) z aktami prawnymi w środku.
+ * Dziedzina zaznaczona w całości = wszystkie jej akty; po rozwinięciu można zostawić tylko niektóre.
  */
 export function ScopeTree({ tree, selected, onChange, onSelectAll, onClear }: ScopeTreeProps) {
-  // Na początku rozwinięty jest rodzaj, w którym zaznaczono tylko część (żeby było widać, co dokładnie wybrano),
-  // a gdy rodzaj jest jeden, to on.
+  // Na początku rozwinięta jest dziedzina, w której zaznaczono tylko część (żeby było widać, co dokładnie wybrano),
+  // a gdy dziedzina jest jedna, to ona.
   const [open, setOpen] = useState<Set<number>>(
     () =>
       new Set(
         tree
-          .filter((category) => tree.length === 1 || categoryState(category, selected) === "partial")
-          .map((category) => category.id)
+          .filter((field) => tree.length === 1 || fieldState(field, selected) === "partial")
+          .map((field) => field.id)
       )
   );
   const listId = useId();
@@ -90,24 +90,24 @@ export function ScopeTree({ tree, selected, onChange, onSelectAll, onClear }: Sc
       </div>
 
       <ul aria-labelledby={`${listId}-title`} className="flex flex-col gap-1 rounded-2xl border border-line bg-surface p-2">
-        {tree.map((category) => {
-          const state = categoryState(category, selected);
-          const isOpen = open.has(category.id);
-          const panelId = `${listId}-c${category.id}`;
+        {tree.map((field) => {
+          const state = fieldState(field, selected);
+          const isOpen = open.has(field.id);
+          const panelId = `${listId}-c${field.id}`;
           return (
-            <li key={category.id}>
+            <li key={field.id}>
               <div className="flex items-center gap-1">
                 <label className={ROW}>
-                  <TriCheckbox state={state} onChange={() => onChange(toggleCategory(category, selected))} />
-                  <span className="min-w-0 flex-1 font-medium">{category.name}</span>
-                  <QuestionCount value={category.questionCount} />
+                  <TriCheckbox state={state} onChange={() => onChange(toggleField(field, selected))} />
+                  <span className="min-w-0 flex-1 font-medium">{field.name}</span>
+                  <QuestionCount value={field.questionCount} />
                 </label>
                 <button
                   type="button"
-                  onClick={() => toggleOpen(category.id)}
+                  onClick={() => toggleOpen(field.id)}
                   aria-expanded={isOpen}
                   aria-controls={panelId}
-                  aria-label={`${isOpen ? "Zwiń" : "Rozwiń"}: ${category.name}`}
+                  aria-label={`${isOpen ? "Zwiń" : "Rozwiń"}: ${field.name}`}
                   className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg"
                 >
                   <ChevronDown size={18} aria-hidden="true" className={cn("transition-transform", isOpen && "rotate-180")} />
@@ -116,17 +116,17 @@ export function ScopeTree({ tree, selected, onChange, onSelectAll, onClear }: Sc
 
               {isOpen && (
                 <ul id={panelId} className="mb-1 ml-5 flex flex-col border-l border-line pl-2">
-                  {category.subjects.map((subject) => (
-                    <li key={subject.id}>
+                  {field.acts.map((act) => (
+                    <li key={act.id}>
                       <label className={ROW}>
                         <input
                           type="checkbox"
-                          checked={selected.has(subject.id)}
-                          onChange={() => onChange(toggleSubject(subject.id, selected))}
+                          checked={selected.has(act.id)}
+                          onChange={() => onChange(toggleAct(act.id, selected))}
                           className="size-5 shrink-0 cursor-pointer accent-accent-ink"
                         />
-                        <span className="min-w-0 flex-1 text-sm">{subject.name}</span>
-                        <QuestionCount value={subject.questionCount} />
+                        <span className="min-w-0 flex-1 text-sm">{act.name}</span>
+                        <QuestionCount value={act.questionCount} />
                       </label>
                     </li>
                   ))}

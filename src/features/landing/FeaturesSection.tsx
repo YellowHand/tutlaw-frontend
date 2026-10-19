@@ -1,8 +1,7 @@
 import { Check } from "lucide-react";
-import { OriginToga } from "../../components/icons/TogaIcon";
 import { cn } from "../../lib/cn";
 import { COPY } from "./copy";
-import { OriginChips } from "./OriginChips";
+import { TrackChips } from "./TrackChips";
 import { Section, Wrap } from "./ui";
 
 const CARD = "flex min-w-0 flex-col gap-3 rounded-[18px] border p-[clamp(20px,3cqw,32px)]";
@@ -30,7 +29,7 @@ export function FeaturesSection() {
             <h3 className={CARD_TITLE}>{f.tests.title}</h3>
             <p className={CARD_TEXT}>{f.tests.text}</p>
             <p className="mt-1 text-sm font-bold text-fg-muted">{f.tests.chipsLead}</p>
-            <OriginChips />
+            <TrackChips />
           </article>
 
           <article className={cn(CARD, CARD_PAPER, "@min-[1000px]:col-span-2")}>
@@ -77,10 +76,7 @@ export function FeaturesSection() {
                   {f.stats.sample.map((row) => (
                     <li key={row.label} className="grid gap-1.5">
                       <div className="flex justify-between gap-3 text-sm leading-snug font-semibold">
-                        <span className="inline-flex min-w-0 items-center gap-2">
-                          <OriginToga origin={row.origin} size={22} className="flex-none" />
-                          {row.label}
-                        </span>
+                        <span className="min-w-0">{row.label}</span>
                         <span className="flex-none font-extrabold">{row.value}%</span>
                       </div>
                       <div aria-hidden="true" className="h-2 overflow-hidden rounded-full bg-[#38383e]">

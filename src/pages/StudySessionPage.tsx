@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
-import { useParams, useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowRight, BookOpen, CheckCircle2, ChevronLeft, ChevronRight } from "lucide-react";
-import { getReviewQueue, submitReview, getAvailableNewCardsCount, type ReviewQueueItem } from "../api/review";
+import { useNavigate } from "react-router-dom";
+import { ArrowRight, CheckCircle2, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  getFlashcardQueue,
+  submitReview,
+  getAvailableNewQuestionsCount,
+  type FlashcardQueueItem,
+} from "../api/review";
 import { Skeleton } from "../components/ui/Skeleton";
 import { cn } from "../lib/cn";
 import { ROUTES } from "../config/routes";
@@ -15,14 +20,14 @@ import { LegalBasisLine } from "../features/review/LegalBasisLine";
 import { BacklogFinishNotice, BacklogNotice } from "../features/review/BacklogNotice";
 import { KeyboardHint } from "../features/review/KeyboardHint";
 import { EXTRA_DUE_BATCH, useBacklog } from "../features/review/useBacklog";
-import { ReportCardButton } from "../features/report/ReportCardButton";
-import { OriginLabel } from "../features/review/OriginLabel";
-import { originLabel } from "../lib/origin";
-import { HideCardButton } from "../features/admin/HideCardButton";
+import { ReportQuestionButton } from "../features/report/ReportQuestionButton";
+import { SourceLabel } from "../features/review/SourceLabel";
+import { HideQuestionButton } from "../features/admin/HideQuestionButton";
 import { LeechHint } from "../features/difficult/LeechHint";
-import { SuspendCardButton } from "../features/difficult/SuspendCardButton";
+import { SuspendQuestionButton } from "../features/difficult/SuspendQuestionButton";
 import { SessionLoadError } from "../features/review/SessionLoadError";
 import { loadErrorMessage } from "../lib/errors";
+import { useScopeParams } from "../features/review/useScopeParams";
 
 const MAX_EXTRA_BATCH = 10;
 
@@ -66,7 +71,7 @@ const RATING_BUTTONS = [
 ];
 
 /** Jedna już ocenioną fiszka – trzymana tylko w pamięci strony, do podglądu. */
-type HistoryEntry = { card: ReviewQueueItem; rating: number };
+type HistoryEntry = { card: FlashcardQueueItem; rating: number };
 
 const CARD_HEIGHT = "h-[clamp(19rem,50vh,30rem)]";
 // Ta sama kolumna i to samo zakotwiczenie co w TestSessionPage – przełączanie Testy ↔ Fiszki nic nie przeskakuje.
@@ -94,15 +99,12 @@ function fiszkiForm(n: number) {
 }
 
 export function StudySessionPage() {
-  const { subjectId } = useParams();
-  const [searchParams] = useSearchParams();
-  const sourceId = searchParams.get("sourceId");
   const navigate = useNavigate();
   useRefreshReviewDataOnExit();
   const countAnswer = useCountAnswer("flashcard");
   const timerSetting = useQuestionTimerSetting();
 
-  const [queue, setQueue] = useState<ReviewQueueItem[]>([]);
+  const [queue, setQueue] = useState<FlashcardQueueItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -120,11 +122,11 @@ export function StudySessionPage() {
   const [suspendedIds, setSuspendedIds] = useState<ReadonlySet<number>>(() => new Set());
   // Karty ukryte przez administratora w tej sesji.
   const [hiddenIds, setHiddenIds] = useState<ReadonlySet<number>>(() => new Set());
-  const handleHidden = useCallback((cardId: number) => {
-    setHiddenIds((prev) => new Set(prev).add(cardId));
+  const handleHidden = useCallback((questionId: number) => {
+    setHiddenIds((prev) => new Set(prev).add(questionId));
   }, []);
-  const handleSuspended = useCallback((cardId: number) => {
-    setSuspendedIds((prev) => new Set(prev).add(cardId));
+  const handleSuspended = useCallback((questionId: number) => {
+    setSuspendedIds((prev) => new Set(prev).add(questionId));
   }, []);
   // Po „Ucz się jeszcze" / „Powtórz jeszcze" sesja jest dodatkową porcją: informacja o zaległościach z początku nie dotyczy.
   const [isExtraBatch, setIsExtraBatch] = useState(false);
@@ -134,32 +136,33 @@ export function StudySessionPage() {
   // Numer ostatniego zapytania o kolejkę: spóźniona odpowiedź na starsze zapytanie jest ignorowana.
   const requestRef = useRef(0);
 
-  const numericSubjectId = subjectId ? Number(subjectId) : undefined;
-  const numericSourceId = sourceId ? Number(sourceId) : undefined;
+  // Zakres sesji z adresu; wszystkie pola puste = cała pula użytkownika. Obiekt zmienia się tylko razem z adresem.
+  const scope = useScopeParams();
+  const { fieldId, actId, sourceId } = scope;
   const finished = !loading && !loadError && currentIndex >= queue.length;
-  const backlog = useBacklog({ mode: "FLASHCARD", subjectId: numericSubjectId, sourceId: numericSourceId });
+  const backlog = useBacklog({ mode: "FLASHCARD", ...scope });
   const refetchBacklog = backlog.refetch;
 
   // Dwa stopery tej samej karty, oba tylko przy widocznej karcie przeglądarki i nie w podglądzie poprzednich fiszek:
   // widoczny licznik staje po odkryciu odpowiedzi (to jest czas przypominania sobie), a czas wysyłany na serwer
   // liczy się do oceny, razem z czytaniem odpowiedzi, tak jak dotychczas.
-  const currentCardId = queue[currentIndex]?.cardId ?? null;
-  const cardKey = currentCardId === null ? null : `${currentCardId}:${currentIndex}`;
+  const currentQuestionId = queue[currentIndex]?.questionId ?? null;
+  const cardKey = currentQuestionId === null ? null : `${currentQuestionId}:${currentIndex}`;
   const live = !loading && !loadError && !finished && viewIndex === null;
   const recallClock = useQuestionClock({ questionKey: cardKey, batch: queue, running: live && !showAnswer });
   const ratingClock = useQuestionClock({ questionKey: cardKey, batch: queue, running: live, display: false });
   const readRatingClock = ratingClock.read;
 
   useEffect(() => {
-    // Bez subjectId (trasa /app/study) kolejka obejmuje cały materiał użytkownika.
-    const key = `${subjectId ?? "all"}:${sourceId ?? ""}:${reloadCount}`;
+    // Bez zakresu w adresie (trasa /app/study) kolejka obejmuje całą pulę użytkownika.
+    const key = `${fieldId ?? ""}:${actId ?? ""}:${sourceId ?? ""}:${reloadCount}`;
     if (fetchedKeyRef.current === key) return;
     fetchedKeyRef.current = key;
 
     const requestId = ++requestRef.current;
     setLoading(true);
     setLoadError(null);
-    getReviewQueue(numericSubjectId, numericSourceId)
+    getFlashcardQueue(scope)
       .then((items) => {
         if (requestRef.current !== requestId) return;
         setQueue(items);
@@ -178,15 +181,15 @@ export function StudySessionPage() {
         setLoadError(loadErrorMessage(e, "fiszek"));
         setLoading(false);
       });
-  }, [subjectId, sourceId, reloadCount, numericSubjectId, numericSourceId]);
+  }, [fieldId, actId, sourceId, scope, reloadCount]);
 
   useEffect(() => {
     if (loading || loadError || currentIndex < queue.length) return;
     // Gdy nie uda się sprawdzić, ile jest nowych fiszek, po prostu nie pokazujemy przycisku „Ucz się jeszcze".
-    getAvailableNewCardsCount(numericSubjectId, numericSourceId)
+    getAvailableNewQuestionsCount(scope, "FLASHCARD")
       .then(setAvailableExtra)
       .catch(() => setAvailableExtra(0));
-  }, [loading, loadError, currentIndex, queue.length, numericSubjectId, numericSourceId]);
+  }, [loading, loadError, currentIndex, queue.length, scope]);
 
   // Na końcu sesji (i po każdej nowej kolejce) pytamy o zaległości jeszcze raz: ile zostało na kolejne dni.
   useEffect(() => {
@@ -204,13 +207,13 @@ export function StudySessionPage() {
       setRateError(false);
       try {
         const timeSpentSeconds = readRatingClock();
-        const result = await submitReview(currentCard.cardId, rating, timeSpentSeconds);
+        const result = await submitReview(currentCard.questionId, rating, timeSpentSeconds);
         countAnswer();
-        if (result.newCard) setNewCardCount((prev) => prev + 1);
+        if (result.firstReview) setNewCardCount((prev) => prev + 1);
 
         setHistory((prev) => [...prev, { card: currentCard, rating }]);
         // „Nie pamiętam": karta wraca na koniec tej samej sesji, zamiast czekać do następnego dnia.
-        if (rating === 1 && !suspendedIds.has(currentCard.cardId)) setQueue((prev) => [...prev, currentCard]);
+        if (rating === 1 && !suspendedIds.has(currentCard.questionId)) setQueue((prev) => [...prev, currentCard]);
         setShowAnswer(false);
         setCurrentIndex((prev) => prev + 1);
       } catch {
@@ -309,7 +312,7 @@ export function StudySessionPage() {
   }, [loading, finished, viewIndex, showAnswer, handleFlip, handleRate, goBack, goForward]);
 
   /** Wczytuje dodatkową porcję fiszek (nowe albo zaległe ponad limit) i zaczyna z nią nową sesję. */
-  async function startExtraBatch(load: () => Promise<ReviewQueueItem[]>) {
+  async function startExtraBatch(load: () => Promise<FlashcardQueueItem[]>) {
     setLoading(true);
     setExtraError(false);
     try {
@@ -333,12 +336,12 @@ export function StudySessionPage() {
   function handleStudyMore() {
     if (!availableExtra) return;
     const batchSize = Math.min(MAX_EXTRA_BATCH, availableExtra);
-    void startExtraBatch(() => getReviewQueue(numericSubjectId, numericSourceId, batchSize));
+    void startExtraBatch(() => getFlashcardQueue(scope, batchSize));
   }
 
   /** „Powtórz jeszcze": kolejna porcja zaległych ponad dzienny limit (bez nowych fiszek). */
   function handleExtraDue(batch: number) {
-    void startExtraBatch(() => getReviewQueue(numericSubjectId, numericSourceId, 0, undefined, batch));
+    void startExtraBatch(() => getFlashcardQueue(scope, 0, batch));
   }
 
   const viewEntry = viewIndex !== null ? (history[viewIndex] ?? null) : null;
@@ -427,13 +430,11 @@ export function StudySessionPage() {
   const flipped = viewing ? true : showAnswer;
   const shownIndex = viewIndex ?? currentIndex;
   // Ta sama karta była już w tej sesji wcześniej (ocenione „Nie pamiętam"), więc to jej powtórka.
-  const isRepeat = !viewing && queue.findIndex((c) => c.cardId === shownCard.cardId) < currentIndex;
+  const isRepeat = !viewing && queue.findIndex((c) => c.questionId === shownCard.questionId) < currentIndex;
   const canGoBack = !submitting && (viewing ? (viewIndex ?? 0) > 0 : history.length > 0);
   const ratingMeta = viewEntry ? RATING_BUTTONS.find((b) => b.value === viewEntry.rating) : undefined;
   const progress = (currentIndex / queue.length) * 100;
-  const sourceLabel = [shownCard.sourceName, shownCard.pageNumber ? `s. ${shownCard.pageNumber}` : null]
-    .filter(Boolean)
-    .join(", ");
+  const hasSourceInfo = Boolean(shownCard.actName?.trim() || shownCard.sourceName);
 
   return (
     <div className={PAGE_SHELL}>
@@ -496,12 +497,12 @@ export function StudySessionPage() {
       </div>
 
       {/*
-        key = cardId + pozycja → każda karta to świeży element (także jej powtórka w tej samej sesji): nowa fiszka pojawia się od razu "od przodu"
+        key = questionId + pozycja → każda karta to świeży element (także jej powtórka w tej samej sesji): nowa fiszka pojawia się od razu "od przodu"
         i NIE odwraca się z powrotem (inaczej przez chwilę byłoby widać odpowiedź następnej karty).
         W podglądzie karta od razu jest odwrócona, na odpowiedzi.
       */}
       <div
-        key={`${shownCard.cardId}:${shownIndex}`}
+        key={`${shownCard.questionId}:${shownIndex}`}
         className={cn(
           "relative w-full transition-opacity duration-200 starting:opacity-0 motion-reduce:transition-none",
           CARD_HEIGHT
@@ -528,7 +529,12 @@ export function StudySessionPage() {
               !flipped && "hover:bg-surface-2"
             )}
           >
-            <OriginLabel origin={shownCard.origin} examYear={shownCard.examYear} className="mb-2 shrink-0 justify-center" />
+            <SourceLabel
+              actName={shownCard.actName}
+              sourceName={shownCard.sourceName}
+              examYear={shownCard.examYear}
+              className="mb-2 shrink-0 justify-center"
+            />
             <div className="flex flex-1 flex-col overflow-y-auto">
               <p className="my-auto text-pretty text-center text-xl font-semibold leading-snug text-fg sm:text-2xl">
                 {shownCard.front}
@@ -546,9 +552,9 @@ export function StudySessionPage() {
               <p className="line-clamp-3 min-w-0 flex-1 text-sm text-fg-muted">{shownCard.front}</p>
               {/* „Zgłoś błąd" w prawym górnym rogu odwróconej karty; przycisk (44 px) wystaje w górę, żeby nie powiększać nagłówka. */}
               {flipped && (
-                <ReportCardButton
-                  key={`report:${shownCard.cardId}:${shownIndex}`}
-                  cardId={shownCard.cardId}
+                <ReportQuestionButton
+                  key={`report:${shownCard.questionId}:${shownIndex}`}
+                  questionId={shownCard.questionId}
                   variant="corner"
                   className="-mr-2 -mt-3 shrink-0"
                 />
@@ -556,26 +562,19 @@ export function StudySessionPage() {
             </div>
 
             <div className="flex flex-1 flex-col overflow-y-auto">
-              <div className="my-auto">
-                {shownCard.verbatimQuote ? (
-                  <blockquote className="border-l-2 border-accent-ink/60 pl-4 text-lg italic leading-relaxed text-fg sm:text-xl">
-                    „{shownCard.back}”
-                  </blockquote>
-                ) : (
-                  <p className="text-lg leading-relaxed text-fg sm:text-xl">{shownCard.back}</p>
+              <div className="my-auto flex flex-col gap-3">
+                <p className="text-lg leading-relaxed text-fg sm:text-xl">{shownCard.back}</p>
+                {shownCard.explanation?.trim() && (
+                  <p data-testid="flashcard-explanation" className="text-sm leading-relaxed text-fg-muted sm:text-base">
+                    {shownCard.explanation}
+                  </p>
                 )}
               </div>
             </div>
 
-            {(sourceLabel || shownCard.legalBasis || shownCard.validAsOf || shownCard.leech || originLabel(shownCard.origin, shownCard.examYear)) && (
+            {(hasSourceInfo || shownCard.legalBasis || shownCard.validAsOf || shownCard.leech) && (
               <div className="flex shrink-0 flex-col gap-1 border-t border-line pt-3 text-xs text-fg-muted">
-                <OriginLabel origin={shownCard.origin} examYear={shownCard.examYear} />
-                {sourceLabel && (
-                  <p className="flex items-center gap-2">
-                    <BookOpen size={14} aria-hidden="true" />
-                    <span>{sourceLabel}</span>
-                  </p>
-                )}
+                <SourceLabel actName={shownCard.actName} sourceName={shownCard.sourceName} examYear={shownCard.examYear} />
                 <LegalBasisLine legalBasis={shownCard.legalBasis} validAsOf={shownCard.validAsOf} />
                 {shownCard.leech && (
                   <LeechHint kind="flashcard" lapses={shownCard.lapses} className="mt-1 text-xs text-fg-muted" />
@@ -650,17 +649,19 @@ export function StudySessionPage() {
 
       {(viewing || showAnswer) && (
         <div className="flex flex-wrap items-center gap-x-4 self-start">
-          <HideCardButton
-            key={`hide:${shownCard.cardId}:${shownIndex}`}
-            cardId={shownCard.cardId}
-            alreadyHidden={hiddenIds.has(shownCard.cardId)}
+          <HideQuestionButton
+            key={`hide:${shownCard.questionId}:${shownIndex}`}
+            questionId={shownCard.questionId}
+            scope="flashcard"
+            alreadyHidden={hiddenIds.has(shownCard.questionId)}
             onHidden={handleHidden}
           />
           {shownCard.leech && (
-            <SuspendCardButton
-              key={`suspend:${shownCard.cardId}:${shownIndex}`}
-              cardId={shownCard.cardId}
-              alreadySuspended={suspendedIds.has(shownCard.cardId)}
+            <SuspendQuestionButton
+              key={`suspend:${shownCard.questionId}:${shownIndex}`}
+              questionId={shownCard.questionId}
+              mode="FLASHCARD"
+              alreadySuspended={suspendedIds.has(shownCard.questionId)}
               onSuspended={handleSuspended}
             />
           )}

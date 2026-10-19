@@ -11,7 +11,7 @@ const TILE =
 const ICON = "shrink-0 text-fg-muted";
 
 /**
- * „Szybki start": ciche przyciski w jednym rzędzie zamiast dużych kart: „Cały materiał", „Własny test", „Moje błędy"
+ * „Szybki start": ciche przyciski w jednym rzędzie zamiast dużych kart: „Cała pula", „Własny test", „Moje błędy"
  * i „Egzamin próbny". „Moje błędy" jest tylko wtedy, gdy są błędy do powtórki; gdy nie uda się pobrać liczby,
  * po prostu go nie ma (to dodatek, nie powód do komunikatu).
  * Opisy, np. że egzamin nie zmienia powtórek, są na ekranach, które się po kliknięciu otwierają.
@@ -38,7 +38,7 @@ export function QuickStart() {
       <div className={cn("grid gap-2 sm:flex sm:flex-wrap sm:gap-3", columns)}>
         <Link to={ROUTES.testAll} className={TILE}>
           <ClipboardList size={18} aria-hidden="true" className={ICON} />
-          Cały materiał
+          Cała pula
         </Link>
 
         <Link to={ROUTES.customTest} className={TILE}>

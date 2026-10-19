@@ -1,4 +1,5 @@
-import type { QuestionOrigin } from "../../lib/origin";
+import type { SessionMode } from "../../api/review";
+import type { SourceGroup, SourceKind } from "../../lib/source";
 
 export interface DailyCount {
   date: string; // YYYY-MM-DD
@@ -6,9 +7,10 @@ export interface DailyCount {
 }
 
 export interface OverviewResponse {
-  totalCards: number;
-  cardsStarted: number;
-  matureCards: number;
+  /** Ile pytań (w trybie fiszek: odblokowanych fiszek) można teraz ćwiczyć. */
+  totalQuestions: number;
+  questionsStarted: number;
+  matureQuestions: number;
   /** Procent udanych powtórek z 30 dni; null = jeszcze brak powtórek, z których dałoby się to policzyć. */
   retentionRate: number | null;
   upcomingReviews: DailyCount[];
@@ -19,17 +21,23 @@ export interface ActivityItem {
   reviewCount: number;
 }
 
-export interface ChapterMastery {
-  chapterId: number;
-  chapterTitle: string;
-  totalCards: number;
-  matureCards: number;
+/** Opanowanie jednego aktu prawnego z puli użytkownika. */
+export interface ActMastery {
+  actId: number;
+  name: string;
+  shortName: string;
+  fieldId: number;
+  fieldName: string;
+  totalQuestions: number;
+  questionsStarted: number;
+  matureQuestions: number;
   masteryPercentage: number;
 }
 
-export interface WeakCard {
-  cardId: number;
-  front: string;
+export interface WeakQuestion {
+  questionId: number;
+  body: string;
+  mode: SessionMode;
   lapses: number;
   currentRetrievability: number;
   lastReviewAt: string;
@@ -50,8 +58,8 @@ export interface TestStats {
   activity: ActivityItem[];
 }
 
-/** Liczby dla jednego pochodzenia albo jednego roku egzaminu. Dotyczą pytań dostępnych teraz dla użytkownika. */
-export interface OriginMetrics {
+/** Liczby dla jednej grupy źródeł albo jednego arkusza. Dotyczą pytań dostępnych teraz dla użytkownika. */
+export interface SourceMetrics {
   totalQuestions: number;
   /** Ile pytań rozwiązano co najmniej raz. */
   solvedQuestions: number;
@@ -70,22 +78,26 @@ export interface OriginMetrics {
   confidentMistakesLast30Days: number;
 }
 
-export interface OriginStatsYear {
-  year: number;
-  stats: OriginMetrics;
+export interface SourceEntry {
+  id: number;
+  name: string;
+  kind: SourceKind;
+  /** Rok egzaminu; pytania autorskie go nie mają. */
+  examYear: number | null;
+  stats: SourceMetrics;
 }
 
-export interface OriginStatsEntry {
-  origin: QuestionOrigin;
-  /** Suma ze wszystkich lat. */
-  stats: OriginMetrics;
-  /** Rozbicie na lata egzaminu, od najnowszego; puste dla pytań autorskich. */
-  years: OriginStatsYear[];
+export interface SourceGroupEntry {
+  group: SourceGroup;
+  /** Suma ze wszystkich źródeł grupy. */
+  stats: SourceMetrics;
+  /** Źródła grupy (arkusze od najnowszego roku); źródła bez pytań są pomijane. */
+  sources: SourceEntry[];
 }
 
-/** Statystyki Testów według pochodzenia: zawsze wszystkie pochodzenia, bez filtra z Testów. */
-export interface OriginStats {
-  origins: OriginStatsEntry[];
+/** Statystyki Testów według źródła: zawsze trzy grupy, bez filtra źródeł z Testów i bez zawężenia do aktów. */
+export interface SourceStats {
+  groups: SourceGroupEntry[];
 }
 
 /** „Podsumowanie nauki": luźne liczby o całej dotychczasowej nauce. Czasy w sekundach. */

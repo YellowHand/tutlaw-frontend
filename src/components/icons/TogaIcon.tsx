@@ -1,6 +1,5 @@
 import type { SVGProps } from "react";
-import type { QuestionOrigin } from "../../lib/origin";
-import { ORIGIN_TOGA_TRIM, type TogaTrim } from "./togaTrim";
+import { togaTrimForTrack, type TogaTrim } from "./togaTrim";
 
 type TogaIconProps = Omit<SVGProps<SVGSVGElement>, "children" | "fill" | "stroke" | "viewBox"> & {
   /** Kolor(y) żabotu. Bez tego żabot ma kolor obrysu (neutralna toga). */
@@ -54,7 +53,7 @@ export function TogaIcon({ trim, size = 20, strokeWidth = 2, title, ...rest }: T
   );
 }
 
-/** Toga w kolorach zawodów dla danego pochodzenia pytania (adwokacka+radcowska: zielony i niebieski itd.). */
-export function OriginToga({ origin, ...props }: Omit<TogaIconProps, "trim"> & { origin: QuestionOrigin }) {
-  return <TogaIcon trim={ORIGIN_TOGA_TRIM[origin]} {...props} />;
+/** Toga w kolorach zawodów dla ścieżki (adwokacka+radcowska: zielony i niebieski itd.). Student: toga neutralna. */
+export function TrackToga({ slug, ...props }: Omit<TogaIconProps, "trim"> & { slug: string | null | undefined }) {
+  return <TogaIcon trim={togaTrimForTrack(slug)} {...props} />;
 }

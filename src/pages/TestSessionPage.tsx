@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { useParams, useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { ArrowRight, CheckCircle2, ChevronLeft, ChevronRight, XCircle } from "lucide-react";
-import { getPracticeQueue } from "../api/exam";
 import {
   getMistakesQueue,
+  getPracticeQueue,
   getTestQueue,
   submitTestAnswer,
-  getAvailableNewCardsCount,
+  getAvailableNewQuestionsCount,
   type FlashcardStatus,
   type TestQueueItem,
   type TestAnswerResult,
@@ -25,14 +25,15 @@ import { LegalBasisLine } from "../features/review/LegalBasisLine";
 import { BacklogFinishNotice, BacklogNotice } from "../features/review/BacklogNotice";
 import { KeyboardHint } from "../features/review/KeyboardHint";
 import { EXTRA_DUE_BATCH, useBacklog } from "../features/review/useBacklog";
-import { ReportCardButton } from "../features/report/ReportCardButton";
-import { OriginLabel } from "../features/review/OriginLabel";
-import { HideCardButton } from "../features/admin/HideCardButton";
+import { ReportQuestionButton } from "../features/report/ReportQuestionButton";
+import { SourceLabel } from "../features/review/SourceLabel";
+import { HideQuestionButton } from "../features/admin/HideQuestionButton";
 import { FlashcardStatusNote, QuestionFlashcardActions } from "../features/flashcards/QuestionFlashcardActions";
 import { LeechHint } from "../features/difficult/LeechHint";
-import { SuspendCardButton } from "../features/difficult/SuspendCardButton";
+import { SuspendQuestionButton } from "../features/difficult/SuspendQuestionButton";
 import { SessionLoadError } from "../features/review/SessionLoadError";
 import { loadErrorMessage } from "../lib/errors";
+import { useScopeParams } from "../features/review/useScopeParams";
 import {
   OPTION_KEYS,
   displayKeyOf,
@@ -139,13 +140,13 @@ interface QuestionBodyProps {
   showGuessHint?: boolean;
   /** Pytania zawieszone w tej sesji (do stanu przycisku „Zawieś pytanie" także w podglądzie). */
   suspendedIds?: ReadonlySet<number>;
-  onSuspended?: (cardId: number) => void;
+  onSuspended?: (questionId: number) => void;
   /** Zmiany stanu fiszki w tej sesji (po „Dodaj do fiszek" / „Usuń z fiszek"); bez wpisu obowiązuje stan z odpowiedzi. */
   flashcardOverrides?: Readonly<Record<number, FlashcardStatus>>;
-  onFlashcardStatus?: (cardId: number, status: FlashcardStatus) => void;
+  onFlashcardStatus?: (questionId: number, status: FlashcardStatus) => void;
   /** Pytania ukryte przez administratora w tej sesji. */
   hiddenIds?: ReadonlySet<number>;
-  onHidden?: (cardId: number) => void;
+  onHidden?: (questionId: number) => void;
   footer?: ReactNode;
 }
 
@@ -174,15 +175,20 @@ function QuestionBody({
   // Stan fiszki: ostatnia zmiana z tej sesji, a gdy jej nie było, stan z odpowiedzi serwera.
   // Starszy backend (sprzed Etapu 17) nie zwraca `flashcard`, tylko `flashcardUnlocked`: wtedy też pokażemy komunikat.
   const flashcardStatus: FlashcardStatus | null = result
-    ? (flashcardOverrides?.[question.cardId] ?? result.flashcard ?? (result.flashcardUnlocked ? "ADDED_BY_MISTAKE" : "UNAVAILABLE"))
+    ? (flashcardOverrides?.[question.questionId] ?? result.flashcard ?? (result.flashcardUnlocked ? "ADDED_BY_MISTAKE" : "UNAVAILABLE"))
     : null;
 
   return (
     <div className="flex flex-col gap-4 transition-opacity duration-200 starting:opacity-0 motion-reduce:transition-none">
       {/* Pytanie */}
       <div className="rounded-2xl border border-line bg-surface p-6 sm:p-8">
-        <OriginLabel origin={question.origin} examYear={question.examYear} className="mb-3" />
-        <p className="text-pretty text-lg font-semibold leading-snug text-fg sm:text-xl">{question.front}</p>
+        <SourceLabel
+          actName={question.actName}
+          sourceName={question.sourceName}
+          examYear={question.examYear}
+          className="mb-3"
+        />
+        <p className="text-pretty text-lg font-semibold leading-snug text-fg sm:text-xl">{question.body}</p>
       </div>
 
       {/* Odpowiedzi */}
@@ -275,9 +281,9 @@ function QuestionBody({
       */}
       {result && (
         <div className="relative">
-          <ReportCardButton
-            key={question.cardId}
-            cardId={question.cardId}
+          <ReportQuestionButton
+            key={question.questionId}
+            questionId={question.questionId}
             variant="corner"
             className="absolute right-2 top-1 z-10 transition-opacity duration-200 starting:opacity-0 sm:right-3 sm:top-2"
           />
@@ -311,23 +317,25 @@ function QuestionBody({
         <div className="flex flex-wrap items-center gap-x-4 self-start">
           {flashcardStatus && onFlashcardStatus && (
             <QuestionFlashcardActions
-              key={`flashcard:${question.cardId}`}
-              questionId={question.cardId}
+              key={`flashcard:${question.questionId}`}
+              questionId={question.questionId}
               status={flashcardStatus}
               onStatusChange={onFlashcardStatus}
             />
           )}
-          <HideCardButton
-            key={`hide:${question.cardId}`}
-            cardId={question.cardId}
-            alreadyHidden={hiddenIds?.has(question.cardId)}
+          <HideQuestionButton
+            key={`hide:${question.questionId}`}
+            questionId={question.questionId}
+            scope="question"
+            alreadyHidden={hiddenIds?.has(question.questionId)}
             onHidden={onHidden}
           />
           {result.leech && (
-            <SuspendCardButton
-              key={`suspend:${question.cardId}`}
-              cardId={question.cardId}
-              alreadySuspended={suspendedIds?.has(question.cardId)}
+            <SuspendQuestionButton
+              key={`suspend:${question.questionId}`}
+              questionId={question.questionId}
+              mode="TEST"
+              alreadySuspended={suspendedIds?.has(question.questionId)}
               onSuspended={onSuspended}
             />
           )}
@@ -341,17 +349,17 @@ function QuestionBody({
 
 interface TestSessionPageProps {
   /**
-   * "scope" (domyślnie): test z wybranego zakresu (całość, rodzaj, przedmiot, źródło).
+   * "scope" (domyślnie): test z wybranego zakresu (cała pula, dziedzina ?fieldId=, akt ?actId= albo źródło ?sourceId=).
    * "mistakes": „Powtórz moje błędy" – pytania, w których ostatnia odpowiedź była błędna.
-   * "practice": pytania wskazane w adresie (?cardIds=1,2,3), np. błędy z egzaminu próbnego.
+   * "practice": pytania wskazane w adresie (?questionIds=1,2,3), np. błędy z egzaminu próbnego.
    * "custom": jak "practice", ale z ekranu „Własny test" (inne podpisy i powrót do układania testu).
-   * "due": „Powtórz zaległe" – z całego materiału same pytania z minionym terminem powtórki, bez nowych.
+   * "due": „Powtórz zaległe" – z całej puli same pytania z minionym terminem powtórki, bez nowych.
    */
   mode?: "scope" | "mistakes" | "practice" | "custom" | "due";
 }
 
-/** Numery pytań z adresu (?cardIds=1,2,3): tylko dodatnie liczby całkowite, bez powtórzeń, do 200. */
-function parseCardIds(raw: string | null): number[] {
+/** Numery pytań z adresu (?questionIds=1,2,3): tylko dodatnie liczby całkowite, bez powtórzeń, do 200. */
+function parseQuestionIds(raw: string | null): number[] {
   if (!raw) return [];
   const ids = raw
     .split(",")
@@ -372,7 +380,7 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
   const customMode = mode === "custom";
   // Własny test to ta sama sesja z podanej listy pytań co powtórka błędów z egzaminu; różni się tylko podpisami.
   const practiceMode = mode === "practice" || customMode;
-  // Zaległe powtórki: zwykła sesja z całego materiału, tylko bez nowych pytań na starcie.
+  // Zaległe powtórki: zwykła sesja z całej puli, tylko bez nowych pytań na starcie.
   // Po jej zakończeniu można dołożyć nowe pytania albo kolejną porcję zaległych, jak w zwykłym teście.
   const dueMode = mode === "due";
   // Sesje z gotowej, zamkniętej listy pytań: nie dokładamy nowych i wracamy gdzie indziej niż zwykły test.
@@ -389,11 +397,8 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
           : "Sesja testowa";
   const backTo = customMode ? ROUTES.customTest : practiceMode ? ROUTES.exam : ROUTES.tests;
   const backLabel = customMode ? "Wróć do własnego testu" : practiceMode ? "Wróć do egzaminu" : "Wróć do Testów";
-  const { subjectId } = useParams();
   const [searchParams] = useSearchParams();
-  const cardIdsParam = searchParams.get("cardIds");
-  const sourceId = searchParams.get("sourceId");
-  const categoryId = searchParams.get("categoryId");
+  const questionIdsParam = searchParams.get("questionIds");
   const customSessionId = customMode ? parseSessionId(searchParams.get("sessionId")) : undefined;
   const navigate = useNavigate();
   useRefreshReviewDataOnExit();
@@ -429,46 +434,44 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
   const shuffleRef = useRef(true);
   // Pytania zawieszone w tej sesji: nie wracają w „Powtórz teraz".
   const [suspendedIds, setSuspendedIds] = useState<ReadonlySet<number>>(() => new Set());
-  const handleSuspended = useCallback((cardId: number) => {
-    setSuspendedIds((prev) => new Set(prev).add(cardId));
+  const handleSuspended = useCallback((questionId: number) => {
+    setSuspendedIds((prev) => new Set(prev).add(questionId));
   }, []);
   // Zmiany fiszek w tej sesji („Dodaj do fiszek" / „Usuń z fiszek"), żeby podgląd poprzednich pytań pokazywał aktualny stan.
   const [flashcardOverrides, setFlashcardOverrides] = useState<Readonly<Record<number, FlashcardStatus>>>({});
-  const handleFlashcardStatus = useCallback((cardId: number, status: FlashcardStatus) => {
-    setFlashcardOverrides((prev) => ({ ...prev, [cardId]: status }));
+  const handleFlashcardStatus = useCallback((questionId: number, status: FlashcardStatus) => {
+    setFlashcardOverrides((prev) => ({ ...prev, [questionId]: status }));
   }, []);
   // Pytania ukryte przez administratora w tej sesji.
   const [hiddenIds, setHiddenIds] = useState<ReadonlySet<number>>(() => new Set());
-  const handleHidden = useCallback((cardId: number) => {
-    setHiddenIds((prev) => new Set(prev).add(cardId));
+  const handleHidden = useCallback((questionId: number) => {
+    setHiddenIds((prev) => new Set(prev).add(questionId));
   }, []);
 
-  const numericSubjectId = subjectId ? Number(subjectId) : undefined;
-  const numericSourceId = sourceId ? Number(sourceId) : undefined;
-  const numericCategoryId = categoryId ? Number(categoryId) : undefined;
+  // Zakres sesji z adresu; wszystkie pola puste = cała pula użytkownika. Obiekt zmienia się tylko razem z adresem.
+  const scope = useScopeParams();
+  const { fieldId, actId, sourceId } = scope;
   const finished = !loading && !loadError && currentIndex >= queue.length;
   const backlog = useBacklog({
     mode: "TEST",
-    subjectId: numericSubjectId,
-    sourceId: numericSourceId,
-    categoryId: numericCategoryId,
+    ...scope,
     enabled: !fixedListMode,
   });
   const refetchBacklog = backlog.refetch;
 
   // Stoper pytania liczy tylko, gdy pytanie czeka na odpowiedź i karta przeglądarki jest widoczna: stoi po odpowiedzi,
   // w podglądzie poprzednich pytań i na ekranie końcowym.
-  const currentCardId = queue[currentIndex]?.cardId ?? null;
+  const currentQuestionId = queue[currentIndex]?.questionId ?? null;
   const clock = useQuestionClock({
-    questionKey: currentCardId === null ? null : `${currentCardId}:${currentIndex}`,
+    questionKey: currentQuestionId === null ? null : `${currentQuestionId}:${currentIndex}`,
     batch: queue,
     running: !loading && !loadError && !finished && viewIndex === null && selected === null && result === null,
   });
   const readClock = clock.read;
 
   useEffect(() => {
-    // Bez subjectId i categoryId (trasa /app/test) test obejmuje cały materiał użytkownika.
-    const key = `${mode}:${subjectId ?? "all"}:${sourceId ?? ""}:${categoryId ?? ""}:${cardIdsParam ?? ""}:${reloadCount}`;
+    // Bez zakresu w adresie (trasa /app/test) test obejmuje całą pulę użytkownika.
+    const key = `${mode}:${fieldId ?? ""}:${actId ?? ""}:${sourceId ?? ""}:${questionIdsParam ?? ""}:${reloadCount}`;
     if (fetchedKeyRef.current === key) return;
     fetchedKeyRef.current = key;
 
@@ -483,11 +486,11 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
     if (mistakesMode) {
       itemsRequest = getMistakesQueue();
     } else if (practiceMode) {
-      const ids = parseCardIds(cardIdsParam);
+      const ids = parseQuestionIds(questionIdsParam);
       itemsRequest = ids.length === 0 ? Promise.resolve([]) : getPracticeQueue(ids);
     } else {
       // 0 nowych pytań = same zaległe powtórki (w dziennym limicie powtórek); undefined = zwykły test z nowymi.
-      itemsRequest = getTestQueue(numericSubjectId, numericSourceId, dueMode ? 0 : undefined, numericCategoryId);
+      itemsRequest = getTestQueue(scope, dueMode ? 0 : undefined);
     }
     Promise.all([itemsRequest, shuffleSetting])
       .then(([items, shuffle]) => {
@@ -512,16 +515,16 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
         setLoadError(loadErrorMessage(e, "pytań"));
         setLoading(false);
       });
-  }, [mode, mistakesMode, practiceMode, dueMode, cardIdsParam, subjectId, sourceId, categoryId, reloadCount, numericSubjectId, numericSourceId, numericCategoryId]);
+  }, [mode, mistakesMode, practiceMode, dueMode, questionIdsParam, fieldId, actId, sourceId, scope, reloadCount]);
 
   useEffect(() => {
     // Sesja z gotowej listy (błędy, egzamin) nie ma „nowych pytań do dołożenia".
     if (fixedListMode || loading || loadError || currentIndex < queue.length) return;
     // Gdy nie uda się sprawdzić, ile jest nowych pytań, po prostu nie pokazujemy przycisku „Rozwiąż jeszcze".
-    getAvailableNewCardsCount(numericSubjectId, numericSourceId, numericCategoryId, "TEST")
+    getAvailableNewQuestionsCount(scope, "TEST")
       .then(setAvailableExtra)
       .catch(() => setAvailableExtra(0));
-  }, [fixedListMode, loading, loadError, currentIndex, queue.length, numericSubjectId, numericSourceId, numericCategoryId]);
+  }, [fixedListMode, loading, loadError, currentIndex, queue.length, scope]);
 
   // Na końcu sesji (i po każdej nowej kolejce) pytamy o zaległości jeszcze raz: ile zostało na kolejne dni.
   // W sesjach z gotowej listy (błędy, egzamin) zaległości z zakresu nie są tematem, więc o nie nie pytamy.
@@ -531,8 +534,8 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
 
   const handleSelect = useCallback(
     async (option: OptionKey) => {
-      const currentCard = queue[currentIndex];
-      if (!currentCard || selected) return;
+      const currentQuestion = queue[currentIndex];
+      if (!currentQuestion || selected) return;
 
       setSaveError(false);
       setSelected(option);
@@ -543,8 +546,8 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
       try {
         // Serwer zna odpowiedzi pod oryginalnymi kluczami, więc literę z ekranu zamieniamy z powrotem.
         const res = await submitTestAnswer(
-          currentCard.cardId,
-          originalKeyOf(currentCard.order, option),
+          currentQuestion.questionId,
+          originalKeyOf(currentQuestion.order, option),
           timeSpentSeconds,
           guessed,
           customSessionId
@@ -675,17 +678,17 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
   function handleStudyMore() {
     if (!availableExtra) return;
     const batchSize = Math.min(MAX_EXTRA_BATCH, availableExtra);
-    void startExtraBatch(() => getTestQueue(numericSubjectId, numericSourceId, batchSize, numericCategoryId));
+    void startExtraBatch(() => getTestQueue(scope, batchSize));
   }
 
   /** „Powtórz jeszcze": kolejna porcja zaległych pytań ponad dzienny limit (bez nowych pytań). */
   function handleExtraDue(batch: number) {
-    void startExtraBatch(() => getTestQueue(numericSubjectId, numericSourceId, 0, numericCategoryId, batch));
+    void startExtraBatch(() => getTestQueue(scope, 0, batch));
   }
 
   // Pytania, które wrócą w powtórkach: błędne albo oznaczone jako „Nie jestem pewien". Zawieszone w tej sesji odpadają.
   const toReview = history
-    .filter((h) => (!h.result.correct || h.guessed) && !suspendedIds.has(h.question.cardId))
+    .filter((h) => (!h.result.correct || h.guessed) && !suspendedIds.has(h.question.questionId))
     .map((h) => h.question);
 
   function handleRepeatMistakes() {
@@ -742,14 +745,14 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
         <h1 className="text-xl font-bold">Nie masz zaległych powtórek.</h1>
         <p className="max-w-md text-sm text-fg-muted">
           Pytanie wraca tu, gdy minie termin powtórki wyznaczony po Twojej odpowiedzi. Możesz w międzyczasie rozwiązać
-          nowe pytania w teście z całego materiału.
+          nowe pytania w teście z całej puli.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3">
           <button
             onClick={() => navigate(ROUTES.testAll)}
             className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl bg-accent px-6 text-sm font-medium text-accent-fg hover:opacity-90"
           >
-            Rozpocznij test z całego materiału
+            Rozpocznij test z całej puli
           </button>
           <button
             onClick={() => navigate(backTo)}
@@ -947,10 +950,10 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
         )}
       </div>
 
-      {/* key = cardId → każde pytanie pojawia się świeże, bez resztek stanu poprzedniego */}
+      {/* key = questionId → każde pytanie pojawia się świeże, bez resztek stanu poprzedniego */}
       {viewEntry ? (
         <QuestionBody
-          key={`view-${viewEntry.question.cardId}`}
+          key={`view-${viewEntry.question.questionId}`}
           question={viewEntry.question}
           selected={viewEntry.selected}
           result={viewEntry.result}
@@ -973,7 +976,7 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
         />
       ) : (
         <QuestionBody
-          key={queue[currentIndex].cardId}
+          key={queue[currentIndex].questionId}
           question={queue[currentIndex]}
           selected={selected}
           result={result}

@@ -16,9 +16,9 @@ export function HeroSection({ isAuthenticated }: { isAuthenticated: boolean }) {
   return (
     <section
       aria-labelledby="landing-hero"
-      className="relative flex min-h-[min(calc(100svh_-_65px),1100px)] flex-col pt-[clamp(24px,4cqw,56px)] pb-[clamp(64px,6cqw,88px)]"
+      className="relative flex min-h-[min(calc(100svh_-_65px),1100px)] flex-col pt-[clamp(24px,4cqw,56px)] pb-[clamp(60px,6cqw,88px)]"
     >
-      <Wrap className="grid flex-1 grid-cols-1 grid-rows-[auto_minmax(220px,1fr)] items-center gap-x-[clamp(32px,6cqw,72px)] gap-y-[clamp(20px,4cqw,48px)] @min-[960px]:grid-cols-[minmax(0,1.04fr)_minmax(0,0.96fr)] @min-[960px]:grid-rows-[auto]">
+      <Wrap className="grid flex-1 grid-cols-1 grid-rows-[auto_minmax(140px,1fr)] items-center gap-x-[clamp(32px,6cqw,72px)] gap-y-[clamp(20px,4cqw,48px)] @min-[960px]:grid-cols-[minmax(0,1.04fr)_minmax(0,0.96fr)] @min-[960px]:grid-rows-[auto]">
         <div className="min-w-0">
           <h1 id="landing-hero" className="text-lp-h1 text-balance break-words">
             {COPY.hero.title}

@@ -4,7 +4,6 @@ import { Skeleton } from "../../components/ui/Skeleton";
 import { ROUTES } from "../../config/routes";
 import { cn } from "../../lib/cn";
 import { formatDatePl } from "../../lib/date";
-import { ORIGIN_LABELS } from "../../lib/origin";
 import { pluralizePl } from "../../lib/plural";
 import { useDueCount, useMistakesCount } from "../review/hooks";
 import { useLearningSettings } from "../settings/hooks";
@@ -26,7 +25,7 @@ interface TodayCardProps {
 /**
  * „Na dziś": jedno miejsce, które mówi, co zrobić teraz. Główny przycisk (jedyny złoty na pulpicie) sam wybiera
  * następny krok: zaległe pytania, potem zaległe fiszki, potem nowe pytania. Jest podpisany tym, co się po nim stanie,
- * a testy i fiszki nie mieszają się w jednej sesji. Na górze karty jest egzamin (termin i wybrana aplikacja), pod
+ * a testy i fiszki nie mieszają się w jednej sesji. Na górze karty jest egzamin (termin i wybrana aplikacja; Student go nie ma), pod
  * przyciskiem cel dnia i cicha seria nauki. Reszta (fiszki do powtórki, poprawa błędów) to ciche linki.
  */
 export function TodayCard({ className }: TodayCardProps) {
@@ -93,7 +92,7 @@ export function TodayCard({ className }: TodayCardProps) {
         {action.kind === "new-questions" && (
           <>
             <p className="mt-1 text-3xl font-bold">Nic nie zalega</p>
-            <p className="mt-1 text-sm text-fg-muted">Możesz wziąć nową porcję pytań z całego materiału.</p>
+            <p className="mt-1 text-sm text-fg-muted">Możesz wziąć nową porcję pytań z całej puli.</p>
           </>
         )}
         {action.kind === "all-done" && (
@@ -159,12 +158,15 @@ function TodayActions({ action }: { action: ReturnType<typeof pickTodayAction> }
   );
 }
 
-/** Termin egzaminu i wybrana aplikacja. Bez wyboru (nowy użytkownik widzi wtedy okno startowe) nic nie pokazujemy. */
+/**
+ * Termin egzaminu i wybrana aplikacja. Bez wyboru (nowy użytkownik widzi wtedy okno startowe) i dla Studenta, który nie ma
+ * terminu, nic nie pokazujemy.
+ */
 function ExamLine() {
   const { data } = useLearningSettings();
-  if (!data?.examOrigin) return null;
+  if (!data?.track || data.track.kind !== "EXAM") return null;
 
-  const application = ORIGIN_LABELS[data.examOrigin];
+  const application = data.track.shortName;
   const frame = (children: React.ReactNode) => (
     <div className="flex flex-col">
       <Link to={ROUTES.account} className={cn(TEXT_LINK, "w-fit gap-2")}>

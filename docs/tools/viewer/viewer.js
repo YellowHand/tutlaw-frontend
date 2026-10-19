@@ -1,4 +1,4 @@
-/* Podgląd dokumentacji Tutlaw: routing po haszu, spis treści, wyszukiwarka, diagramy Mermaid, motyw. Bez zależności. */
+/* Podgląd dokumentacji Gradus iuris: routing po haszu, spis treści, wyszukiwarka, diagramy Mermaid, motyw. Bez zależności. */
 (() => {
   "use strict";
 
@@ -10,7 +10,7 @@
   const tocList = $("#toc-list");
   const input = $("#q");
   const resultsBox = $("#results");
-  const THEME_KEY = "tutlaw-docs-theme";
+  const THEME_KEY = "gradus-docs-theme";
 
   const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   const safe = (fn) => {
@@ -119,16 +119,16 @@
   function renderPage(id) {
     if (id === "home") {
       content.innerHTML = `<article class="doc home">${DATA.home}</article>`;
-      document.title = "Dokumentacja Tutlaw";
+      document.title = "Dokumentacja Gradus iuris";
       buildToc(null);
     } else if (id === null) {
       content.innerHTML = `<article class="doc"><h1>Nie ma takiej strony</h1><p>Adres nie prowadzi do żadnego dokumentu. <a href="#/">Wróć na stronę startową</a>.</p></article>`;
-      document.title = "Nie znaleziono · Dokumentacja Tutlaw";
+      document.title = "Nie znaleziono · Dokumentacja Gradus iuris";
       buildToc(null);
     } else {
       const p = DATA.pages[id];
       content.innerHTML = `<article class="doc" data-page="${id}">${p.html}${pagerHtml(id)}</article>`;
-      document.title = `${p.title} · Dokumentacja Tutlaw`;
+      document.title = `${p.title} · Dokumentacja Gradus iuris`;
       buildToc(p, id);
     }
     markNav(id === null ? "" : id);

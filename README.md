@@ -1,7 +1,8 @@
-# Tutlaw: frontend
+# Gradus iuris: frontend
 
-Strona internetowa aplikacji **Tutlaw**: darmowej nauki do egzaminów na aplikacje prawnicze. Rozwiązujesz pytania ABC
-(dokładnie jedna poprawna odpowiedź) i uczysz się z fiszek, a algorytm FSRS-6 po stronie serwera sam układa powtórki.
+Strona internetowa aplikacji **Gradus iuris**: darmowej nauki do egzaminów na aplikacje prawnicze i dla studentów prawa. Wybierasz
+ścieżkę (jedną z pięciu aplikacji albo Student), rozwiązujesz pytania ABC (dokładnie jedna poprawna odpowiedź) i uczysz się z
+fiszek, a algorytm FSRS-6 po stronie serwera sam układa powtórki.
 
 To aplikacja jednostronicowa napisana w React 19, TypeScript, Vite 8 i Tailwind CSS 4. Serwer (Java, Spring) leży w
 osobnym repozytorium `port-be`.

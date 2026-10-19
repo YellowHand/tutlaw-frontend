@@ -7,7 +7,7 @@ import { useMe } from "./hooks";
 import { ChangePasswordCard } from "./ChangePasswordCard";
 import { ExportCard } from "./ExportCard";
 import { DeleteAccountCard } from "./DeleteAccountCard";
-import { DifficultCardsCard } from "../difficult/DifficultCardsCard";
+import { DifficultQuestionsCard } from "../difficult/DifficultQuestionsCard";
 import { AppearanceCard } from "../settings/AppearanceCard";
 import { ExamTermsCard } from "../settings/ExamTermsCard";
 import { LearningSettingsCard } from "../settings/LearningSettingsCard";
@@ -34,7 +34,7 @@ export function AccountPage() {
 
         <ExamTermsCard />
 
-        <DifficultCardsCard />
+        <DifficultQuestionsCard />
 
         <ChangePasswordCard />
 

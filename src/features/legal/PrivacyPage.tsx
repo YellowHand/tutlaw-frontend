@@ -16,7 +16,7 @@ export function PrivacyPage() {
           items={[
             "prywatny adres e-mail (login) i adres uczelniany (potwierdzenie konta, odzyskiwanie dostępu),",
             "hasło, które zapisujemy wyłącznie jako zaszyfrowany skrót (nie znamy Twojego hasła),",
-            "dane o nauce: odpowiedzi w testach, oceny powtórek, terminy kolejnych powtórek, zaznaczone rozdziały i statystyki,",
+            "dane o nauce: odpowiedzi w testach, oceny powtórek, terminy kolejnych powtórek, wybraną ścieżkę, akty prawne w puli i statystyki,",
             "datę akceptacji regulaminu,",
             "dane techniczne: adres IP używany krótkotrwale do ograniczania liczby prób logowania oraz w dziennikach błędów serwera.",
           ]}

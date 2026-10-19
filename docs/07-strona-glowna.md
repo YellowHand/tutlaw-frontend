@@ -19,7 +19,7 @@ się bez dotykania komponentów.
 | Polska typografia (twarde spacje) | `features/landing/typography.ts` |
 | Interaktywne demo | `DemoQuestion.tsx` |
 | Wykres krzywej zapominania | `ForgettingCurve.tsx` |
-| Chipy pochodzenia pytań z togami | `OriginChips.tsx` |
+| Ścieżki do wyboru (pięć aplikacji i Student) jako chipy z togami | `TrackChips.tsx` |
 | Ilustracja Temidy | `features/landing/assets/temida-medalion.svg` |
 | Tokeny wyglądu strony (`lp-*`, `paper-*`, `ink-*`) | `src/index.css`, blok `@theme` |
 
@@ -64,14 +64,14 @@ Wszystkie napisy są w obiekcie `COPY` w `features/landing/copy.ts`, pogrupowane
 |---------------|-------|
 | Główne hasło („Testy, które pamiętają, co ci umyka.”) | `COPY.hero.title` |
 | Opis pod hasłem („Rozwiązuj pytania ABC z egzaminów…”) | `COPY.hero.lead` |
-| Nazwę „Tutlaw” w nagłówku i stopce | Nie jest w `copy.ts`. To komponent `components/layout/Logo.tsx`, wspólny z resztą aplikacji |
+| Nazwę „Gradus iuris” w nagłówku i stopce | Nie jest w `copy.ts`. To komponent `components/layout/Logo.tsx`, wspólny z resztą aplikacji. Zasady zapisu nazwy i pliki logo: [`brand/README.md`](brand/README.md) |
 | Pytania i odpowiedzi FAQ | `COPY.faq.items` (lista `q` i `a`) |
 | Pytanie w demo i jego trzy odpowiedzi | `COPY.demo.question` i `COPY.demo.options` oraz poprawna odpowiedź w `demo.ts` (`DEMO_CORRECT`) |
-| Napis w stopce („© 2026 Tutlaw…”) | `COPY.footer.note` |
+| Napis w stopce („© 2026 Gradus iuris…”) | `COPY.footer.note` |
 
 Zasady pisania tekstów (zapisane w komentarzu na początku `copy.ts`):
 
-- Fakty o produkcie (tryby, reguły „Nie jestem pewien”, FSRS-6, filtr pochodzenia, eksport danych) mają odpowiadać
+- Fakty o produkcie (tryby, reguły „Nie jestem pewien”, FSRS-6, pula pytań i filtr źródeł, eksport danych) mają odpowiadać
   temu, co aplikacja naprawdę robi.
 - **Bez liczb o użytkownikach, zdawalności i liczbie pytań.** Takie liczby dopisuje się dopiero, gdy będą prawdziwe.
   Przykładowe dane w sekcji funkcji są wyraźnie oznaczone („Przykładowe dane”).
@@ -132,7 +132,7 @@ obrazek wpisuje się w nie (`object-contain`), więc na niskim oknie Temida się
 
 `DemoQuestion` to **działające** pytanie ABC na „arkuszu egzaminacyjnym” (jasny papier na ciemnej stronie, kolory
 `paper-*` i `ink-*`). Użytkownik zaznacza opcjonalnie „Nie jestem pewien”, wybiera odpowiedź i dostaje komunikat, co
-zrobiłby z nią Tutlaw. Reguły są w `demo.ts` i **odpowiadają zasadom prawdziwej aplikacji**:
+zrobiłby z nią Gradus iuris. Reguły są w `demo.ts` i **odpowiadają zasadom prawdziwej aplikacji**:
 
 | Odpowiedź | Pewność | Wynik w demo (`DemoOutcomeId`) | Co robi aplikacja |
 |-----------|---------|--------------------------------|-------------------|
@@ -153,13 +153,15 @@ Demo **nie wysyła niczego na serwer**.
 | Sekcja | Zawartość |
 |--------|-----------|
 | `SpacedRepetitionSection` (`#algorytm`) | Tytuł, trzy akapity o powtórkach (FSRS-6) i wykres `ForgettingCurve`: schemat poglądowy (SVG, bez liczb na osiach); opisy są w HTML pod rysunkiem, żeby skalowały się jak zwykły tekst |
-| `FeaturesSection` (`#funkcje`) | Siatka kart („bento”): testy ABC z chipami pochodzenia, „Nie jestem pewien” (karta jasna), powtórki, fiszki, egzamin próbny, statystyki z przykładowymi danymi. Od 640 px dwie kolumny, od 1000 px sześć |
+| `FeaturesSection` (`#funkcje`) | Siatka kart („bento”): testy ABC ze ścieżkami do wyboru (chipy z togami), „Nie jestem pewien” (karta jasna), powtórki, fiszki, egzamin próbny, statystyki z przykładowymi danymi. Od 640 px dwie kolumny, od 1000 px sześć |
 | `StepsSection` (`#start`) | Trzy kroki jako lista numerowana na tle `band`, na końcu przycisk |
-| `FaqSection` (`#faq`) | Osiem pytań w natywnych rozwijanych blokach `<details>`; pytanie o źródła pytań pokazuje chipy pochodzenia |
+| `FaqSection` (`#faq`) | Osiem pytań w natywnych rozwijanych blokach `<details>`; pytanie o źródła pytań pokazuje chipy ścieżek |
 | `FinalCta` | Złoty pas z wezwaniem i przyciskiem w odcieniu `ink` |
 
-`OriginChips` bierze nazwy i kolejność z `lib/origin.ts` i `features/statistics/originStats.ts`, czyli z tej samej listy,
-co filtr pochodzenia w Testach. Dodanie nowego pochodzenia pytań trzeba więc zrobić w jednym miejscu.
+`TrackChips` bierze listę z `COPY.tracks` (`copy.ts`): jest stała, bo strona główna jest publiczna i nie pyta serwera, więc
+musi odpowiadać ścieżkom z bazy (pięć aplikacji i Student, dane słownikowe w migracji `V2` backendu). Toga każdej ścieżki
+dobiera kolor wykończenia po `slug` (`TrackToga` w `components/icons/TogaIcon.tsx`). Dodanie ścieżki trzeba więc zrobić w
+dwóch miejscach: w bazie i w `COPY.tracks`.
 
 ## Czego strona nie robi
 

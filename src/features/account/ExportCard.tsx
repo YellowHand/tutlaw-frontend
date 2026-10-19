@@ -18,8 +18,8 @@ export function ExportCard() {
       <div>
         <h2 className="text-lg font-semibold">Pobierz moje dane</h2>
         <p className="mt-1 text-sm text-fg-muted">
-          Plik JSON z wszystkim, co o Tobie przechowujemy: adresami e-mail, datą akceptacji regulaminu, zaznaczonymi
-          rozdziałami, stanem każdej fiszki (kiedy wrócisz do niej na powtórce), pełną historią Twoich odpowiedzi oraz
+          Plik JSON z wszystkim, co o Tobie przechowujemy: adresami e-mail, datą akceptacji regulaminu, wybraną
+          ścieżką i aktami prawnymi w puli, stanem każdego pytania w testach i w fiszkach (kiedy wrócisz do niego na powtórce), pełną historią Twoich odpowiedzi oraz
           zgłoszeniami błędów w pytaniach, ustawieniami nauki oraz podsumowaniami egzaminów próbnych. Nie ma w nim hasła.
         </p>
       </div>

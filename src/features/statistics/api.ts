@@ -1,19 +1,19 @@
 import { api } from "../../api/axiosInstance";
 import type { SessionMode } from "../../api/review";
 import type {
+  ActMastery,
   ActivityItem,
-  ChapterMastery,
   LearningSummary,
-  OriginStats,
   OverviewResponse,
+  SourceStats,
   TestStats,
-  WeakCard,
+  WeakQuestion,
 } from "./types";
 
-/** Bez trybu backend liczy fiszki i testy razem (strona Statystyki); z trybem tylko wskazany rodzaj kart. */
-export async function fetchOverview(subjectId?: number, mode?: SessionMode): Promise<OverviewResponse> {
+/** Bez trybu backend liczy fiszki i testy razem (strona Statystyki); z trybem tylko wskazany rodzaj. */
+export async function fetchOverview(actId?: number, mode?: SessionMode): Promise<OverviewResponse> {
   const res = await api.get<OverviewResponse>("/api/statistics/overview", {
-    params: { subjectId: subjectId || undefined, mode },
+    params: { actId: actId || undefined, mode },
   });
   return res.data;
 }
@@ -23,15 +23,15 @@ export async function fetchActivity(days = 30, mode?: SessionMode): Promise<Acti
   return res.data;
 }
 
-export async function fetchChapterMastery(sourceId?: number): Promise<ChapterMastery[]> {
-  if (!sourceId) return [];
-  const res = await api.get<ChapterMastery[]>("/api/statistics/chapters", { params: { sourceId } });
+/** Opanowanie aktów prawnych z puli użytkownika (w jednym trybie albo w obu razem). */
+export async function fetchActMastery(mode?: SessionMode): Promise<ActMastery[]> {
+  const res = await api.get<ActMastery[]>("/api/statistics/acts", { params: { mode } });
   return res.data;
 }
 
-export async function fetchWeakCards(subjectId?: number, limit = 10): Promise<WeakCard[]> {
-  const res = await api.get<WeakCard[]>("/api/statistics/weak-cards", {
-    params: { subjectId: subjectId || undefined, limit },
+export async function fetchWeakQuestions(actId?: number, mode?: SessionMode, limit = 10): Promise<WeakQuestion[]> {
+  const res = await api.get<WeakQuestion[]>("/api/statistics/weak-questions", {
+    params: { actId: actId || undefined, mode, limit },
   });
   return res.data;
 }
@@ -41,9 +41,9 @@ export async function fetchTestStats(): Promise<TestStats> {
   return res.data;
 }
 
-/** Statystyki Testów według pochodzenia pytań (aplikacja) i roku egzaminu. */
-export async function fetchOriginStats(): Promise<OriginStats> {
-  const res = await api.get<OriginStats>("/api/statistics/origins");
+/** Statystyki Testów według źródła pytań (grupa źródeł → arkusz). */
+export async function fetchSourceStats(): Promise<SourceStats> {
+  const res = await api.get<SourceStats>("/api/statistics/sources");
   return res.data;
 }
 

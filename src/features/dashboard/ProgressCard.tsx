@@ -4,7 +4,8 @@ import { ROUTES } from "../../config/routes";
 import { cn } from "../../lib/cn";
 import { useTestStats } from "../statistics/hooks";
 import { useTestCatalog } from "../tests/hooks";
-import { isFilterActive, useOriginFilter } from "../tests/originFilter";
+import { usePool } from "../pool/hooks";
+import { isPoolRestricted } from "../pool/summary";
 import { InlineError } from "./InlineError";
 import { percentOf } from "./selectors";
 
@@ -12,13 +13,13 @@ const TEXT_LINK =
   "-my-3 inline-flex min-h-11 items-center text-sm text-fg-muted underline underline-offset-2 hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink";
 
 /**
- * „Postęp": jeden pasek „Przerobione" (ile pytań zobaczyłeś co najmniej raz) i pod nim rodzaje z postępem, każdy
- * prowadzi do Testów tego rodzaju. „Przerobione" to nie „opanowane": pasek rośnie od pierwszego dnia, a opanowanie
+ * „Postęp": jeden pasek „Przerobione" (ile pytań z puli zobaczyłeś co najmniej raz) i pod nim dziedziny z postępem, każda
+ * prowadzi do Testów tej dziedziny. „Przerobione" to nie „opanowane": pasek rośnie od pierwszego dnia, a opanowanie
  * (które pojawia się dopiero po około dwóch tygodniach) jest opisane w Statystykach.
  */
 export function ProgressCard({ className }: { className?: string }) {
   const stats = useTestStats();
-  const filter = useOriginFilter();
+  const pool = usePool();
   const catalog = useTestCatalog();
   const frame = cn("flex flex-col gap-5 rounded-2xl border border-line bg-surface p-5 sm:p-6", className);
 
@@ -47,7 +48,7 @@ export function ProgressCard({ className }: { className?: string }) {
   const total = Math.max(0, stats.data.totalQuestions);
   const done = Math.min(Math.max(0, stats.data.solvedQuestions), total);
   const percent = percentOf(done, total);
-  const rows = (Array.isArray(catalog.data?.categories) ? catalog.data.categories : []).filter((c) => c.questionCount > 0);
+  const rows = (Array.isArray(catalog.data?.fields) ? catalog.data.fields : []).filter((field) => field.questionCount > 0);
 
   return (
     <section aria-labelledby="progress-title" className={frame}>
@@ -75,30 +76,30 @@ export function ProgressCard({ className }: { className?: string }) {
           </div>
           <p className="text-xs text-fg-muted">
             Przerobione to pytania, które miały już choć jedną odpowiedź.
-            {isFilterActive(filter.data) && " Liczymy tylko pytania z wybranych aplikacji."}
+            {pool.data && isPoolRestricted(pool.data) && " Liczymy tylko pytania z Twojej puli (wybrane akty i źródła)."}
           </p>
         </div>
       )}
 
       {rows.length > 0 && (
-        <ul aria-label="Postęp według rodzajów" className="flex flex-col divide-y divide-line border-t border-line">
-          {rows.map((category) => (
-            <li key={category.id}>
+        <ul aria-label="Postęp według dziedzin" className="flex flex-col divide-y divide-line border-t border-line">
+          {rows.map((field) => (
+            <li key={field.id}>
               <Link
-                to={ROUTES.testsCategory(category.id)}
+                to={ROUTES.testsField(field.id)}
                 className="-mx-2 flex min-h-11 flex-col justify-center gap-1.5 rounded-lg px-2 py-2.5 transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink"
               >
                 <span className="flex items-baseline justify-between gap-3">
-                  <span className="min-w-0 truncate text-sm font-medium">{category.name}</span>
+                  <span className="min-w-0 truncate text-sm font-medium">{field.name}</span>
                   <span className="shrink-0 text-xs tabular-nums text-fg-muted">
-                    {category.solvedCount} z {category.questionCount}
+                    {field.solvedCount} z {field.questionCount}
                     <span className="sr-only"> pytań przerobionych</span>
                   </span>
                 </span>
                 <span aria-hidden="true" className="block h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
                   <span
                     className="block h-full rounded-full bg-accent"
-                    style={{ width: `${percentOf(category.solvedCount, category.questionCount)}%` }}
+                    style={{ width: `${percentOf(field.solvedCount, field.questionCount)}%` }}
                   />
                 </span>
               </Link>
@@ -106,7 +107,7 @@ export function ProgressCard({ className }: { className?: string }) {
           ))}
         </ul>
       )}
-      {catalog.isError && <InlineError message="Nie udało się pobrać rodzajów." onRetry={() => void catalog.refetch()} />}
+      {catalog.isError && <InlineError message="Nie udało się pobrać dziedzin." onRetry={() => void catalog.refetch()} />}
     </section>
   );
 }

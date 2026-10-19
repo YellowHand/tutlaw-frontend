@@ -7,18 +7,24 @@ To najważniejszy dokument frontendu: opisuje, co dzieje się na ekranie podczas
 w dokumentacji backendu, rozdział „Nauka: testy, fiszki, FSRS”). Dlatego tu nie ma żadnych wzorów ani dat powtórek,
 są tylko ekrany, stany i reguły interfejsu.
 
-## Dwa rodzaje kart i trzy rodzaje sesji
+## Dwa tryby jednego pytania i trzy rodzaje sesji
 
-| | Pytanie testowe (Testy) | Fiszka (Fiszki) |
+W bazie jest jedno pytanie, a **fiszka jest trybem tego samego pytania**, nie osobną kartą: ta sama treść, ale osobny
+harmonogram powtórek (FSRS) w teście i w fiszkach. Dlatego w obu trybach frontend rozmawia z serwerem numerem pytania
+(`questionId`), a nie numerem „karty”.
+
+| | Test (Testy) | Fiszka (Fiszki) |
 |---|---|---|
 | Wygląd | Pytanie i trzy odpowiedzi A, B, C, dokładnie jedna poprawna | Przód z pytaniem, po kliknięciu tył z odpowiedzią |
 | Kto ocenia | Serwer (porównuje wybraną odpowiedź z poprawną) | Użytkownik, czterema przyciskami |
 | Pole „Nie jestem pewien” | Tak | Nie dotyczy |
 | Plik sesji | `pages/TestSessionPage.tsx` | `pages/StudySessionPage.tsx` |
-| Skąd się biorą | Z materiału (Testy) | Z błędów w testach i z „Dodaj do fiszek” |
+| Kolejka z serwera | `GET /api/review/test-queue` | `GET /api/review/flashcard-queue` |
+| Skąd się biorą | Z puli pytań użytkownika (patrz [Pula pytań użytkownika](#pula-pytań-użytkownika)) | Z pewnych błędów w testach i z „Dodaj do fiszek” |
 
-Fiszki **zaczynają puste**: każde pytanie testowe ma w bazie własną fiszkę, ale użytkownik dostaje ją dopiero po
-**pewnym błędzie** w teście (błędna odpowiedź bez „Nie jestem pewien”) albo po kliknięciu „Dodaj do fiszek”.
+Fiszki **zaczynają puste**: pytanie trafia do Fiszek dopiero po **pewnym błędzie** w teście (błędna odpowiedź bez „Nie
+jestem pewien”) albo po kliknięciu „Dodaj do fiszek”. Administrator może ukryć samą fiszkę pytania, a pytanie zostaje wtedy
+w testach.
 
 ## Sesja testowa (`TestSessionPage`)
 
@@ -28,11 +34,14 @@ Ta sama strona obsługuje pięć trybów (parametr `mode`, ustawiany w `app/rout
 
 | Tryb | Adres | Skąd pytania | Co jeszcze |
 |------|-------|--------------|------------|
-| `scope` (domyślny) | `/app/test`, `/app/test/:subjectId` (`?sourceId=`, `?categoryId=`) | `GET /api/review/test-queue` (zaległe + dzienna porcja nowych) | Informacja o zaległościach, „Rozwiąż jeszcze”, „Powtórz jeszcze” |
+| `scope` (domyślny) | `/app/test` z zakresem w adresie: `?fieldId=` (dziedzina), `?actId=` (akt prawny), `?sourceId=` (arkusz); bez żadnego cała pula | `GET /api/review/test-queue` z tym samym zakresem (zaległe + dzienna porcja nowych) | Informacja o zaległościach, „Rozwiąż jeszcze”, „Powtórz jeszcze” |
 | `due` | `/app/test/due` | To samo, ale z `extraNewCards=0`: same zaległe, bez nowych | Jak wyżej; gdy nic nie zalega, ekran „Nie masz zaległych powtórek” |
 | `mistakes` | `/app/test/mistakes` | `GET /api/review/mistakes-queue` | Zamknięta lista, bez dokładania nowych |
-| `practice` | `/app/test/practice?cardIds=1,2,3` | `GET /api/review/practice-queue` | Zamknięta lista (np. błędy z egzaminu); numery z adresu: tylko dodatnie liczby całkowite, bez powtórzeń, do 200 |
-| `custom` | `/app/test/custom?cardIds=1,2,3` | `GET /api/review/practice-queue` | To samo co `practice`, ale numery pochodzą z ekranu „Własny test”; własne podpisy („Własny test”, „Brawo! Własny test zakończony.”), a przycisk powrotu prowadzi do ekranu układania |
+| `practice` | `/app/test/practice?questionIds=1,2,3` | `GET /api/review/practice-queue` | Zamknięta lista (np. błędy z egzaminu); numery z adresu: tylko dodatnie liczby całkowite, bez powtórzeń, do 200 |
+| `custom` | `/app/test/custom?questionIds=1,2,3&sessionId=12` | `GET /api/review/practice-queue` | To samo co `practice`, ale numery pochodzą z ekranu „Własny test”; własne podpisy („Własny test”, „Brawo! Własny test zakończony.”), a przycisk powrotu prowadzi do ekranu układania |
+
+Zakres z adresu czyta `useScopeParams` (zły albo brakujący numer jest pomijany), a adresy budują `ROUTES.testScope(...)` i
+`ROUTES.studyScope(...)` z `config/routes.ts`. Zakres nigdy nie rozszerza puli: serwer liczy go razem z pulą użytkownika.
 
 W trybach `mistakes`, `practice` i `custom` (lista zamknięta) nie ma informacji o zaległościach ani przycisku „Rozwiąż
 jeszcze”, a przycisk powrotu prowadzi do Testów (dla `practice` do Egzaminu, dla `custom` do ekranu „Własny test”).
@@ -55,18 +64,19 @@ stateDiagram-v2
    **przed** odpowiedzią i znika po jej wybraniu. Gdy to jego **pierwsze pytanie w życiu** (`testAnswers === 0` w ustawieniach
    interfejsu), pod przełącznikiem stoi jednorazowa podpowiedź „Zaznacz, jeśli zgadujesz. Takie pytanie wróci szybciej, nawet
    przy dobrej odpowiedzi.” (`data-testid="guess-hint"`); po pierwszej odpowiedzi licznik rośnie i podpowiedź już się nie pokazuje.
-   Nad pytaniem, obok strzałek podglądu, jest mały [licznik czasu](#licznik-czasu-przy-pytaniu).
-2. Wybór odpowiedzi blokuje pozostałe i wysyła `POST /api/review/test-answer` z numerem karty, wybraną opcją (A, B lub C), czasem
+   Nad pytaniem, obok strzałek podglądu, jest mały [licznik czasu](#licznik-czasu-przy-pytaniu), a pod nim podpis z aktu
+   prawnego i źródła pytania (`SourceLabel`, np. „Kodeks cywilny · Notarialna 2024” albo „… · Pytania autorskie”).
+2. Wybór odpowiedzi blokuje pozostałe i wysyła `POST /api/review/test-answer` z numerem pytania (`questionId`), wybraną opcją (A, B lub C), czasem
    odpowiedzi w sekundach, znacznikiem `guessed` i (w sesji własnego testu) numerem sesji `sessionId`. Czas liczy się od
    pokazania pytania, ale tylko przy widocznej karcie przeglądarki, a podgląd poprzednich pytań go wstrzymuje. Odpowiedź
    serwera niesie też `newQuestion` (czy to pierwsze zobaczenie tego pytania), z czego frontend liczy „nowe pytania w tej sesji”.
 3. Odpowiedź serwera (`TestAnswerResult`) steruje wynikiem:
    - poprawna odpowiedź podświetla się na zielono, wybrana błędna na czerwono, pozostałe wyszarzają;
    - nagłówek „Poprawnie!” albo „Niepoprawnie” i zdanie o zapisanej ocenie (tabela niżej);
-   - wyjaśnienie (jeśli jest), podstawa prawna i data stanu prawnego (`LegalBasisLine`);
+   - wyjaśnienie (jeśli jest), podstawa prawna (np. „art. 415 k.c.”) i data stanu prawnego (`LegalBasisLine`);
    - podpowiedź o trudnym pytaniu, jeśli `leech` jest prawdą (patrz niżej);
    - informacja o fiszce: „Dodałem fiszkę do tego pytania w Fiszkach.” przy pierwszym pewnym błędzie.
-4. Pod wynikiem są przyciski: **Dodaj do fiszek / Usuń z fiszek**, **Ukryj** (tylko administrator),
+4. Pod wynikiem są przyciski: **Dodaj do fiszek / Usuń z fiszek**, **Ukryj pytanie** (tylko administrator),
    **Zawieś pytanie** (tylko przy trudnym pytaniu) oraz **Dalej** albo **Zakończ test**. **Zgłoś błąd** leży w prawym górnym
    rogu panelu wyniku i pojawia się dopiero po odpowiedzi (patrz [Zgłoś błąd](#zgłoś-błąd)).
 5. Gdy zapis się nie uda (np. brak internetu), odpowiedzi odblokowują się i pojawia się komunikat „Nie udało się zapisać
@@ -119,7 +129,7 @@ zaległościach z początku znika, bo jej już nie dotyczy.
 
 **Podsumowanie sesji** (`features/review/SessionSummary.tsx`, `data-testid="session-summary"`) stoi na ekranie „Brawo!” pod
 wynikiem, w testach i w fiszkach. Ma najwyżej dwa zdania: „Nowe pytania w tej sesji: N” (w fiszkach „Nowe fiszki w tej sesji: N”;
-liczone z `newQuestion` / `newCard` z odpowiedzi serwera, pokazywane tylko gdy N > 0) i „Jutro wróci N powtórek.” albo „Na jutro nie
+liczone z `newQuestion` w teście i `firstReview` w fiszkach, z odpowiedzi serwera, pokazywane tylko gdy N > 0) i „Jutro wróci N powtórek.” albo „Na jutro nie
 masz żadnych powtórek.” (`GET /api/review/due-tomorrow?mode=TEST|FLASHCARD`, liczba powtórek wypadających do końca jutra, razem z tymi, które czekają już teraz). Błąd
 pobrania liczby jutrzejszych powtórek nie psuje ekranu: ten wiersz po prostu się nie pokazuje.
 
@@ -136,10 +146,13 @@ stateDiagram-v2
     Koniec --> [*]
 ```
 
-- Kolejka to `GET /api/review/queue` (zaległe fiszki od tych, które najłatwiej zapomnieć, plus dzienna porcja nowych).
+- Kolejka to `GET /api/review/flashcard-queue` (zaległe fiszki od tych, które najłatwiej zapomnieć, plus dzienna porcja
+  nowych). Adres `/app/study` przyjmuje ten sam zakres co testy (`?fieldId=`, `?actId=`, `?sourceId=`); ekran Fiszek
+  podpowiada całą pulę, dziedzinę albo akt prawny. Zawężenie puli do aktów obowiązuje też w fiszkach, ale filtr źródeł nie
+  (fiszka wynika z błędu w teście, więc zostaje w nauce niezależnie od źródła pytania).
 - Karta ma **przód** (pytanie) i **tył** (odpowiedź), a odwracanie to animacja 3D (obrót o 180°). Strona, która jest
   schowana, ma `aria-hidden`, żeby czytnik ekranu czytał tylko widoczną.
-- Cztery oceny, wysyłane przez `POST /api/review` jako liczby 1–4:
+- Cztery oceny, wysyłane przez `POST /api/review` (`questionId`, ocena, czas) jako liczby 1–4:
 
 | Klawisz | Przycisk | Liczba | Kolor |
 |---------|----------|--------|-------|
@@ -153,11 +166,12 @@ stateDiagram-v2
 - Jeśli zapis oceny się nie uda, karta zostaje na ekranie z odkrytą odpowiedzią i komunikatem; można ocenić ją jeszcze raz.
 - Koniec sesji i przyciski dodatkowe działają jak w teście: „Ucz się jeszcze N fiszek” (max 10 nowych), „Powtórz jeszcze N fiszek”
   (zaległe ponad limit, max 20), „Wróć do Fiszek”, „Przejrzyj powtórki”.
-- Pod kartą są przyciski pomocnicze „Zawieś” (przy trudnej fiszce) i „Ukryj” (administrator). „Zgłoś błąd” leży w prawym
-  górnym rogu **odwróconej** karty (dopiero po odsłonięciu odpowiedzi), tak samo jak w teście.
+- Pod kartą są przyciski pomocnicze „Zawieś pytanie” (przy trudnej fiszce; zawiesza tylko tryb fiszek) i „Ukryj fiszkę”
+  (administrator; ukrywa samą fiszkę, a pytanie zostaje w testach). „Zgłoś błąd” leży w prawym górnym rogu **odwróconej**
+  karty (dopiero po odsłonięciu odpowiedzi), tak samo jak w teście.
 - Nad kartą jest ten sam mały [licznik czasu](#licznik-czasu-przy-pytaniu); w fiszkach pokazuje czas do odsłonięcia odpowiedzi,
-  a na serwer z oceną idzie łączny czas od pokazania karty do oceny (`timeSpentSeconds`, też tylko przy widocznej karcie). Odpowiedź na ocenę niesie `newCard`
-  (pierwsze zobaczenie fiszki), z czego powstaje „Nowe fiszki w tej sesji” na ekranie końcowym.
+  a na serwer z oceną idzie łączny czas od pokazania karty do oceny (`timeSpentSeconds`, też tylko przy widocznej karcie). Odpowiedź na ocenę niesie `firstReview`
+  (pierwsza ocena tej fiszki), z czego powstaje „Nowe fiszki w tej sesji” na ekranie końcowym.
 
 ## Skróty klawiszowe
 
@@ -230,7 +244,8 @@ i zastanawianiem się między pytaniami. Mierzy go `StudyTimeTracker` (w `AppShe
 
 ## Zaległości i dzienny limit
 
-Serwer ogranicza liczbę zaległych powtórek na dzień (limit użytkownika, osobny dla fiszek i testów). Frontend tylko to
+Serwer ogranicza liczbę zaległych powtórek na dzień (limit użytkownika, osobny dla fiszek i testów; zapytanie
+`GET /api/review/queue/backlog` podaje tryb i zakres sesji). Frontend tylko to
 pokazuje (`features/review/useBacklog.ts`, `BacklogNotice.tsx`):
 
 - Na początku sesji, jeśli `deferred > 0`: „Na dziś najpilniejsze: zaczynasz od tego, co najłatwiej zapomnieć. Jeszcze N
@@ -242,11 +257,12 @@ pokazuje (`features/review/useBacklog.ts`, `BacklogNotice.tsx`):
 
 ## Fiszka z pytania: „Dodaj do fiszek”
 
-Odpowiedź serwera niesie stan fiszki tego pytania (`FlashcardStatus`):
+Odpowiedź serwera niesie stan fiszki tego pytania (`FlashcardStatus`); zmiany idą przez `POST` i `DELETE
+/api/questions/{id}/flashcard`:
 
 | Stan | Znaczenie | Co widać pod odpowiedzią |
 |------|-----------|--------------------------|
-| `UNAVAILABLE` | Pytanie nie ma widocznej fiszki | Nic |
+| `UNAVAILABLE` | Administrator ukrył fiszkę tego pytania | Nic |
 | `AVAILABLE` | Fiszkę można dodać | Przycisk **Dodaj do fiszek** |
 | `ADDED_MANUALLY` | Użytkownik sam ją dodał | „W fiszkach” i przycisk **Usuń z fiszek** (cofnięcie) |
 | `ADDED_BY_MISTAKE` | Trafiła do Fiszek po pewnym błędzie | Zdanie w panelu wyniku; przycisku nie ma (tego nie da się cofnąć) |
@@ -259,55 +275,97 @@ odświeżane są liczniki (patrz [05](05-warstwa-api-i-dane.md)).
 - Serwer oznacza pytanie jako **trudne** (`leech`), gdy liczba błędów osiągnie próg (domyślnie 8). Wtedy pod odpowiedzią
   pojawia się `LeechHint`: „To pytanie sprawia Ci trudność: pomyliłeś się w nim już N razy. Jeśli jest niejasne albo
   nieaktualne, zgłoś błąd. Możesz też zawiesić je na jakiś czas.”
-- **Zawieś pytanie** (`SuspendCardButton`): `PUT /api/me/suspended-cards/{id}`. Pytanie znika z powtórek i testów, postęp
-  zostaje. Przycisk zmienia tylko opis na „Zawieszone” i podpowiada „Przywrócisz je w Koncie.”
-- W **Koncie** (`DifficultCardsCard`) są dwie listy: „Zawieszone” (z przyciskiem „Przywróć”) i trudne pytania, które nadal
-  są w nauce (z przyciskiem „Zawieś”). Każda lista ma limit 200 pozycji (limit serwera). Po akcji lista się odświeża, a
+- **Zawieś pytanie** (`SuspendQuestionButton`): `PUT /api/me/suspended-questions/{id}?mode=TEST` (w fiszkach
+  `mode=FLASHCARD`). Pytanie znika z powtórek tego trybu, postęp zostaje; test i fiszka tego samego pytania zawiesza się
+  osobno. Przycisk zmienia tylko opis na „Zawieszone” i podpowiada „Przywrócisz je w Koncie.”
+- W **Koncie** (`DifficultQuestionsCard`) są dwie listy: „Zawieszone” (z przyciskiem „Przywróć”) i trudne pytania, które
+  nadal są w nauce (z przyciskiem „Zawieś”). Wiersz mówi, w którym trybie pytanie jest trudne („w testach” albo „w fiszkach”),
+  a to samo pytanie może być na liście dwa razy. Każda lista ma limit 200 pozycji (limit serwera). Po akcji lista się odświeża, a
   fokus przechodzi na nagłówek sekcji, z której wiersz zniknął.
 
 ## Zgłoś błąd
 
-`ReportCardButton` otwiera **okno na środku ekranu** (`Dialog`), a nie formularz wstawiony pod pytaniem. Przycisk jest **tylko po
+`ReportQuestionButton` otwiera **okno na środku ekranu** (`Dialog`), a nie formularz wstawiony pod pytaniem. Przycisk jest **tylko po
 odpowiedzi**: w teście w prawym górnym rogu panelu wyniku (obok „Poprawnie!” / „Niepoprawnie”, poza obszarem `role="status"`,
 żeby czytnik nie czytał go razem z wynikiem), w fiszkach w prawym górnym rogu odwróconej karty (`variant="corner"`). Przed
-odpowiedzią go nie ma, bo wtedy użytkownik nie widzi jeszcze, co jest poprawne. W oknie: powód (cztery do wyboru: „Zaznaczona odpowiedź jest błędna”, „Przepis się zmienił”,
+odpowiedzią go nie ma, bo wtedy użytkownik nie widzi jeszcze, co jest poprawne. W oknie: powód (cztery do wyboru: „Zaznaczona odpowiedź jest błędna”, „Przepis się zmienił (pytanie jest nieaktualne)”,
 „Literówka albo niejasne sformułowanie”, „Coś innego”; żaden nie jest zaznaczony z góry, a „Wyślij zgłoszenie” jest nieaktywne
-bez wyboru) i komentarz do 1000 znaków (przy „Coś innego” wymagany). Wysyła `POST /api/cards/{id}/reports`.
+bez wyboru) i komentarz do 1000 znaków (przy „Coś innego” wymagany). Wysyła `POST /api/questions/{id}/reports` (to samo zgłoszenie z testu i z fiszki).
 
 - Esc, „Anuluj” i kliknięcie w tło zamykają okno; **kliknięcie w tło nie zamyka okna, gdy jest w nim wpisany komentarz**
   (nie ginie od przypadkowego kliknięcia). Każde otwarcie zaczyna od pustego formularza.
-- Po wysłaniu okno pokazuje podziękowanie („Dziękujemy! Zgłoszenie zapisane, sprawdzimy tę kartę.”) i przycisk „Zamknij”; po
-  jego zamknięciu w miejscu przycisku zostaje informacja z fokusem, żeby fokus nie przepadł: w rogu panelu krótka „Zgłoszono.
-Dziękujemy!”, a w wariancie pod kartą (`inline`) pełna „Zgłoszenie wysłane. Dziękujemy!”.
-  Przy następnej karcie wszystko zaczyna od zera (`key={cardId}`).
+- Po wysłaniu okno pokazuje podziękowanie („Dziękujemy! Zgłoszenie zapisane, sprawdzimy to pytanie.”) i przycisk „Zamknij”; po
+  jego zamknięciu w miejscu przycisku zostaje informacja z fokusem, żeby fokus nie przepadł: w rogu panelu krótka „Zgłoszono. Dziękujemy!”,
+  a w wariancie pod kartą (`inline`) pełna „Zgłoszenie wysłane. Dziękujemy!”.
+  Przy następnym pytaniu wszystko zaczyna od zera (`key={questionId}`).
 - Jeśli użytkownik miał już otwarte zgłoszenie tego pytania, serwer je uzupełnia (`updated: true`) i okno mówi o tym osobnym
-  zdaniem („Uzupełniliśmy Twoje wcześniejsze zgłoszenie tej karty. Dziękujemy!”).
+  zdaniem („Uzupełniliśmy Twoje wcześniejsze zgłoszenie tego pytania. Dziękujemy!”).
 - Błąd serwera pokazuje komunikat w oknie, które zostaje otwarte, z zachowanym wyborem i komentarzem; można ponowić.
 - Skróty klawiszowe sesji nie działają, gdy okno jest otwarte (m.in. Enter w polu komentarza nie przechodzi do następnego pytania).
 
 Zgłoszenia nie mają ekranu do przeglądania: administrator rozpatruje je w bazie.
 
-## Ukrywanie kart (administrator)
+## Ukrywanie pytań i fiszek (administrator)
 
-`HideCardButton` jest widoczny tylko dla roli `ADMIN` (patrz [03](03-logowanie-i-sesja.md)). Wymaga potwierdzenia „Ukryć dla
-wszystkich użytkowników?”, wysyła `PUT /api/cards/{id}/hidden` i odświeża liczniki oraz katalog. Karta znika wszystkim, a
-historia zostaje. Przywrócenie jest tylko w bazie (nie ma przycisku).
+`HideQuestionButton` (`features/admin`) jest widoczny tylko dla roli `ADMIN` (patrz [03](03-logowanie-i-sesja.md)) i ma dwa
+warianty:
 
-## Filtr pochodzenia pytań
+| Gdzie | Przycisk | Wywołanie | Skutek |
+|-------|----------|-----------|--------|
+| Sesja testowa | „Ukryj pytanie” | `PUT /api/questions/{id}/hidden` | Pytanie znika wszystkim: z testów, fiszek i egzaminu |
+| Sesja fiszek | „Ukryj fiszkę” | `PUT /api/questions/{id}/flashcard-hidden` | Znika sama fiszka, a pytanie zostaje w testach |
 
-Znacznik „Pochodzenie pytań” (`features/tests/OriginFilterChip.tsx`) stoi przy tytule na wszystkich ekranach Testów, w
-ustawieniach egzaminu i na ekranie „Własny test”. Pokazuje, co jest wybrane („wszystkie”, jedna lub dwie nazwy albo „3 z 6 pochodzeń”). Gdy filtr
-coś zawęża, znacznik ma złotą ramkę i kropkę, a podpowiedź (atrybut `title` i tekst dla czytnika ekranu) podaje łączną
-liczbę pytań. Kliknięcie otwiera okno z sześcioma polami wyboru (pięć aplikacji prawniczych i pytania autorskie, każde
-z liczbą pytań).
+Ukrycie wymaga potwierdzenia „Ukryć dla wszystkich użytkowników?” („Tak, ukryj” / „Anuluj”), a po nim pojawia się „Ukryte dla
+wszystkich.” albo „Fiszka ukryta dla wszystkich.”. Frontend odświeża liczniki, katalog Testów i pulę. Historia odpowiedzi
+zostaje, a przywrócenie jest tylko w bazie (`UPDATE questions SET hidden = false …`, dla fiszki `flashcard_hidden`), bo
+przycisku przywracania nie ma.
 
-- Trzeba zaznaczyć co najmniej jedno pochodzenie; „Zaznacz wszystkie” przywraca stan domyślny.
-- Zapis: `PUT /api/me/origin-filter`. Filtr jest na koncie, więc działa też na innym urządzeniu.
-- **Filtr stosuje serwer**: katalog Testów, kolejki, powtórki, błędy, własny test i egzamin. Frontend niczego nie filtruje u siebie, a
-  po zapisie unieważnia tylko dane Testów (katalog, liczniki powtórek, błędów i własnego testu, ustawienia/plan). **Fiszek i statystyk
-  filtr nie dotyczy.**
-- Gdy filtr zawęża, puste pozycje katalogu mają napis „Brak w filtrze” zamiast „Wkrótce”.
-- Gdy filtru nie uda się pobrać, znacznika po prostu nie ma, a Testy działają normalnie.
+## Pula pytań użytkownika
+
+Użytkownik uczy się z **puli**: pytań z aktów prawnych swojej ścieżki (pięć aplikacji egzaminacyjnych albo Student), po
+opcjonalnym zawężeniu do wybranych aktów i z filtrem źródeł. Pulę liczy serwer (`GET /api/me/pool`, `api/pool.ts`), a
+frontend ją tylko pokazuje i zapisuje wybór. **Każdy widzi wszystkie dziedziny, ale w każdej tylko akty swojej ścieżki**:
+dziedzina bez aktów w ścieżce jest wyszarzona („Poza pulą” na kafelku w Testach, „Brak aktów w Twojej puli” w środku).
+
+**Znacznik „Pula pytań”** (`features/pool/PoolChip.tsx`, `data-testid="pool-chip"`) stoi przy tytule na liście Testów, na
+ekranie dziedziny, we „Własnym teście” i w ustawieniach egzaminu. Mówi, z czego użytkownik się uczy, np. „Notarialna”,
+„Notarialna, wybrane akty” albo „Student, filtr źródeł” (`describePool`). Gdy pula jest czymś zawężona, znacznik ma złotą
+ramkę i kropkę, a podpowiedź (atrybut `title` i tekst dla czytnika ekranu) podaje liczbę pytań w puli. Gdy puli nie uda się
+pobrać, znacznika po prostu nie ma, a nauka działa normalnie.
+
+Kliknięcie otwiera okno **„Pula pytań”** (`PoolDialog`), w którym są trzy części:
+
+- **Przedmioty** (tylko Student; `GET /api/courses`): pola wyboru z trzecim stanem „część zaznaczona”. Przedmiot to wyłącznie
+  podział aktów prawnych: zaznaczenie przedmiotu zaznacza jego akty, a pytania i tak należą do aktów (paremie łacińskie
+  to zwykłe pytania w zagadnieniu, nie osobny rodzaj treści).
+- **Akty prawne**, pogrupowane w 11 dziedzin: pole „Cała dziedzina”, osobny przycisk rozwijania dziedziny (rodzeństwo pola
+  wyboru, nie zagnieżdżone w nim, żeby kontrolki nie siedziały jedna w drugiej) i pola przy każdym akcie z liczbą jego
+  pytań ze wszystkich źródeł. „Zaznacz wszystkie” wraca do całej ścieżki. Akt typu `TOPIC` to zagadnienie bez ustawy.
+- **Źródła pytań w Testach**: trzy pola „Moje arkusze”, „Arkusze innych ścieżek” i „Pytania autorskie” (`lib/source.ts`) z
+  liczbą pytań każdej grupy; grupa bez pytań w puli jest nieaktywna.
+
+Zasady okna:
+
+- Trzeba zostawić co najmniej jeden akt i jedną grupę źródeł; inaczej „Zapisz” jest nieaktywne, a podpowiedź mówi, czego brakuje.
+- Zapis wysyła tylko to, co się zmieniło: `PUT /api/me/pool/acts` (zaznaczenie **wszystkich** aktów wysyła pustą listę, czyli
+  zdejmuje zawężenie) i `PUT /api/me/pool/source-filter` (`ownSheets`, `otherSheets`, `authored`). Pula jest na koncie, więc
+  działa też na innym urządzeniu.
+- Zmiana ścieżki w Koncie zdejmuje zawężenie i przywraca wszystkie trzy grupy źródeł.
+
+**Gdzie pula obowiązuje** (stosuje ją serwer, frontend niczego nie filtruje u siebie):
+
+| Obszar | Zawężenie do aktów | Filtr źródeł |
+|--------|--------------------|--------------|
+| Testy: katalog, kolejki, powtórki, „Moje błędy”, własny test | tak | tak |
+| Egzamin próbny | **nie** (losuje ze wszystkich aktów ścieżki) | tak |
+| Fiszki | tak | **nie** |
+| Statystyki testów (przegląd, opanowanie aktów, „Postęp” na Pulpicie) | tak | tak |
+| Statystyki fiszek | tak | **nie** |
+| Statystyki według źródła | nie (zawsze cała pula ścieżki) | nie |
+
+Po zapisie frontend unieważnia dane, które liczą pytania: katalog Testów, liczniki powtórek, błędów i własnego testu,
+ustawienia (plan nauki) i statystyki (`invalidateAfterPoolChange` w `features/pool/hooks.ts`).
+Gdy pula zawęża katalog, puste pozycje mają napis „Brak w filtrze źródeł” zamiast „Wkrótce”.
 
 ## Ustawienia nauki (Konto)
 
@@ -326,23 +384,26 @@ z liczbą pytań).
   równy domyślnemu (40), wysyłany jest jako liczba.
 - **Limit nowych pytań: automatyczny albo własny.** Po co jest limit: żeby nowe pytania nie wypierały powtórek (każde nowe
   pytanie wraca później kilka razy). „Automatycznie” (zalecane, nic nie trzeba ustawiać) to co najmniej 40 dziennie, a gdy wybrana
-  aplikacja ma termin, limit idzie za planem: tyle nowych pytań, ile trzeba, żeby zdążyć przed ostatnimi dwoma tygodniami, ale
+  aplikacja (ścieżka egzaminacyjna) ma termin, limit idzie za planem: tyle nowych pytań, ile trzeba, żeby zdążyć przed ostatnimi dwoma tygodniami, ale
   **nie więcej niż 100** (`maxTestQuestionsPerDay` z planu). „Własny limit” obowiązuje wprost (0–500). Obliczenia robi serwer od
   stanu z początku dnia, więc limit nie zmienia się w trakcie dnia. Ustawienia zwracają limit obowiązujący teraz
   (`newTestQuestionsPerDay`) i znacznik `newTestQuestionsAuto`.
 - **Uczciwy komunikat zamiast „podnieś limit”** (`LimitNotice`, reguły w `newQuestionsLimit.ts`; ten sam na Pulpicie i w Koncie,
   w Koncie bez linku do samego siebie): (a) własny limit niższy niż potrzeba, a potrzeba mieści się w maksimum: „Zmień go w
   Ustawieniach albo wybierz limit automatyczny”; (b) potrzeba więcej niż maksimum: „Wszystkich nowych pytań nie zdążysz zacząć
-  przed ostatnimi dwoma tygodniami…”, bez prośby o podniesienie limitu (to nic by nie dało), z podpowiedzią zawężenia zakresu
-  filtrem pochodzenia; przy limicie automatycznym dopisek „Limit ustawiliśmy na 100.”; (c) własny limit co najmniej tak duży jak potrzeba: brak
+  przed ostatnimi dwoma tygodniami…”, bez prośby o podniesienie limitu (to nic by nie dało), z podpowiedzią zawężenia puli
+  w oknie „Pula pytań”; przy limicie automatycznym dopisek „Limit ustawiliśmy na 100.”; (c) własny limit co najmniej tak duży jak potrzeba: brak
   komunikatu.
-- **Egzamin.** Użytkownik nie wpisuje już własnej daty. W sekcji „Egzamin” (testid `exam-choice-settings`) wybiera aplikację,
-  do której się przygotowuje („Aplikacja, do której się przygotowuję”, przycisk „Wybierz egzamin” albo „Zmień egzamin”), a
-  termin ustawia administrator (niżej). Wybór woła `PUT /api/me/exam` (`chooseExam`, hook `useChooseExam` w
-  `features/settings/examChoice.ts`). **Backend przy tym jednorazowo ustawia filtr pochodzenia** na wybraną aplikację i pytania
-  autorskie, więc po wyborze frontend unieważnia także filtr pochodzenia, katalog Testów, liczniki powtórek i błędów oraz liczniki
-  Własnego testu. Każdy kolejny wybór filtr nadpisuje; poza wyborem filtr zmienia się osobno.
-- **Plan do egzaminu**: gdy wybrana aplikacja ma przyszły termin, serwer zwraca plan (ile nowych pytań i fiszek zostało, ile
+- **Moja ścieżka.** Użytkownik nie wpisuje własnej daty. W sekcji „Moja ścieżka” (`TrackChoiceSettings`, testid
+  `track-choice-settings`) wybiera z listy „Do czego się przygotowuję” jedną z pięciu aplikacji (przy każdej data egzaminu
+  albo „termin nieogłoszony”) albo **Studenta**, a termin ustawia administrator (niżej). Przycisk nazywa się „Zmień
+  ścieżkę” (albo „Wybierz ścieżkę”, gdy nic jeszcze nie wybrano) i wywołuje `PUT /api/me/track` (`chooseTrack`, hook
+  `useChooseTrack` w `features/settings/trackChoice.ts`). **Serwer przy tym zdejmuje zawężenie puli do aktów i przywraca
+  filtr źródeł**, więc po wyborze frontend odświeża pulę, katalog Testów, liczniki powtórek i błędów, Własny test oraz
+  statystyki (`refreshAfterTrackChosen`). Pod listą jedno zdanie opisuje stan egzaminu (`ExamInfo`): ile dni zostało, że
+  tryb egzaminacyjny jest włączony, że termin jest nieogłoszony albo że egzamin już się odbył; Student zamiast tego widzi
+  „Jako Student nie masz odliczania ani dziennego planu.”.
+- **Plan do egzaminu**: gdy wybrana aplikacja ma przyszły termin (Student go nie ma), serwer zwraca plan (ile nowych pytań i fiszek zostało, ile
   dni na ich zaczęcie, sugerowane limity dzienne), a sugerowane limity są tylko informacją (limit nowych pytań robi się sam w trybie „Automatycznie”).
 - Ostatnie **14 dni** przed egzaminem serwer zostawia na same powtórki; to stąd bierze się `planningDays`
   (dni do egzaminu − 14, najmniej 0). W tym czasie cel nowych pytań wynosi 0, a Pulpit pokazuje „Ostatnie dwa tygodnie: skup
@@ -352,9 +413,9 @@ z liczbą pytań).
 
 ### Terminy egzaminów (administrator)
 
-`features/settings/ExamTermsCard.tsx` ↔ `GET /api/exam-terms`, `PUT /api/exam-terms/{origin}` (`api/examTerms.ts`,
+`features/settings/ExamTermsCard.tsx` ↔ `GET /api/exam-terms`, `PUT /api/exam-terms/{trackId}` (`api/examTerms.ts`,
 hook `useExamTerms`). Karta w Koncie jest widoczna tylko dla administratora: rolę czyta `useIsAdmin()` z tokenu, ale to
-tylko wygoda interfejsu, bo naprawdę chroni `403` z serwera. Dla każdej z pięciu aplikacji jest pole daty i przyciski
+tylko wygoda interfejsu, bo naprawdę chroni `403` z serwera. Dla każdej z pięciu aplikacji (Studenta na liście nie ma, bo nie ma terminu) jest pole daty i przyciski
 „Zapisz” oraz „Usuń termin”. Serwer odrzuca datę z przeszłości i oddaloną o więcej niż 3 lata; komunikat błędu jest pokazany
 przy wierszu. Zmiana działa od razu u wszystkich, którzy wybrali daną aplikację, ale wyznaczone już terminy powtórek nie
 są przeliczane wstecz.
@@ -363,25 +424,24 @@ są przeliczane wstecz.
 
 ### Okno startowe (`features/onboarding/OnboardingDialog.tsx`)
 
-`OnboardingGate` stoi w `AppShell` i czyta ustawienia nauki. Gdy `startChoiceMade` jest dokładnie `false` (nowe konto, które nie
-zrobiło wyboru), otwiera okno modalne „Witaj w Tutlaw”. **Wybór jest obowiązkowy**: okno można zamknąć tylko wybierając aplikację
-albo „Jestem studentem” i klikając „Zacznij naukę” (albo wylogowując się).
+`OnboardingGate` stoi w `AppShell` i czyta ustawienia nauki. Gdy `track` w ustawieniach jest dokładnie `null` (nowe konto, które nie
+wybrało ścieżki), otwiera okno modalne „Witaj w Gradus iuris”. **Wybór jest obowiązkowy**: okno można zamknąć tylko wybierając ścieżkę
+(aplikację albo Studenta) i klikając „Zacznij naukę” (albo wylogowując się).
 
-- Dwie grupy wyboru: „Do jakiego egzaminu się przygotowujesz?” (pięć aplikacji z wierszem terminu oraz szósta pozycja
-  **„Jestem studentem / jeszcze nie wybrałem”**) i „Wygląd strony” (Ciemny zaznaczony z góry, Jasny). Z aplikacji biorą się
-  odliczanie, plan dnia i zawężenie pytań w Testach (backend ustawia przy wyborze filtr pochodzenia na wybraną aplikację i
-  pytania autorskie). **Student** nie ma aplikacji, terminu ani odliczania, a filtr pytań obejmuje wszystkie pochodzenia
-  (`PUT /api/me/exam` z `{"student": true}`; w ustawieniach wtedy `startChoiceMade = true`, `examOrigin = null`). Tę samą
-  pozycję ma lista „Aplikacja, do której się przygotowuję” w Koncie, więc wybór można zmienić.
-- „Zacznij naukę” jest nieaktywne, dopóki nic nie wybrano, a pod przyciskiem stoi podpowiedź „Wybierz aplikację albo opcję dla
-  studentów, żeby przejść dalej.” Okno nie ma przycisku zamknięcia, Esc i kliknięcie w tło nic nie robią (`Dialog` z `dismissible={false}`; gdyby
-  przeglądarka mimo to zamknęła okno, otworzy się z powrotem).
+- Dwie grupy wyboru: „Do czego się przygotowujesz?” (lista ścieżek z `GET /api/tracks`: pięć aplikacji z wierszem terminu, a na
+  końcu **Student**) i „Wygląd strony” (Ciemny zaznaczony z góry, Jasny). Z aplikacji biorą się odliczanie, plan dnia i pula
+  pytań (własne arkusze aplikacji oraz akty prawne, które obejmuje; potem zawęzisz ją w „Puli pytań”). **Student** nie ma
+  terminu ani odliczania, a pulę składa z przedmiotów i aktów z całego banku pytań (pod nazwą stoi podpis „Bez odliczania i
+  planu dnia…”). Obie opcje to ten sam `PUT /api/me/track` z numerem ścieżki, a tę samą listę ma „Moja ścieżka” w Koncie,
+  więc wybór można zmienić.
+- „Zacznij naukę” jest nieaktywne, dopóki nic nie wybrano, a pod przyciskiem stoi podpowiedź „Wybierz aplikację albo
+  Studenta, żeby przejść dalej.” Okno nie ma przycisku zamknięcia, Esc i kliknięcie w tło nic nie robią (`Dialog` z
+  `dismissible={false}`; gdyby przeglądarka mimo to zamknęła okno, otworzy się z powrotem).
 - Wybór wyglądu działa od razu jako **podgląd** (zmienia całą stronę), ale niczego nie zapisuje. Zapis dzieje się dopiero po
-  „Zacznij naukę”: najpierw `PUT /api/me/theme` (tylko gdy wygląd się zmienił), potem `PUT /api/me/exam`. Błąd któregokolwiek
+  „Zacznij naukę”: najpierw `PUT /api/me/theme` (tylko gdy wygląd się zmienił), potem `PUT /api/me/track`. Błąd któregokolwiek
   kroku zostaje w oknie jako komunikat z serwera i można ponowić (gdy zawiedzie zapis wyglądu, aplikacja nie jest wysyłana).
 - Okno nie blokuje aplikacji, gdy nie wiadomo, czy wybór zrobiono: błąd pobrania ustawień, ładowanie albo odpowiedź bez
-  `startChoiceMade` nie otwierają go. Konta, które aplikację już wybrały, nie widzą okna wcale; stare konta bez wyboru zobaczą je
-  przy najbliższym wejściu do aplikacji.
+  pola `track` nie otwierają go (liczy się tylko wyraźne `null`). Konta, które ścieżkę już wybrały, nie widzą okna wcale.
 - Okno jest `Dialog`em, więc skróty klawiszowe sesji pod nim nie działają, a fokus jest uwięziony w oknie.
 
 ### Wygląd: ciemny i jasny (`features/settings`)
@@ -391,15 +451,15 @@ albo „Jestem studentem” i klikając „Zacznij naukę” (albo wylogowując 
   (`PUT /api/me/theme`, hook `useChooseTheme`); strona przełącza się natychmiast, a przy błędzie zapisu wraca do poprzedniego
   wyglądu i pokazuje komunikat. Karta działa także wtedy, gdy ustawienia nauki się nie wczytały.
 - **Źródłem prawdy jest konto.** `ThemeSync` (w `AppShell`) stosuje wygląd z ustawień, zapisuje jego kopię w przeglądarce
-  (`tutlaw.theme.v1`, patrz [03](03-logowanie-i-sesja.md)) i przy opuszczeniu aplikacji przywraca ciemny. Skrypt w `index.html`
+  (`gradus.theme.v1`, patrz [03](03-logowanie-i-sesja.md)) i przy opuszczeniu aplikacji przywraca ciemny. Skrypt w `index.html`
   ustawia jasny wygląd przed pierwszą klatką, ale tylko na ścieżkach `/app`; strona główna, logowanie i strony prawne są
   zawsze ciemne.
 - Szczegóły kolorów w [06](06-wyglad-i-komponenty.md#paleta-kolorów-aplikacja).
 
 ## Własny test (`features/customTest`)
 
-Sesja nauki ułożona przez użytkownika: wybiera rodzaje i akty prawne, rodzaj pytań (wszystkie, nowe, „Moje błędy”, zaległe) i liczbę
-pytań. Opis ekranu jest w [02](02-routing-i-strony.md). Zasady:
+Sesja nauki ułożona przez użytkownika: wybiera dziedziny i akty prawne z puli (`ScopeTree`), rodzaj pytań (wszystkie, nowe,
+„Moje błędy”, zaległe) i liczbę pytań. Opis ekranu jest w [02](02-routing-i-strony.md). Zasady:
 
 - **To nauka, nie egzamin.** Nie ma progu, wyniku „zdał / nie zdał” ani zegara. Sesja kończy się zwykłym ekranem
   „Brawo! Własny test zakończony.”.
@@ -414,10 +474,10 @@ pytań. Opis ekranu jest w [02](02-routing-i-strony.md). Zasady:
   dostępna nieprzekraczająca zapamiętanej** (kto prosił o 100, a ma 35 pytań, dostaje „Wszystkie (35)”). Bez zapamiętanego
   wyboru proponujemy 20. Zapamiętywane są rodzaj pytań i liczba (`customTestStorage.ts`).
 - **Dwa kroki.** Ekran pyta serwer o liczby pytań (`GET /api/review/custom-test/counts`), a po „Rozpocznij test”
-  losuje numery i **zapisuje sesję** (`POST /api/review/custom-test` zwraca `cardIds` i `sessionId`). Sesja
-  `/app/test/custom?cardIds=…&sessionId=…` pobiera te pytania kolejką ćwiczeń.
-- **Filtr pochodzenia obowiązuje automatycznie** (serwer), a drzewo wyboru pokazuje tylko działy, w których po filtrze
-  jest co rozwiązywać. Zawieszone, ukryte i niedostępne pytania nie wchodzą do testu.
+  losuje numery i **zapisuje sesję** (`POST /api/review/custom-test` zwraca `questionIds` i `sessionId`). Sesja
+  `/app/test/custom?questionIds=…&sessionId=…` pobiera te pytania kolejką ćwiczeń.
+- **Pula obowiązuje automatycznie** (serwer: akty ścieżki po zawężeniu i filtr źródeł), a drzewo wyboru pokazuje tylko
+  działy, w których po filtrze jest co rozwiązywać; gdy filtr źródeł wyciął wszystko, ekran mówi „Brak w filtrze źródeł”. Zawieszone, ukryte i niedostępne pytania nie wchodzą do testu.
 - **Dzienny limit nowych pytań go nie dotyczy.** Użytkownik sam wybiera, ile pytań chce rozwiązać.
 - W podsumowaniu nad przyciskiem opis zakresu i rodzaju łączą się przecinkiem („Cały materiał, Wszystkie”), bez środkowych kropek.
 
@@ -434,17 +494,19 @@ Każdy własny test jest **zapisywany w chwili startu**, nie dopiero po ukończe
   Błędne i bez odpowiedzi”. Do nieukończonego testu nie da się wrócić, ekran mówi o tym wprost. Gdy test nie istnieje albo nie
   należy do użytkownika, ekran pokazuje błąd z linkiem „Wróć do listy testów”.
 - **„Ułóż ponownie z tymi ustawieniami”** otwiera ekran układania ze wstępnie zaznaczonymi tymi samymi działami, rodzajem pytań
-  i liczbą (ustawienia jadą w stanie nawigacji, `CustomTestPrefill`). Działy, których już nie ma w drzewie (np. po zmianie
-  filtra pochodzenia), są pomijane z komunikatem; komunikat jest też, gdy od tamtego czasu zmienił się filtr pochodzenia.
+  i liczbą (ustawienia jadą w stanie nawigacji, `CustomTestPrefill`). Akty i dziedziny, których nie ma już w puli (np. po zmianie
+  ścieżki), są pomijane z komunikatem; komunikat jest też, gdy od tamtego czasu zmienił się filtr źródeł (test pamięta grupy
+  źródeł z chwili układania).
   Przycisk niczego nie uruchamia sam: użytkownik klika „Rozpocznij test”, więc powstaje nowa sesja.
 - Do **Moich testów nie trafiają** zwykłe powtórki, „Popraw błędy” ani „Powtórz zaległe”; to osobne sesje.
 - W Statystykach („Podsumowanie nauki”) liczba testów to liczba własnych testów, a egzaminy próbne są liczone osobno.
 
 ## Egzamin próbny (`features/exam`)
 
-Egzamin ma **stały format**: zawsze **150 pytań** z całego dostępnego materiału, a zaliczenie jest od **100 punktów**
+Egzamin ma **stały format**: zawsze **150 pytań** z całej puli ścieżki, a zaliczenie jest od **100 punktów**
 (1 punkt za poprawną odpowiedź, bez punktów ujemnych). Użytkownik niczego z tego nie wybiera: ani zakresu, ani liczby pytań,
-ani progu. Pytania losuje serwer, a serwer też ocenia egzamin i sam ustala próg, więc frontend tylko wyświetla to, co dostał.
+ani progu. Pytania losuje serwer (ze wszystkich aktów ścieżki, **bez zawężenia do wybranych aktów**, ale z filtrem źródeł), a serwer
+także ocenia egzamin i sam ustala próg, więc frontend tylko wyświetla to, co dostał.
 Ćwiczenie jednego działu to osobna funkcja, [Własny test](#własny-test-featurescustomtest), który niczego nie zalicza.
 
 Egzamin ma trzy fazy na jednym adresie `/app/exam`: **ustawienia → przebieg → raport**. Nie zmienia harmonogramu powtórek
@@ -462,19 +524,22 @@ flowchart LR
 
 ### Ustawienia
 
-- **Format** pokazują dwa kafelki: „150 pytań z całego materiału” i „100 punktów do zaliczenia”. To opis, a nie pola
+- **Format** pokazują dwa kafelki: „150 pytań z całej puli ścieżki” i „100 punktów do zaliczenia”. To opis, a nie pola
   formularza (stałe `EXAM_QUESTION_COUNT` i `EXAM_PASS_POINTS` w `features/exam/format.ts` służą tylko do wyświetlania;
   prawdziwy próg przychodzi z serwera).
-- **Pochodzenie pytań:** znacznik filtra pochodzenia (jak w Testach) i informacja, ile pytań jest do wylosowania
-  (z katalogu Testów, bez zawieszonych i z nieodblokowanych rozdziałów).
+- **Pula pytań:** znacznik puli (jak w Testach) i informacja, ile pytań jest do wylosowania. Gdy pula nie jest zawężona do
+  aktów, liczba to `questionCount` z `GET /api/me/pool`; przy zawężeniu serwer nie podaje liczby pytań całej ścieżki, więc
+  ekran tylko tłumaczy, że egzamin losuje ze wszystkich aktów ścieżki, niczego nie zgaduje i nie blokuje startu. Gdy filtr
+  źródeł wyciął wszystko, ekran każe go zmienić w oknie „Pula pytań”.
 - **Limit czasu:** 1–600 minut albo „Bez limitu czasu”. Dopóki użytkownik nie ustawi własnego, czas jest równy liczbie pytań w
   minutach (minuta na pytanie, czyli 150 min). Prawdziwy czas egzaminu nie jest tu odtwarzany, to wybór użytkownika.
-- Zapamiętywany jest tylko ostatnio użyty limit czasu (`tutlaw.exam.settings.v1`).
+- Zapamiętywany jest tylko ostatnio użyty limit czasu (`gradus.exam.settings.v1`).
 - **Mniej niż 150 pytań w materiale:** egzamin ma tyle pytań, ile jest, a próg jest proporcjonalnie niższy
   (100 z 150, w górę do pełnego punktu, np. 12 pytań to 8 punktów). Ekran uprzedza o tym przed startem.
 - Obok przycisku „Rozpocznij egzamin” jest link „Chcesz poćwiczyć jeden dział? Ułóż własny test” do `/app/custom-test`.
 - Pod formularzem jest **historia** ostatnich podejść (do 50; `GET /api/exams/history`): wynik, zakres, data, próg, czas.
-  Podejścia sprzed stałego formatu zostają w historii: mają nazwę wybranego wtedy zakresu i próg w procentach (zob. „Raport”).
+  Frontend nadal rozumie podejście bez progu w punktach (`passPoints: null`, próg w procentach, własny zakres); w bazie
+  założonej od nowa takich podejść nie ma (zob. „Raport”).
 
 ### Przebieg
 
@@ -496,10 +561,10 @@ flowchart LR
 
 ### Wznawianie
 
-Szkic ma numer wersji i adres konta właściciela. Przy wejściu na `/app/exam` aplikacja czyta go z pamięci i sprawdza kształt
-danych: uszkodzony, nieznanej wersji albo cudzy (inne konto w tej przeglądarce) szkic jest po prostu pomijany. Szkic w wersji 1
-(z czasów własnego zakresu i progu) da się wznowić: jego zakres i próg są odrzucane, bo ocenia serwer, a próg w punktach
-bywa wtedy nieznany (ekran go po prostu nie pokazuje). Jeśli szkic jest
+Szkic leży pod kluczem `gradus.exam.draft.v2` i ma numer wersji (3) oraz adres konta właściciela. Klucz zmieniono w Etapie 32,
+bo pytania dostały nowe numery po przebudowie bazy: zapis pod starym kluczem (z „v1” w nazwie) jest ignorowany, a jego numery
+pytań i tak do niczego by nie pasowały. Przy wejściu na `/app/exam` aplikacja czyta szkic z pamięci i sprawdza kształt danych:
+uszkodzony, nieznanej wersji albo cudzy (inne konto w tej przeglądarce) szkic jest po prostu pomijany. Jeśli szkic jest
 poprawny, ekran ustawień oferuje „Wznów egzamin” (a gdy czas minął, „Zakończ i sprawdź”) albo „Porzuć”.
 
 ### Raport
@@ -507,24 +572,32 @@ poprawny, ekran ustawień oferuje „Wznów egzamin” (a gdy czas minął, „Z
 `ExamResultView`: werdykt „Zaliczony” lub „Niezaliczony”, wynik (poprawne / wszystkie i procent), próg w punktach
 („100 z 150 pkt”, z dopiskiem „Zabrakło N pkt do zaliczenia”, gdy zabrakło), czas, liczba odpowiedzi udzielonych i pominiętych,
 zakres i data. Zaliczenie rozstrzyga serwer (`passed`: poprawne ≥ `passPoints`), frontend niczego nie przelicza.
-Podejście **sprzed stałego formatu** (`passPoints: null`) ma w raporcie i w historii stary próg w procentach z liczbą
-poprawnych odpowiedzi, której wtedy wymagał (`pointsNeeded`), i nazwę wybranego wtedy zakresu.
+Podejście bez progu w punktach (`passPoints: null`, spoza stałego formatu) ma w raporcie i w historii próg w procentach z liczbą
+poprawnych odpowiedzi, której wymagał (`pointsNeeded`), i nazwę wybranego wtedy zakresu.
 Dodatkowo: informacja o automatycznym zakończeniu po czasie, informacja o pytaniach, których nie dało się ocenić (usunięte
 albo już niedostępne; nie wliczają się do wyniku), wyniki według źródeł (gdy źródeł jest więcej niż jedno) oraz przegląd
 pytań z poprawnymi odpowiedziami, wyjaśnieniami i podstawą prawną (domyślnie tylko błędne, z przełącznikiem na wszystkie).
-Przycisk **„Przerób błędne i pominięte”** otwiera zwykłą sesję testową z tych pytań (`/app/test/practice?cardIds=...`);
+Przycisk **„Przerób błędne i pominięte”** otwiera zwykłą sesję testową z tych pytań (`/app/test/practice?questionIds=...`);
 dopiero ta sesja zapisuje odpowiedzi w powtórkach.
 
 ## Statystyki i Pulpit
 
 Ekrany statystyk tylko wyświetlają liczby policzone przez serwer. Frontend liczy sam wyłącznie rzeczy czysto prezentacyjne:
 ograniczenie procentów do 0–100 i podział „opanowane / w nauce / nowe” z klamrami (`masterySplit` w
-`features/statistics/originStats.ts`), 28 słupków aktywności i porównanie ostatnich 7 dni z poprzednimi (`selectors.ts`),
+`features/statistics/sourceStats.ts`), 28 słupków aktywności i porównanie ostatnich 7 dni z poprzednimi (`selectors.ts`),
 serię dni i liczbę odpowiedzi w tym tygodniu. Definicje liczb („Opanowane”, „Skuteczność”, „Pewne błędy”) są w dokumentacji
 backendu, rozdział o statystykach.
+
+**Według źródła i według aktów.** Pierwsza część Statystyk (`MasterySection`) to opanowanie pytań według źródła:
+`GET /api/statistics/sources` zwraca zawsze trzy grupy (Moje arkusze, Arkusze innych ścieżek, Pytania autorskie) z arkuszami
+od najnowszego roku. Użytkownik wybiera zakres widoku: jedną grupę albo „Wszystkie” (`MasteryScope`); domyślnie są to „Moje
+arkusze”, gdy mają pytania. Statystyki według źródła liczą całą pulę ścieżki, więc nie zmieniają się od filtra źródeł ani od
+zawężenia aktów. Druga część (`ActMasteryList`) pokazuje opanowanie aktów prawnych z puli, a wybór aktu (`ActFilter`) ma tylko
+część o fiszkach.
 
 **„Przerobione” a „opanowane”.** Pulpit pokazuje „Przerobione”: pytania, które miały choć jedną odpowiedź. „Opanowane” jest
 w Statystykach i oznacza pytanie, którego stabilność w modelu FSRS przekracza 21 dni (backend: `MATURE_STABILITY_THRESHOLD`).
 Przy odpowiedziach w terminie stabilność rośnie mniej więcej 2,3 → 11 → 46 dni, więc trzy poprawne odpowiedzi w terminie
 (około dwóch tygodni nauki) wystarczą. Błędna odpowiedź albo „Nie jestem pewien” zwykle cofa pytanie do „W nauce”. W pierwszych
-dwóch tygodniach „0 opanowanych” jest więc normalne, dlatego tej liczby nie ma na Pulpicie.
+dwóch tygodniach „0 opanowanych” jest więc normalne, dlatego tej liczby nie ma na Pulpicie. Gdy pula jest zawężona (akty albo
+źródła), karta „Postęp” na Pulpicie dopisuje, że liczy tylko pytania z Twojej puli.

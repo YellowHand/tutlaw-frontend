@@ -1,5 +1,3 @@
-import type { QuestionOrigin } from "../../lib/origin";
-
 /**
  * Kolory żabotów w polskich togach (źródła: Rzeczpospolita, Bezprawnik): adwokat zielony, radca prawny
  * niebieski, sędzia fioletowy, prokurator czerwony. Odcienie są rozjaśnione pod ciemne tło aplikacji
@@ -20,11 +18,18 @@ export const TOGA_COLORS = {
 /** Jeden kolor = pełny żabot, dwa kolory = żabot podzielony na pół (lewa i prawa strona). */
 export type TogaTrim = readonly [string] | readonly [string, string];
 
-export const ORIGIN_TOGA_TRIM: Record<QuestionOrigin, TogaTrim> = {
-  ADVOCATE_LEGAL_ADVISER: [TOGA_COLORS.advocate, TOGA_COLORS.legalAdviser],
-  JUDGE_PROSECUTOR: [TOGA_COLORS.judge, TOGA_COLORS.prosecutor],
-  NOTARY: [TOGA_COLORS.notary],
-  SUPPLEMENTARY_JUDGE: [TOGA_COLORS.judge],
-  BAILIFF: [TOGA_COLORS.bailiff],
-  AUTHORED: [TOGA_COLORS.authored],
+/**
+ * Żabot togi dla ścieżki (slug jak w bazie). Student i ścieżki, których tu nie ma, dostają neutralną togę
+ * (undefined), a pytania autorskie złoto aplikacji.
+ */
+export const TRACK_TOGA_TRIM: Record<string, TogaTrim> = {
+  "adwokacka-radcowska": [TOGA_COLORS.advocate, TOGA_COLORS.legalAdviser],
+  "sedziowska-prokuratorska": [TOGA_COLORS.judge, TOGA_COLORS.prosecutor],
+  "uzupelniajaca-sedziowska": [TOGA_COLORS.judge],
+  notarialna: [TOGA_COLORS.notary],
+  komornicza: [TOGA_COLORS.bailiff],
 };
+
+export function togaTrimForTrack(slug: string | null | undefined): TogaTrim | undefined {
+  return slug ? TRACK_TOGA_TRIM[slug] : undefined;
+}

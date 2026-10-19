@@ -11,8 +11,8 @@ export function saveTextFile(filename: string, content: string, mimeType = "appl
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-/** Nazwa pliku z kopią danych, np. tutlaw-moje-dane-2026-10-12.json. */
+/** Nazwa pliku z kopią danych, np. gradus-iuris-moje-dane-2026-10-12.json. */
 export function exportFilename(date: Date = new Date()): string {
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `tutlaw-moje-dane-${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}.json`;
+  return `gradus-iuris-moje-dane-${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}.json`;
 }

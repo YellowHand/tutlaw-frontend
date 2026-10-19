@@ -47,7 +47,7 @@ function ExamFlow({ owner }: { owner: string }) {
     (start: ExamStart, config: ExamConfig) => {
       const startedAtMs = Date.now();
       const exam: ExamDraft = {
-        version: 2,
+        version: 3,
         owner,
         scopeLabel: start.scopeLabel,
         requestedCount: start.requestedCount,

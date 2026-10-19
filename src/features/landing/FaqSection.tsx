@@ -1,5 +1,5 @@
 import { COPY } from "./copy";
-import { OriginChips } from "./OriginChips";
+import { TrackChips } from "./TrackChips";
 import { Section, Wrap } from "./ui";
 
 export function FaqSection() {
@@ -24,7 +24,7 @@ export function FaqSection() {
               </summary>
               <div className="grid gap-3.5 pb-[22px]">
                 <p className="max-w-[62ch] text-pretty text-fg-soft">{item.a}</p>
-                {item.origins && <OriginChips />}
+                {item.tracks && <TrackChips />}
               </div>
             </details>
           ))}

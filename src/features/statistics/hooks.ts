@@ -1,22 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
 import type { SessionMode } from "../../api/review";
 import {
+  fetchActMastery,
   fetchActivity,
-  fetchChapterMastery,
   fetchLearningSummary,
-  fetchOriginStats,
   fetchOverview,
+  fetchSourceStats,
   fetchTestStats,
-  fetchWeakCards,
+  fetchWeakQuestions,
 } from "./api";
 
 const STALE_TIME = 60_000;
 
 /** mode: tylko fiszki ("FLASHCARD") albo tylko testy ("TEST"); bez trybu wszystko razem. */
-export function useOverview(subjectId?: number, mode?: SessionMode) {
+export function useOverview(actId?: number, mode?: SessionMode) {
   return useQuery({
-    queryKey: ["statistics", "overview", subjectId ?? "all", mode ?? "all"],
-    queryFn: () => fetchOverview(subjectId, mode),
+    queryKey: ["statistics", "overview", actId ?? "all", mode ?? "all"],
+    queryFn: () => fetchOverview(actId, mode),
     staleTime: STALE_TIME,
   });
 }
@@ -29,19 +29,18 @@ export function useActivity(days = 30, mode?: SessionMode) {
   });
 }
 
-export function useChapterMastery(sourceId?: number) {
+export function useActMastery(mode?: SessionMode) {
   return useQuery({
-    queryKey: ["statistics", "chapters", sourceId ?? "none"],
-    queryFn: () => fetchChapterMastery(sourceId),
-    enabled: !!sourceId,
+    queryKey: ["statistics", "acts", mode ?? "all"],
+    queryFn: () => fetchActMastery(mode),
     staleTime: STALE_TIME,
   });
 }
 
-export function useWeakCards(subjectId?: number, limit = 10) {
+export function useWeakQuestions(actId?: number, mode?: SessionMode, limit = 10) {
   return useQuery({
-    queryKey: ["statistics", "weak-cards", subjectId ?? "all", limit],
-    queryFn: () => fetchWeakCards(subjectId, limit),
+    queryKey: ["statistics", "weak-questions", actId ?? "all", mode ?? "all", limit],
+    queryFn: () => fetchWeakQuestions(actId, mode, limit),
     staleTime: STALE_TIME,
   });
 }
@@ -55,11 +54,11 @@ export function useTestStats() {
   });
 }
 
-/** Statystyki Testów według aplikacji i roku. Klucz zaczyna się od „statistics", więc odświeża się po sesji nauki. */
-export function useOriginStats() {
+/** Statystyki Testów według grup źródeł i arkuszy. Klucz zaczyna się od „statistics", więc odświeża się po sesji nauki. */
+export function useSourceStats() {
   return useQuery({
-    queryKey: ["statistics", "origins"],
-    queryFn: fetchOriginStats,
+    queryKey: ["statistics", "sources"],
+    queryFn: fetchSourceStats,
     staleTime: STALE_TIME,
   });
 }

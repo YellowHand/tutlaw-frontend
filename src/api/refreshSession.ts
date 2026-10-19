@@ -9,7 +9,7 @@ import { getStoredRefreshToken, getStoredToken, storeTokens } from "../features/
  *  - między kartami pilnuje tego blokada Web Locks: kto wejdzie drugi, widzi już nowe tokeny w localStorage i ich używa.
  */
 
-const LOCK_NAME = "tutlaw.refresh-session";
+const LOCK_NAME = "gradus.refresh-session";
 
 export type RefreshOutcome = "refreshed" | "rejected" | "unavailable";
 

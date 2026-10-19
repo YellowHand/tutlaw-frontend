@@ -37,9 +37,9 @@ export function LimitNotice({ issue, withSettingsLink = true, className }: { iss
       ) : (
         <span>
           Wszystkich nowych pytań nie zdążysz zacząć przed ostatnimi dwoma tygodniami: trzeba by {needed(issue.required)} dziennie, a{" "}
-          {issue.max} dziennie to rozsądne maksimum.{issue.auto ? ` Limit ustawiliśmy na ${issue.max}.` : ""} Zawęź zakres, np. filtrem{" "}
+          {issue.max} dziennie to rozsądne maksimum.{issue.auto ? ` Limit ustawiliśmy na ${issue.max}.` : ""} Zawęź pulę, np. w oknie{" "}
           <Link to={ROUTES.tests} className={LINK}>
-            Pochodzenie pytań w Testach
+            „Pula pytań” w Testach
           </Link>
           , albo skup się na tym, co najważniejsze.
         </span>

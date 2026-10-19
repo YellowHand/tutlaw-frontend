@@ -1,3 +1,15 @@
+import type { ReviewScope } from "../api/review";
+
+/** Zakres sesji w adresie: ?fieldId=1&actId=2&sourceId=3 (tylko podane pola); bez zakresu pusty napis. */
+export function scopeQuery(scope: ReviewScope): string {
+  const params = new URLSearchParams();
+  if (scope.fieldId !== undefined) params.set("fieldId", String(scope.fieldId));
+  if (scope.actId !== undefined) params.set("actId", String(scope.actId));
+  if (scope.sourceId !== undefined) params.set("sourceId", String(scope.sourceId));
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
 export const ROUTES = {
   landing: "/",
   login: "/login",
@@ -12,45 +24,34 @@ export const ROUTES = {
   app: "/app",
   dashboard: "/app/dashboard",
 
+  // Fiszki: ekran startowy (zaległe, nowe, zakres) i sesja. Fiszka to tryb pytania, a nie osobna karta.
   flashcards: "/app/flashcards",
-  flashcardsSubjects: (categoryId: string | number) => `/app/flashcards/${categoryId}/subjects`,
-  flashcardsSources: (subjectId: string | number) => `/app/flashcards/${subjectId}/sources`,
-  flashcardsChapters: (subjectId: string | number, sourceId: string | number) =>
-    `/app/flashcards/${subjectId}/sources/${sourceId}/chapters`,
 
-  // Testy: rodzaj (kategoria) → przedmiot / akt prawny → źródło
+  // Testy: dziedzina → akt prawny. Akt jest liściem: z niego od razu zaczyna się sesja.
   tests: "/app/tests",
-  testsCategory: (categoryId: string | number) => `/app/tests/${categoryId}`,
-  testsSubject: (categoryId: string | number, subjectId: string | number) => `/app/tests/${categoryId}/${subjectId}`,
+  testsField: (fieldId: string | number) => `/app/tests/${fieldId}`,
 
-  // Sesje z całego materiału użytkownika (bez wybranego przedmiotu).
+  // Sesje z całej puli użytkownika albo z zakresu podanego w adresie (?fieldId=, ?actId=, ?sourceId=).
   studyAll: "/app/study",
   testAll: "/app/test",
+  studyScope: (scope: ReviewScope) => `/app/study${scopeQuery(scope)}`,
+  testScope: (scope: ReviewScope) => `/app/test${scopeQuery(scope)}`,
   // Sesja z pytań, w których ostatnia odpowiedź w teście była błędna.
   testMistakes: "/app/test/mistakes",
   // Sesja z samych zaległych powtórek testowych (bez nowych pytań).
   testDue: "/app/test/due",
   // Sesja testowa z podanych pytań (np. błędy z egzaminu próbnego).
-  testPractice: (cardIds: readonly number[]) => `/app/test/practice?cardIds=${cardIds.join(",")}`,
+  testPractice: (questionIds: readonly number[]) => `/app/test/practice?questionIds=${questionIds.join(",")}`,
   // Własny test: ekran układania (to NIE sesja, więc zostaje z menu) i sesja z wylosowanych pytań.
   customTest: "/app/custom-test",
   testCustomBase: "/app/test/custom",
-  testCustom: (cardIds: readonly number[], sessionId?: number) =>
-    `/app/test/custom?cardIds=${cardIds.join(",")}${sessionId !== undefined ? `&sessionId=${sessionId}` : ""}`,
+  testCustom: (questionIds: readonly number[], sessionId?: number) =>
+    `/app/test/custom?questionIds=${questionIds.join(",")}${sessionId !== undefined ? `&sessionId=${sessionId}` : ""}`,
   // „Moje testy": zapisane własne testy (lista i szczegóły). Pod /app/custom-test, więc menu dalej świeci „Testy".
   myTests: "/app/custom-test/history",
   myTest: (id: string | number) => `/app/custom-test/history/${id}`,
   // Egzamin próbny: ustawienia, egzamin, raport i historia.
   exam: "/app/exam",
-
-  study: (subjectId: string | number, sourceId?: string | number) =>
-    sourceId !== undefined ? `/app/study/${subjectId}?sourceId=${sourceId}` : `/app/study/${subjectId}`,
-
-  test: (subjectId: string | number, sourceId?: string | number) =>
-    sourceId !== undefined ? `/app/test/${subjectId}?sourceId=${sourceId}` : `/app/test/${subjectId}`,
-
-  // Test z całego rodzaju (działu prawa / kategorii).
-  testCategory: (categoryId: string | number) => `/app/test?categoryId=${categoryId}`,
 
   statistics: "/app/statistics",
   account: "/app/account",

@@ -6,7 +6,7 @@ import { Dialog } from "../../components/ui/Dialog";
 import { cn } from "../../lib/cn";
 import { pluralizePl } from "../../lib/plural";
 import { isTyping } from "../review/keyboard";
-import { OriginLabel } from "../review/OriginLabel";
+import { SourceLabel } from "../review/SourceLabel";
 import { formatClock } from "./format";
 import { saveDraft, type ExamDraft } from "./examStorage";
 
@@ -58,7 +58,7 @@ export function ExamRunner({ exam, persist, submitting, submitError, onSubmit, o
 
   const question = exam.questions[index];
   const answeredCount = useMemo(
-    () => exam.questions.filter((q) => answers[String(q.cardId)] !== undefined).length,
+    () => exam.questions.filter((q) => answers[String(q.questionId)] !== undefined).length,
     [exam.questions, answers]
   );
   const unansweredCount = total - answeredCount;
@@ -66,7 +66,7 @@ export function ExamRunner({ exam, persist, submitting, submitError, onSubmit, o
 
   const buildPayload = useCallback(
     (): ExamAnswerPayload[] =>
-      exam.questions.map((q) => ({ cardId: q.cardId, selectedOption: answers[String(q.cardId)] ?? null })),
+      exam.questions.map((q) => ({ questionId: q.questionId, selectedOption: answers[String(q.questionId)] ?? null })),
     [exam.questions, answers]
   );
 
@@ -124,7 +124,7 @@ export function ExamRunner({ exam, persist, submitting, submitError, onSubmit, o
   const choose = useCallback(
     (option: OptionKey) => {
       if (submitting || timeUp) return;
-      const id = String(exam.questions[index].cardId);
+      const id = String(exam.questions[index].questionId);
       setAnswers((prev) => {
         const next = { ...prev };
         // Ponowny wybór tej samej odpowiedzi ją odznacza.
@@ -137,7 +137,7 @@ export function ExamRunner({ exam, persist, submitting, submitError, onSubmit, o
   );
 
   const toggleFlag = useCallback(() => {
-    const id = exam.questions[index].cardId;
+    const id = exam.questions[index].questionId;
     setFlagged((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -177,8 +177,8 @@ export function ExamRunner({ exam, persist, submitting, submitError, onSubmit, o
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [dialog, index, goTo, toggleFlag, choose]);
 
-  const selected = answers[String(question.cardId)];
-  const isFlagged = flagged.has(question.cardId);
+  const selected = answers[String(question.questionId)];
+  const isFlagged = flagged.has(question.questionId);
   const texts: Record<OptionKey, string> = { A: question.optionA, B: question.optionB, C: question.optionC };
   const frozen = submitting;
 
@@ -240,8 +240,13 @@ export function ExamRunner({ exam, persist, submitting, submitError, onSubmit, o
           </div>
 
           <div className="rounded-2xl border border-line bg-surface p-6 sm:p-8">
-            <OriginLabel origin={question.origin} examYear={question.examYear} className="mb-3" />
-            <p className="text-pretty text-lg font-semibold leading-snug text-fg sm:text-xl">{question.front}</p>
+            <SourceLabel
+              actName={question.actName}
+              sourceName={question.sourceName}
+              examYear={question.examYear}
+              className="mb-3"
+            />
+            <p className="text-pretty text-lg font-semibold leading-snug text-fg sm:text-xl">{question.body}</p>
           </div>
 
           <div role="group" aria-label="Odpowiedzi" className="flex flex-col gap-3">
@@ -334,11 +339,11 @@ export function ExamRunner({ exam, persist, submitting, submitError, onSubmit, o
           <h2 className="text-sm font-medium text-fg-muted">Pytania</h2>
           <ol className="grid grid-cols-6 gap-1.5 sm:grid-cols-12 lg:max-h-[60vh] lg:grid-cols-5 lg:overflow-y-auto">
             {exam.questions.map((q, i) => {
-              const answered = answers[String(q.cardId)] !== undefined;
-              const marked = flagged.has(q.cardId);
+              const answered = answers[String(q.questionId)] !== undefined;
+              const marked = flagged.has(q.questionId);
               const current = i === index;
               return (
-                <li key={q.cardId} className="min-w-0">
+                <li key={q.questionId} className="min-w-0">
                   <button
                     type="button"
                     onClick={() => goTo(i, true)}

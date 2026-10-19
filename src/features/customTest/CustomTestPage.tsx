@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ClipboardList, History, Play } from "lucide-react";
 import { drawCustomTest, type CustomTestCounts, type CustomTestKind } from "../../api/customTest";
+import { SOURCE_GROUP_LABELS, SOURCE_GROUP_ORDER, type SourceGroup } from "../../lib/source";
 import { PageHeader } from "../../components/layout/PageHeader";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { ErrorState } from "../../components/ui/ErrorState";
@@ -13,13 +14,14 @@ import { pluralizePl } from "../../lib/plural";
 import { Breadcrumbs } from "../tests/Breadcrumbs";
 import { formatCount } from "../tests/format";
 import { useTestCatalog } from "../tests/hooks";
-import { OriginFilterChip } from "../tests/OriginFilterChip";
-import { describeSelection as describeOriginFilter, isFilterActive, selectedInOrder, useOriginFilter } from "../tests/originFilter";
+import { PoolChip } from "../pool/PoolChip";
+import { usePool } from "../pool/hooks";
+import { hiddenGroups } from "../pool/summary";
 import { START_BUTTON } from "../tests/StartButtons";
 import { loadRemembered, saveRemembered } from "./customTestStorage";
 import { useCustomTestCounts, useDebounced } from "./hooks";
 import {
-  allSubjectIds,
+  allActIds,
   buildTree,
   countOptions,
   describeSelection,
@@ -50,7 +52,7 @@ const KIND_OPTIONS: KindOption[] = [
 const questionsWord = (n: number) => pluralizePl(n, { one: "pytanie", few: "pytania", many: "pytań" });
 
 /**
- * Własny test: użytkownik składa sesję nauki sam. Wybiera rodzaje i akty prawne, które pytania (wszystkie, nowe, błędy,
+ * Własny test: użytkownik składa sesję nauki sam. Wybiera dziedziny i akty prawne z puli, które pytania (wszystkie, nowe, błędy,
  * zaległe) i liczbę pytań (10, 20, 50, 100 albo 150; przy małym zakresie „Wszystkie"). To nauka, nie egzamin: nie ma progu
  * ani wyniku „zdał / nie zdał", a odpowiedzi idą zwykłą drogą testu (ocena pamięci, pomyłki trafiają do „Moich błędów").
  * Każdy test zapisuje się w „Moich testach"; stamtąd można ułożyć go ponownie z tymi samymi ustawieniami (`prefill`).
@@ -59,8 +61,9 @@ export function CustomTestPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const catalogQuery = useTestCatalog();
-  const originFilter = useOriginFilter().data;
-  const filterActive = isFilterActive(originFilter);
+  const pool = usePool().data;
+  // Filtr źródeł (grupa wyłączona i mająca pytania) zawęża katalog, więc puste drzewo może być jego skutkiem.
+  const filterActive = pool ? hiddenGroups(pool).length > 0 : false;
   const remembered = useMemo(() => loadRemembered(), []);
   // „Ułóż ponownie z tymi ustawieniami" z Moich testów przekazuje ustawienia w stanie nawigacji.
   const prefill = useMemo(() => (location.state as { prefill?: CustomTestPrefill } | null)?.prefill ?? null, [location.state]);
@@ -71,12 +74,12 @@ export function CustomTestPage() {
   const [picked, setPicked] = useState<Set<number> | null>(null);
   const selected = useMemo(() => {
     if (picked !== null) return restrictToTree(tree, picked);
-    if (prefill) return selectionFromScope(tree, prefill.categoryIds, prefill.subjectIds).selected;
+    if (prefill) return selectionFromScope(tree, prefill.fieldIds, prefill.actIds).selected;
     if (remembered && !remembered.all) {
-      const kept = restrictToTree(tree, remembered.subjectIds);
+      const kept = restrictToTree(tree, remembered.actIds);
       if (kept.size > 0) return kept;
     }
-    return allSubjectIds(tree);
+    return allActIds(tree);
   }, [picked, prefill, remembered, tree]);
 
   const [kind, setKind] = useState<CustomTestKind>(prefill?.kind ?? remembered?.kind ?? "ALL");
@@ -114,13 +117,13 @@ export function CustomTestPage() {
     try {
       const selection = await drawCustomTest(scope, kind, chosen.sends);
       saveRemembered({
-        version: 1,
+        version: 2,
         all: isEverythingSelected(tree, selected),
-        subjectIds: Array.from(selected),
+        actIds: Array.from(selected),
         kind,
         questionCount: chosen.all ? "all" : chosen.count,
       });
-      navigate(ROUTES.testCustom(selection.cardIds, selection.sessionId));
+      navigate(ROUTES.testCustom(selection.questionIds, selection.sessionId));
     } catch (err) {
       setError(serverMessage(err, "Nie udało się ułożyć testu. Spróbuj ponownie."));
       setStarting(false);
@@ -130,17 +133,16 @@ export function CustomTestPage() {
   // Uwagi przy ustawieniach przeniesionych z zapisanego testu: czego nie da się odtworzyć dokładnie.
   const prefillNotes: string[] = [];
   if (prefill && tree.length > 0) {
-    if (selectionFromScope(tree, prefill.categoryIds, prefill.subjectIds).missing > 0) {
-      prefillNotes.push("Część działów z tamtego testu nie jest teraz dostępna, więc ich nie zaznaczyliśmy.");
+    if (selectionFromScope(tree, prefill.fieldIds, prefill.actIds).missing > 0) {
+      prefillNotes.push("Część aktów prawnych z tamtego testu nie jest teraz w Twojej puli, więc ich nie zaznaczyliśmy.");
     }
-    if (originFilter) {
-      const now = originFilter.all ? null : selectedInOrder(originFilter).join(",");
-      const then = prefill.origins === null ? null : [...prefill.origins].sort().join(",");
-      const sameSet = now === null ? then === null : then !== null && now.split(",").sort().join(",") === then;
-      if (!sameSet) {
-        prefillNotes.push(
-          `Tamten test powstał przy innym filtrze pochodzenia pytań. Teraz obowiązuje: ${describeOriginFilter(originFilter).toLowerCase()}.`
-        );
+    if (pool && prefill.sourceGroups.length > 0) {
+      const then = new Set<SourceGroup>(prefill.sourceGroups);
+      const now = new Set<SourceGroup>(pool.sourceGroups.filter((group) => group.selected).map((group) => group.code));
+      const same = then.size === now.size && SOURCE_GROUP_ORDER.every((code) => then.has(code) === now.has(code));
+      if (!same) {
+        const nowLabels = SOURCE_GROUP_ORDER.filter((code) => now.has(code)).map((code) => SOURCE_GROUP_LABELS[code].toLowerCase());
+        prefillNotes.push(`Tamten test powstał przy innym filtrze źródeł. Teraz obowiązuje: ${nowLabels.join(", ")}.`);
       }
     }
   }
@@ -150,7 +152,7 @@ export function CustomTestPage() {
       <Breadcrumbs items={[{ label: "Testy", to: ROUTES.tests }, { label: "Własny test" }]} />
       <PageHeader
         title="Własny test"
-        subtitle={`Ułóż sesję z wybranych działów. To nauka, nie egzamin: bez wyniku „zdał / nie zdał".`}
+        subtitle={`Ułóż sesję z wybranych dziedzin i aktów prawnych. To nauka, nie egzamin: bez wyniku „zdał / nie zdał".`}
         actions={
           <>
             <Link
@@ -161,7 +163,7 @@ export function CustomTestPage() {
               <History size={16} aria-hidden="true" className="text-fg-muted" />
               Moje testy
             </Link>
-            <OriginFilterChip />
+            <PoolChip />
           </>
         }
       />
@@ -185,7 +187,7 @@ export function CustomTestPage() {
       <div>
         {header}
         <div className="px-4 sm:px-8">
-          <ErrorState message="Nie udało się pobrać listy działów." onRetry={() => catalogQuery.refetch()} />
+          <ErrorState message="Nie udało się pobrać listy dziedzin i aktów." onRetry={() => catalogQuery.refetch()} />
         </div>
       </div>
     );
@@ -198,10 +200,10 @@ export function CustomTestPage() {
         <div className="px-4 sm:px-8">
           <EmptyState
             icon={ClipboardList}
-            title={filterActive ? "Brak w filtrze" : "Wkrótce"}
+            title={filterActive ? "Brak w filtrze źródeł" : "Wkrótce"}
             description={
               filterActive
-                ? "W wybranych pochodzeniach nie ma teraz pytań. Zmień filtr powyżej."
+                ? "W wybranych grupach źródeł nie ma teraz pytań. Zmień pulę powyżej."
                 : "Nie ma jeszcze pytań, z których dałoby się ułożyć test."
             }
           />
@@ -213,7 +215,7 @@ export function CustomTestPage() {
   const summaryLine = [describeSelection(tree, selected), kindOption.label].join(", ");
 
   let status: string;
-  if (!selectionMade) status = "Zaznacz co najmniej jeden dział.";
+  if (!selectionMade) status = "Zaznacz co najmniej jedną dziedzinę lub akt.";
   else if (counts.isError && !counts.data) status = "Nie udało się sprawdzić, ile jest pytań.";
   else if (!countsReady) status = "Liczę pytania…";
   else if (available === 0) status = "Brak takich pytań w wybranym zakresie.";
@@ -241,7 +243,7 @@ export function CustomTestPage() {
             tree={tree}
             selected={selected}
             onChange={setPicked}
-            onSelectAll={() => setPicked(allSubjectIds(tree))}
+            onSelectAll={() => setPicked(allActIds(tree))}
             onClear={() => setPicked(new Set())}
           />
 
@@ -305,7 +307,7 @@ export function CustomTestPage() {
             ) : (
               <p className="text-sm text-fg-muted">
                 {!selectionMade
-                  ? "Najpierw zaznacz dział."
+                  ? "Najpierw zaznacz dziedzinę lub akt."
                   : countsReady
                     ? "W tym zakresie nie ma pytań do ułożenia testu."
                     : "Liczę pytania…"}
