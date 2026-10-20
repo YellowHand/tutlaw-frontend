@@ -1,12 +1,17 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
-import { getCourses } from "../../api/courses";
-import { getPool, updatePoolActs, updateSourceFilter, type Pool, type SourceFilterUpdate } from "../../api/pool";
+import {
+  getPool,
+  updatePoolActs,
+  updatePoolCourses,
+  updateSourceFilter,
+  type Pool,
+  type SourceFilterUpdate,
+} from "../../api/pool";
 import { CUSTOM_TEST_COUNTS_KEY, DUE_COUNT_KEY, MISTAKES_COUNT_KEY } from "../review/hooks";
 import { LEARNING_SETTINGS_KEY } from "../settings/hooks";
 import { TEST_CATALOG_KEY } from "../tests/hooks";
 
 export const POOL_KEY = ["pool"] as const;
-export const COURSES_KEY = ["pool", "courses"] as const;
 
 /**
  * Pula pytań użytkownika (ścieżka, zawężenie do aktów, filtr źródeł). Błąd pobrania nie blokuje ekranów: znacznik puli
@@ -14,11 +19,6 @@ export const COURSES_KEY = ["pool", "courses"] as const;
  */
 export function usePool() {
   return useQuery({ queryKey: POOL_KEY, queryFn: getPool, staleTime: 30_000 });
-}
-
-/** Przedmioty studenta (podział aktów). Rzadko się zmieniają. */
-export function useCourses(enabled = true) {
-  return useQuery({ queryKey: COURSES_KEY, queryFn: getCourses, enabled, staleTime: 5 * 60_000 });
 }
 
 /**
@@ -39,6 +39,18 @@ export function useUpdatePoolActs() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (actIds: number[]) => updatePoolActs(actIds),
+    onSuccess: (saved: Pool) => {
+      queryClient.setQueryData(POOL_KEY, saved);
+      invalidateAfterPoolChange(queryClient);
+    },
+  });
+}
+
+/** Student wybiera przedmioty, z których się uczy (pusta lista = wszystkie). */
+export function useUpdatePoolCourses() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (courseIds: number[]) => updatePoolCourses(courseIds),
     onSuccess: (saved: Pool) => {
       queryClient.setQueryData(POOL_KEY, saved);
       invalidateAfterPoolChange(queryClient);

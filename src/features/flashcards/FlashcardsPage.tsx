@@ -12,6 +12,7 @@ import { pluralizePl } from "../../lib/plural";
 import { DueReviewBanner } from "../review/DueReviewBanner";
 import { useBacklog } from "../review/useBacklog";
 import { useOverview } from "../statistics/hooks";
+import { actGroups } from "../tests/groups";
 import { useTestCatalog } from "../tests/hooks";
 
 /** Wybór zakresu w liście: „all", „field:3" albo „act:12". */
@@ -80,7 +81,8 @@ function ScopeCard({ loading }: { loading: boolean }) {
 
   if (loading) return <Skeleton className="h-40 w-full" />;
 
-  const fields = catalog.data?.fields.filter((field) => field.acts.length > 0) ?? [];
+  const groups = actGroups(catalog.data);
+  const studentView = (catalog.data?.courses.length ?? 0) > 0;
   const due = backlog.data?.dueNow;
   const fresh = available.data;
 
@@ -88,7 +90,9 @@ function ScopeCard({ loading }: { loading: boolean }) {
     <Card className="flex flex-col gap-4 p-5" data-testid="flashcards-scope">
       <div>
         <h2 className="text-sm font-medium text-fg-muted">Nauka z wybranego zakresu</h2>
-        <p className="mt-1 text-sm text-fg-muted">Fiszki tylko z jednej dziedziny albo jednego aktu prawnego.</p>
+        <p className="mt-1 text-sm text-fg-muted">
+          {studentView ? "Fiszki tylko z jednego aktu prawnego wybranego przedmiotu." : "Fiszki tylko z jednej dziedziny albo jednego aktu prawnego."}
+        </p>
       </div>
 
       <label className="flex flex-col gap-1 text-sm sm:max-w-md">
@@ -99,10 +103,11 @@ function ScopeCard({ loading }: { loading: boolean }) {
           className="min-h-11 w-full rounded-xl border border-field bg-surface-2 px-3 text-sm"
         >
           <option value="all">Cała pula</option>
-          {fields.map((field) => (
-            <optgroup key={field.id} label={field.name}>
-              <option value={`field:${field.id}`}>Cała dziedzina: {field.name}</option>
-              {field.acts.map((act) => (
+          {groups.map((group) => (
+            <optgroup key={group.id} label={group.name}>
+              {/* Zakres „cała dziedzina" istnieje tylko dla aplikacji; przedmiot nie jest zakresem sesji. */}
+              {!studentView && <option value={`field:${group.id}`}>Cała dziedzina: {group.name}</option>}
+              {group.acts.map((act) => (
                 <option key={act.id} value={`act:${act.id}`}>
                   {act.name}
                 </option>

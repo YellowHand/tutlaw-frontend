@@ -9,21 +9,47 @@ export interface TreeAct {
   questionCount: number;
 }
 
-/** Dziedzina z pytaniami. Własny test łączy źródła w obrębie aktu prawnego, więc drzewo ma tylko dwa poziomy. */
+/**
+ * Pozycja najwyższego poziomu drzewa. U użytkownika aplikacji to dziedzina z aktami prawnymi (własny test łączy źródła
+ * w obrębie aktu, więc są tylko dwa poziomy). U Studenta to przedmiot (`course`): jego jedyny „akt" ma ten sam numer
+ * co przedmiot, dzięki czemu cały wybór działa tak samo, a ekran pokazuje płaską listę przedmiotów.
+ */
 export interface TreeField {
   id: number;
   name: string;
   questionCount: number;
   acts: TreeAct[];
+  /** Prawda dla przedmiotu Studenta; `id` jest wtedy numerem przedmiotu, a nie dziedziny. */
+  course?: boolean;
+  /** Akty prawne przedmiotu (do odtworzenia wyboru z zapisanego testu); tylko dla `course`. */
+  actIds?: number[];
 }
 
 export type CheckState = "checked" | "partial" | "unchecked";
 
+/** Czy drzewo składa się z przedmiotów Studenta (a nie z dziedzin i aktów). */
+export function isCourseTree(tree: readonly TreeField[]): boolean {
+  return tree.length > 0 && tree.every((field) => field.course === true);
+}
+
 /**
- * Drzewo do wyboru: tylko dziedziny i akty prawne, w których można teraz coś rozwiązać (według katalogu Testów, czyli
- * z uwzględnieniem puli, zawężenia do aktów i filtra źródeł). Puste pozycje pominięto, bo nie dałyby żadnego pytania.
+ * Drzewo do wyboru: tylko pozycje, w których można teraz coś rozwiązać (według katalogu Testów, czyli z uwzględnieniem
+ * puli, zawężenia i filtra źródeł). Student wybiera przedmioty, użytkownik aplikacji dziedziny i akty prawne. Puste
+ * pozycje pominięto, bo nie dałyby żadnego pytania.
  */
 export function buildTree(catalog: TestCatalog | undefined): TreeField[] {
+  if (catalog && catalog.courses.length > 0) {
+    return catalog.courses
+      .filter((course) => course.questionCount > 0)
+      .map((course) => ({
+        id: course.id,
+        name: course.name,
+        questionCount: course.questionCount,
+        course: true,
+        actIds: course.actIds,
+        acts: [{ id: course.id, name: course.name, questionCount: course.questionCount }],
+      }));
+  }
   return (catalog?.fields ?? [])
     .map((field) => ({
       id: field.id,
@@ -78,6 +104,11 @@ export function toScope(tree: readonly TreeField[], selected: ReadonlySet<number
   const everything = tree.every((field) => fieldState(field, selected) === "checked");
   const fieldIds: number[] = [];
   const actIds: number[] = [];
+  if (isCourseTree(tree)) {
+    // Student: wybrane przedmioty (przedmiot zastępuje wszystkie swoje akty); wszystkie = cała pula.
+    const courseIds = everything ? [] : tree.filter((field) => selected.has(field.id)).map((field) => field.id);
+    return { fieldIds, actIds, courseIds };
+  }
   if (!everything) {
     for (const field of tree) {
       const state = fieldState(field, selected);
@@ -87,7 +118,7 @@ export function toScope(tree: readonly TreeField[], selected: ReadonlySet<number
       }
     }
   }
-  return { fieldIds, actIds };
+  return { fieldIds, actIds, courseIds: [] };
 }
 
 /** Czy zaznaczono cokolwiek (pusty wybór nie ma sensu: serwer wziąłby wtedy całą pulę). */
@@ -99,12 +130,18 @@ export function isEverythingSelected(tree: readonly TreeField[], selected: Reado
   return tree.length > 0 && tree.every((field) => fieldState(field, selected) === "checked");
 }
 
-/** „Cała pula", „Kodeks karny", „Kodeks karny i Kodeks cywilny" albo „5 pozycji w 2 dziedzinach". */
+/**
+ * „Cała pula", „Kodeks karny", „Kodeks karny i Kodeks cywilny", „5 pozycji w 2 dziedzinach" albo, u Studenta,
+ * „Prawo karne i Prawo cywilne" i „3 przedmioty".
+ */
 export function describeSelection(tree: readonly TreeField[], selected: ReadonlySet<number>): string {
   if (!hasSelection(tree, selected)) return "Nic nie wybrano";
   if (isEverythingSelected(tree, selected)) return "Cała pula";
   const chosen = tree.flatMap((field) => field.acts.filter((act) => selected.has(act.id)));
   if (chosen.length <= 2) return chosen.map((act) => act.name).join(" i ");
+  if (isCourseTree(tree)) {
+    return `${chosen.length} ${pluralizePl(chosen.length, { one: "przedmiot", few: "przedmioty", many: "przedmiotów" })}`;
+  }
   const fieldCount = tree.filter((field) => fieldState(field, selected) !== "unchecked").length;
   const positions = pluralizePl(chosen.length, { one: "pozycja", few: "pozycje", many: "pozycji" });
   const kinds = fieldCount === 1 ? "dziedzinie" : "dziedzinach";
@@ -112,17 +149,44 @@ export function describeSelection(tree: readonly TreeField[], selected: Readonly
 }
 
 /**
- * Odtwarza zaznaczenie z zakresu zapisanego testu (dziedziny i akty prawne). Pozycje, których już nie ma w drzewie
- * (np. po zmianie puli), odpadają. Zakres pusty = cała pula. Zwraca też liczbę pominiętych pozycji.
+ * Odtwarza zaznaczenie z zakresu zapisanego testu (dziedziny, akty prawne i przedmioty). Pozycje, których już nie ma w
+ * drzewie (np. po zmianie puli albo ścieżki), odpadają. Zakres pusty = cała pula. Zwraca też liczbę pominiętych pozycji.
+ * Zapisany test przechowuje akty wybranych przedmiotów w `actIds`, więc przy zmianie ścieżki da się je odtworzyć:
+ * Student dostaje przedmioty, które obejmują te akty, a użytkownik aplikacji same akty.
  */
 export function selectionFromScope(
   tree: readonly TreeField[],
   fieldIds: readonly number[],
-  actIds: readonly number[]
+  actIds: readonly number[],
+  courseIds: readonly number[] = []
 ): { selected: Set<number>; missing: number } {
-  if (fieldIds.length === 0 && actIds.length === 0) return { selected: allActIds(tree), missing: 0 };
+  if (fieldIds.length === 0 && actIds.length === 0 && courseIds.length === 0) {
+    return { selected: allActIds(tree), missing: 0 };
+  }
   const selected = new Set<number>();
   let missing = 0;
+  if (isCourseTree(tree)) {
+    for (const courseId of courseIds) {
+      if (tree.some((field) => field.id === courseId)) selected.add(courseId);
+      else missing += 1;
+    }
+    // Test ułożony z aktów (np. na ścieżce aplikacji): wybieramy przedmioty, które te akty obejmują.
+    // Akty przedmiotów wybranych wprost są już w `actIds`, więc dla nich pomijamy to, co i tak zaznaczono.
+    const coveredByChosen = new Set(tree.filter((field) => selected.has(field.id)).flatMap((field) => field.actIds ?? []));
+    for (const actId of actIds) {
+      if (coveredByChosen.has(actId)) continue;
+      const covering = tree.filter((field) => field.actIds?.includes(actId));
+      if (covering.length === 0) missing += 1;
+      else covering.forEach((field) => selected.add(field.id));
+    }
+    // Dziedzin nie da się odtworzyć z przedmiotów.
+    missing += fieldIds.length;
+    return { selected, missing };
+  }
+  // Test ułożony z przedmiotów, a teraz użytkownik wybiera akty: akty przedmiotów są w `actIds`, same przedmioty odpadają.
+  if (courseIds.length > 0 && actIds.length === 0 && fieldIds.length === 0) {
+    return { selected: allActIds(tree), missing: courseIds.length };
+  }
   for (const fieldId of fieldIds) {
     const field = tree.find((c) => c.id === fieldId);
     if (!field) missing += 1;

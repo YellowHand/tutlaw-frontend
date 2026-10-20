@@ -31,6 +31,7 @@ const MyTestDetailPage = lazy(() =>
 );
 const TestsPage = lazy(() => import("../features/tests/TestsPage").then((m) => ({ default: m.TestsPage })));
 const TestFieldPage = lazy(() => import("../features/tests/TestFieldPage").then((m) => ({ default: m.TestFieldPage })));
+const TestCoursePage = lazy(() => import("../features/tests/TestCoursePage").then((m) => ({ default: m.TestCoursePage })));
 const StatisticsPage = lazy(() => import("../features/statistics/StatisticsPage").then((m) => ({ default: m.StatisticsPage })));
 const AccountPage = lazy(() => import("../features/account/AccountPage").then((m) => ({ default: m.AccountPage })));
 
@@ -69,6 +70,7 @@ export function Router() {
                 <Route path="exam" element={<ExamPage />} />
 
                 <Route path="tests" element={<TestsPage />} />
+                <Route path="tests/subject/:courseId" element={<TestCoursePage />} />
                 <Route path="tests/:fieldId" element={<TestFieldPage />} />
 
                 <Route path="statistics" element={<StatisticsPage />} />

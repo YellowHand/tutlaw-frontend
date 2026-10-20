@@ -50,6 +50,7 @@ interface ScopeTreeProps {
 /**
  * Wybór zakresu własnego testu: dziedziny (z polem wyboru i rozwijaniem) z aktami prawnymi w środku.
  * Dziedzina zaznaczona w całości = wszystkie jej akty; po rozwinięciu można zostawić tylko niektóre.
+ * Student wybiera przedmioty: to płaska lista, bez rozwijania (aktów nie widzi).
  */
 export function ScopeTree({ tree, selected, onChange, onSelectAll, onClear }: ScopeTreeProps) {
   // Na początku rozwinięta jest dziedzina, w której zaznaczono tylko część (żeby było widać, co dokładnie wybrano),
@@ -92,6 +93,22 @@ export function ScopeTree({ tree, selected, onChange, onSelectAll, onClear }: Sc
       <ul aria-labelledby={`${listId}-title`} className="flex flex-col gap-1 rounded-2xl border border-line bg-surface p-2">
         {tree.map((field) => {
           const state = fieldState(field, selected);
+          if (field.course) {
+            return (
+              <li key={field.id}>
+                <label className={ROW}>
+                  <input
+                    type="checkbox"
+                    checked={state === "checked"}
+                    onChange={() => onChange(toggleField(field, selected))}
+                    className="size-5 shrink-0 cursor-pointer accent-accent-ink"
+                  />
+                  <span className="min-w-0 flex-1 font-medium">{field.name}</span>
+                  <QuestionCount value={field.questionCount} />
+                </label>
+              </li>
+            );
+          }
           const isOpen = open.has(field.id);
           const panelId = `${listId}-c${field.id}`;
           return (

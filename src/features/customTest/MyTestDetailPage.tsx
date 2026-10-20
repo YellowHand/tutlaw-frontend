@@ -11,6 +11,7 @@ import { cn } from "../../lib/cn";
 import { formatDateTime, formatDuration } from "../exam/format";
 import { ReportQuestionButton } from "../report/ReportQuestionButton";
 import { LegalBasisLine } from "../review/LegalBasisLine";
+import { LawChangeBadge } from "../review/LawChangeBadge";
 import { SourceLabel } from "../review/SourceLabel";
 import { Breadcrumbs } from "../tests/Breadcrumbs";
 import { START_BUTTON } from "../tests/StartButtons";
@@ -83,6 +84,7 @@ function Detail({ detail }: { detail: CustomTestSessionDetail }) {
     const prefill: CustomTestPrefill = {
       fieldIds: summary.fieldIds,
       actIds: summary.actIds,
+      courseIds: summary.courseIds,
       sourceGroups: summary.sourceGroups,
       kind: summary.kind,
       requestedCount: summary.requestedCount,
@@ -214,6 +216,7 @@ function QuestionReview({ question }: { question: CustomTestSessionQuestion }) {
       </p>
 
       <SourceLabel actName={question.actName} sourceName={question.sourceName} examYear={question.examYear} className="mt-2" />
+      <LawChangeBadge change={question.lawChange} showNote className="mt-2" />
       <p className="mt-2 text-base font-semibold leading-snug">{question.body}</p>
 
       <ul className="mt-3 flex flex-col gap-2">

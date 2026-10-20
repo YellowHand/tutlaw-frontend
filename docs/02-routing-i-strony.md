@@ -74,10 +74,11 @@ aplikacji](#menu-aplikacji)).
 | `/app/custom-test` | `CustomTestPage` (`features/customTest/CustomTestPage.tsx`) | Własny test: wybór dziedzin i aktów prawnych, rodzaju pytań i liczby pytań (10, 20, 50, 100 albo 150; przy małym zakresie „Wszystkie (N)”). Link „Moje testy”. To ekran układania, nie sesja, więc menu zostaje |
 | `/app/custom-test/history` | `MyTestsPage` (`features/customTest/MyTestsPage.tsx`) | „Moje testy”: lista zapisanych własnych testów, od najnowszego, z oznaczeniem „Nieukończony” i wynikiem |
 | `/app/custom-test/history/:id` | `MyTestDetailPage` (`features/customTest/MyTestDetailPage.tsx`) | Szczegóły zapisanego testu: ustawienia, wynik i wszystkie pytania z odpowiedziami (filtr „Błędne i bez odpowiedzi”). Przycisk „Ułóż ponownie z tymi ustawieniami” otwiera ekran układania z wypełnionym wyborem |
-| `/app/tests` | `TestsPage` (`features/tests/TestsPage.tsx`) | Testy, poziom 1: znacznik „Pula pytań”, pasek zaległych powtórek, „Szybki start” (cała pula, własny test, moje błędy, egzamin), dziedziny prawa i sekcja „Według źródła” |
+| `/app/tests` | `TestsPage` (`features/tests/TestsPage.tsx`) | Testy, poziom 1: znacznik „Pula pytań”, pasek zaległych powtórek, „Szybki start” (cała pula, własny test, moje błędy, egzamin), dziedziny prawa i sekcja „Według źródła”; u Studenta kafelki przedmiotów i bez sekcji źródeł |
 | `/app/tests/:fieldId` | `TestFieldPage` (`features/tests/TestFieldPage.tsx`) | Testy, poziom 2: akty prawne wybranej dziedziny (tylko z puli użytkownika), przycisk „Test z całej dziedziny” przy tytule. Akt prawny od razu otwiera sesję |
+| `/app/tests/subject/:courseId` | `TestCoursePage` (`features/tests/TestCoursePage.tsx`) | Testy Studenta, poziom 2: akty prawne wybranego przedmiotu i przycisk „Własny test z przedmiotu” (otwiera ekran układania z zaznaczonym przedmiotem). Akt od razu otwiera sesję |
 | `/app/statistics` | `StatisticsPage` (`features/statistics/StatisticsPage.tsx`) | Statystyki: opanowanie pytań według źródła, opanowanie aktów prawnych, „Podsumowanie nauki”, ostatnie 30 dni, aktywność, fiszki |
-| `/app/account` | `AccountPage` (`features/account/AccountPage.tsx`) | Konto: wygląd, ustawienia nauki (w tym wybór ścieżki), terminy egzaminów (administrator), trudne i zawieszone pytania, zmiana hasła, pobranie danych, usunięcie konta |
+| `/app/account` | `AccountPage` (`features/account/AccountPage.tsx`) | Konto: wygląd, ustawienia nauki (w tym wybór ścieżki), terminy egzaminów (administrator), trudne i zawieszone pytania, zmiana hasła, pobranie danych, wyzerowanie postępów, usunięcie konta |
 | `/app/*` | `NotFoundPage` (`features/misc/NotFoundPage.tsx`) | Strona 404 w ramce aplikacji |
 
 Ekrany aplikacji (oprócz stron wejściowych: główna, logowanie, rejestracja i reszta kont) są ładowane **leniwie** (`React.lazy` i `Suspense`): ich kod pobiera się dopiero przy pierwszym wejściu, a w tym czasie widać krótki ekran ładowania (`components/RouteFallback.tsx`). Całość otacza granica błędów `ErrorBoundary` (`components/ErrorBoundary.tsx`): gdy ekran się wywróci, użytkownik widzi „Coś poszło nie tak” i przycisk „Odśwież stronę” zamiast pustej strony, a menu aplikacji zostaje. Przejście na inny adres naprawia widok.
@@ -94,6 +95,9 @@ flowchart LR
     DASH --> SESF["Sesja fiszek<br/>/app/study"]
     FISZ --> SESF
     TESTY --> POLE["Dziedzina<br/>/app/tests/:fieldId"]
+    TESTY -- "Student" --> PRZ["Przedmiot<br/>/app/tests/subject/:courseId"]
+    PRZ --> SEST
+    PRZ --> WLASNY
     POLE --> SEST["Sesja testowa<br/>/app/test?actId=..."]
     TESTY --> SEST
     TESTY --> BLEDY["Powtórz błędy<br/>/app/test/mistakes"]
@@ -109,10 +113,11 @@ flowchart LR
 Dwie sprawy wynikają z tego układu:
 
 - **Jedno drzewo materiału.** Testy prowadzą przez dziedzinę do aktu prawnego (`/app/tests` → `/app/tests/:fieldId` →
-  sesja z `?actId=`), a Fiszki mają tylko listę zakresu na jednym ekranie, bo fiszka jest trybem tego samego pytania i
+  sesja z `?actId=`); Student zamiast dziedziny wybiera przedmiot (`/app/tests/subject/:courseId`), a przedmiot pokazuje swoje
+  akty. Fiszki mają tylko listę zakresu na jednym ekranie, bo fiszka jest trybem tego samego pytania i
   nie ma własnej struktury materiału. Obie sesje (`/app/study`, `/app/test`) przyjmują ten sam zakres w adresie.
 - **Pula ogranicza wszystko.** Każdy ekran z liczbami pytań (Testy, Fiszki, Pulpit, Statystyki, własny test) liczy
-  pytania z puli użytkownika: ścieżka, wybrane akty i filtr źródeł. Znacznik „Pula pytań” (`features/pool/PoolChip.tsx`)
+  pytania z puli użytkownika: ścieżka, wybrane akty (u Studenta wybrane przedmioty) i filtr źródeł. Znacznik „Pula pytań” (`features/pool/PoolChip.tsx`)
   stoi przy tytule Testów i dziedziny i otwiera okno zmiany puli.
 
 ## Menu aplikacji
@@ -157,11 +162,11 @@ Pełna lista wywołań serwera z nazwami funkcji jest w [05](05-warstwa-api-i-da
 | Fiszki | Przegląd fiszek (`overview` z `mode=FLASHCARD`), katalog Testów (lista zakresów), zaległości i liczba nowych fiszek w wybranym zakresie |
 | Sesja fiszek | Kolejka fiszek, zapis oceny, liczba nowych fiszek do dołożenia, zaległości |
 | Sesja testowa | Kolejka pytań (zakres, błędy, ćwiczenia, własny test), zapis odpowiedzi, ustawienia (tasowanie), zaległości, „Dodaj do fiszek” |
-| Testy i dziedzina | Katalog Testów (dziedziny, akty, źródła z licznikami), pula pytań, liczba błędów i zaległych |
-| Własny test | Katalog Testów (drzewo wyboru), liczniki „Dostępnych: N” (`custom-test/counts`), losowanie pytań (`custom-test`) |
+| Testy, dziedzina i przedmiot | Katalog Testów (dziedziny, akty, przedmioty Studenta, źródła z licznikami), pula pytań, liczba błędów i zaległych |
+| Własny test | Katalog Testów (drzewo wyboru: dziedziny i akty albo, u Studenta, przedmioty), liczniki „Dostępnych: N” (`custom-test/counts`), losowanie pytań (`custom-test`) |
 | Egzamin | Katalog Testów (tylko liczba dostępnych pytań), start (bez ciała, serwer losuje 150 pytań) i zakończenie egzaminu (serwer ocenia i ustala próg), historia |
 | Statystyki | Statystyki według źródła, opanowanie aktów prawnych, statystyki Testów (ostatnie 30 dni), „Podsumowanie nauki”, aktywność, przegląd fiszek (`mode=FLASHCARD`), najsłabsze pytania |
-| Konto | Adres konta, ustawienia nauki, lista ścieżek i terminy egzaminów, trudne i zawieszone pytania, zmiana hasła, eksport i usunięcie konta |
+| Konto | Adres konta, ustawienia nauki, lista ścieżek i terminy egzaminów, trudne i zawieszone pytania, zmiana hasła, eksport, zerowanie postępów (liczby `study-progress` dopiero po otwarciu okna) i usunięcie konta |
 | Logowanie i rejestracja | Wywołania `/api/auth/*` |
 | Regulamin, polityka, strona główna | Brak (treść jest w kodzie) |
 
@@ -203,7 +208,8 @@ Kolejność kart (na telefonie od góry, na szerokim ekranie lewa kolumna, potem
 2. **Postęp** (`ProgressCard`): jeden pasek „Przerobione: 166 z 400 (42%)”. „Przerobione” to pytania z puli, które miały już
    choć jedną odpowiedź; to **nie** to samo co „opanowane” (to jest w Statystykach, bo przez pierwsze dwa tygodnie byłoby
    0). Pod paskiem podpis z objaśnieniem i, gdy pula jest zawężona, notka „Liczymy tylko pytania z Twojej puli”. Niżej wiersze
-   według dziedzin (każdy prowadzi do tej dziedziny w Testach, `/app/tests/:fieldId`).
+   według dziedzin (każdy prowadzi do tej dziedziny w Testach, `/app/tests/:fieldId`); u Studenta wiersze są według przedmiotów
+   (`/app/tests/subject/:courseId`).
 3. **Egzamin próbny** (`ExamCard`, kolumna boczna): ostatni wynik („112 / 150”, „Zaliczony” albo „Niezaliczony”, data,
    próg), mały wykres ostatnich pięciu podejść z przerywaną linią progu (100 z 150) i przycisk „Nowy egzamin”. Bez żadnego
    podejścia karta opisuje format i zaprasza do pierwszego.
@@ -221,16 +227,15 @@ np. „Notarialna”, „Notarialna, wybrane akty” albo „Student, filtr źr�
 i w podpowiedzi liczbę pytań, bo zawężenie po cichu zmienia liczby w Testach. Kliknięcie otwiera **okno „Pula pytań”**
 (`PoolDialog`) z dwiema niezależnymi rzeczami:
 
-1. **Akty prawne** (pogrupowane w dziedziny, z polami wyboru i stanem „część zaznaczona”): do których aktów ścieżki ogranicza
-   się nauka. Dla Studenta nad listą aktów są **przedmioty** (`GET /api/courses`), które zaznaczają i odznaczają swoje akty
-   hurtem. Zaznaczone wszystkie akty to brak zawężenia (do serwera idzie pusta lista). Zawężenie dotyczy Testów, Fiszek,
-   własnych testów i statystyk, **nie** egzaminu próbnego.
+1. **Akty prawne** (aplikacje: pogrupowane w dziedziny, z polami wyboru i stanem „część zaznaczona”) albo **przedmioty**
+   (Student: płaska lista pól wyboru, bez aktów): do czego ogranicza się nauka. Zaznaczone wszystko to brak zawężenia (do
+   serwera idzie pusta lista). Zawężenie dotyczy Testów, Fiszek, własnych testów i statystyk, **nie** egzaminu próbnego.
 2. **Źródła pytań w Testach**: trzy grupy do włączenia lub wyłączenia, każda z liczbą pytań: „Moje arkusze”, „Arkusze innych
    ścieżek” i „Pytania autorskie”. Filtr dotyczy Testów, egzaminu i planu nauki, ale **nie fiszek**. Grupa bez pytań jest
    wyłączona z wyboru.
 
-„Zapisz” jest nieaktywny, gdy nic się nie zmieniło albo nie zaznaczono żadnego aktu ani żadnej grupy (komunikat w
-dolnej linii). Zapis wywołuje `PUT /api/me/pool/acts` i `PUT /api/me/pool/source-filter` i odświeża wszystko, co liczy
+„Zapisz” jest nieaktywny, gdy nic się nie zmieniło albo nie zaznaczono żadnego aktu (przedmiotu) ani żadnej grupy (komunikat w
+dolnej linii). Zapis wywołuje `PUT /api/me/pool/acts` (Student: `PUT /api/me/pool/courses`) i `PUT /api/me/pool/source-filter` i odświeża wszystko, co liczy
 pytania (katalog Testów, liczniki powtórek i błędów, własny test, ustawienia, statystyki). Ścieżkę zmienia się w Koncie,
 nie tutaj (link w oknie). Szczegóły: [04](04-nauka-w-aplikacji.md#pula-pytań-użytkownika).
 
@@ -242,26 +247,29 @@ puste**: pojawiają się po pewnym błędzie w teście (bez „Nie jestem pewien
 Testów” zamiast pustych zakresów. W pozostałych przypadkach są dwie karty:
 
 - **Powtórki na dziś** (`DueReviewBanner`): zaległe fiszki z całej puli i przycisk startu sesji.
-- **Nauka z wybranego zakresu**: lista „Zakres” (cała pula, cała dziedzina albo jeden akt prawny, dziedziny w grupach), pod
+- **Nauka z wybranego zakresu**: lista „Zakres” (cała pula, cała dziedzina albo jeden akt prawny, dziedziny w grupach; u
+  Studenta grupami są przedmioty, a „Cała dziedzina” nie ma, bo przedmiot nie jest zakresem sesji), pod
   nią liczby „Do powtórki” i „Nowe” dla tego zakresu i przycisk „Ucz się z tego zakresu” (`/app/study?fieldId=…` albo
   `?actId=…`).
 
 ### Testy (`features/tests`)
 
-Dwupoziomowy katalog: dziedzina → akt prawny (akt jest liściem i od razu otwiera sesję). Każdy użytkownik widzi **wszystkie
-dziedziny**, ale w każdej tylko akty swojej puli; dziedzina bez aktów w puli jest wyszarzona i oznaczona „Poza pulą”. Przy
-tytule stoi znacznik „Pula pytań”. Liczniki „Rozwiązano X / Y” liczą pytania z puli (z zawężeniem i filtrem źródeł).
+Dwupoziomowy katalog: dziedzina → akt prawny (akt jest liściem i od razu otwiera sesję). Użytkownik aplikacji widzi dziedziny
+z aktami swojej puli (dziedzinę bez aktów w puli backend pomija). **Student** zamiast dziedzin widzi **przedmioty** (te,
+które wybrał, albo wszystkie): przedmiot → akty prawne, które mu przypisano. Przy tytule stoi znacznik „Pula pytań”. Liczniki „Rozwiązano X / Y” liczą pytania z puli (z zawężeniem i filtrem źródeł).
 
 Strona ma **jedną główną akcję** (złoty przycisk), a resztę przycisków ciszej (ramka, bez złota):
 
 - Poziom 1 (`TestsPage`): pasek „N pytań do powtórki” ze złotym przyciskiem „Powtórz” (jest tylko wtedy, gdy coś zalega),
   potem rząd „Szybki start” z cichymi przyciskami: „Cała pula”, „Własny test”, „Moje błędy” (z liczbą, tylko gdy są błędy) i
-  „Egzamin próbny” (na telefonie układają się w 2×2), potem kafelki dziedzin („Wybierz dziedzinę”) i na końcu sekcja
-  **„Według źródła”**: te same pytania pogrupowane na „Moje arkusze”, „Arkusze innych ścieżek” i „Pytania autorskie”, z
-  przyciskiem „Rozwiąż” przy arkuszu (`/app/test?sourceId=…`). Sekcji nie ma, gdy filtr źródeł nie zostawia żadnego źródła.
+  „Egzamin próbny” (na telefonie układają się w 2×2), potem kafelki dziedzin („Wybierz dziedzinę”; u Studenta kafelki
+  przedmiotów, „Wybierz przedmiot”, z liczbą aktów) i na końcu sekcja **„Według źródła”**: te same pytania pogrupowane na „Moje arkusze”, „Arkusze innych ścieżek” i „Pytania autorskie”, z
+  przyciskiem „Rozwiąż” przy arkuszu (`/app/test?sourceId=…`). Sekcji nie ma, gdy filtr źródeł nie zostawia żadnego źródła, ani u Studenta (jego pula to akty przedmiotów, nie arkusze).
 - Poziom 2 (`TestFieldPage`, `/app/tests/:fieldId`): kafelki aktów prawnych (zagadnienia, które nie są ustawami, mają podpis
-  „Zagadnienie”) i złoty „Test z całej dziedziny” przy tytule. Gdy dziedzina nie ma aktów w puli, ekran mówi to wprost i kieruje
-  do okna „Pula pytań”.
+  „Zagadnienie”) i złoty „Test z całej dziedziny” przy tytule.
+- Poziom 2 Studenta (`TestCoursePage`, `/app/tests/subject/:courseId`): kafelki aktów przedmiotu (z katalogu bierze się
+  akty, których numery wymienia przedmiot) i cichy przycisk „Własny test z przedmiotu”, który otwiera ekran układania z
+  zaznaczonym przedmiotem. Nieznany przedmiot (np. po zmianie wyboru w „Puli pytań”) daje komunikat z linkiem do Testów.
 
 ### Własny test (`features/customTest`)
 
@@ -270,10 +278,11 @@ Ekran układania sesji nauki na adresie `/app/custom-test`; wchodzi się do nieg
 składa test w trzech krokach na jednym ekranie:
 
 1. **Co** — drzewo dziedzin i aktów prawnych z polami wyboru (dziedzina zaznaczona w całości, częściowo albo wcale;
-   domyślnie zaznaczone jest wszystko). Pokazuje tylko akty, w których jest teraz co rozwiązywać (według katalogu Testów,
+   domyślnie zaznaczone jest wszystko). **Student** ma płaską listę przedmiotów (bez rozwijania i bez aktów). Pokazuje tylko akty, w których jest teraz co rozwiązywać (według katalogu Testów,
    czyli z uwzględnieniem puli, zawężenia i filtra źródeł). Własny test łączy źródła w obrębie aktu, więc drzewo ma dwa
    poziomy.
-2. **Które pytania** — wszystkie, nowe, „Moje błędy” albo zaległe, każde z liczbą dostępnych pytań w wybranym zakresie.
+2. **Które pytania** — wszystkie, nowe, „Moje błędy”, zaległe albo „Zmiany w prawie” (pytania, w których w ostatnim roku
+   zmieniło się prawo), każde z liczbą dostępnych pytań w wybranym zakresie.
 3. **Ile pytań** — tylko 10, 20, 50, 100 albo 150. Pokazane są wyłącznie liczby, które mieszczą się w dostępnych pytaniach, a
    gdy nie wypada żadna pełna liczba, na końcu jest „Wszystkie (N)”; przy bardzo małym zakresie jedyną opcją jest „Wszystkie (N)”.
 
@@ -282,11 +291,12 @@ nie dawało serii zapytań). Przycisk „Rozpocznij test” jest nieaktywny, dop
 spełnia warunków. Na komputerze podsumowanie z przyciskiem stoi w prawej kolumnie, na telefonie w pasku przyklejonym
 do dołu ekranu.
 
-Start robi dwa kroki: `POST /api/review/custom-test` (z `fieldIds` i `actIds`) losuje numery pytań i **zapisuje sesję**
+Start robi dwa kroki: `POST /api/review/custom-test` (z `fieldIds`, `actIds` i `courseIds`; Student wysyła tylko `courseIds`) losuje numery pytań i **zapisuje sesję**
 (odpowiedź ma `questionIds` i `sessionId`), a ekran otwiera `/app/test/custom?questionIds=…&sessionId=…`, która pobiera te
 pytania zwykłą kolejką ćwiczeń (`GET /api/review/practice-queue`). Odpowiedzi w sesji idą tak jak w zwykłym teście: dostają
 ocenę pamięci (FSRS), a błędne trafiają do „Moich błędów”. Ostatni wybór jest zapamiętany w przeglądarce
-(`gradus.customTest.v2`, patrz [03](03-logowanie-i-sesja.md)). W nagłówku ekranu jest link „Moje testy”.
+(`gradus.customTest.v3`, patrz [03](03-logowanie-i-sesja.md); zapis pamięta, czy numery znaczą akty, czy przedmioty, i
+nie stosuje się go po zmianie ścieżki z jednego rodzaju na drugi). W nagłówku ekranu jest link „Moje testy”.
 
 ### Moje testy (`features/customTest`)
 
@@ -328,5 +338,7 @@ kształcie (np. obiekt zamiast listy) jest traktowana jak błąd.
 Karty w tej kolejności: adres konta („Zalogowano jako”), **wygląd** (`AppearanceCard`), **ustawienia nauki**
 (`LearningSettingsCard`: „Moja ścieżka”, limity dzienne, retencja, mieszanie odpowiedzi), **terminy egzaminów** (tylko dla
 administratora, `ExamTermsCard`: data dla każdej z pięciu aplikacji, „Zapisz” i „Usuń termin”; Student terminu nie ma),
-trudne i zawieszone pytania (osobno w testach i w fiszkach), zmiana hasła, pobranie danych, usunięcie konta. Szczegóły w
+trudne i zawieszone pytania (osobno w testach i w fiszkach), zmiana hasła, pobranie danych, **„Wyzeruj postępy”**
+(`ResetProgressCard`), usunięcie konta. Zmiana ścieżki otwiera okno potwierdzenia z tekstem „Twoje postępy zostają” i
+niezaznaczonym „Zacznij od zera”. Szczegóły w
 [03](03-logowanie-i-sesja.md) (konto) i [04](04-nauka-w-aplikacji.md) (ustawienia nauki, zawieszanie).

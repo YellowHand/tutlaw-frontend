@@ -1,4 +1,4 @@
-import { FolderOpen } from "lucide-react";
+import { BookOpen, FolderOpen } from "lucide-react";
 import { PageHeader } from "../../components/layout/PageHeader";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { ErrorState } from "../../components/ui/ErrorState";
@@ -9,19 +9,22 @@ import { useDueCount } from "../review/hooks";
 import { CatalogTile, TileGrid } from "./CatalogTile";
 import { DueReviewsCard } from "./DueReviewsCard";
 import { fieldIconFor } from "./fieldIcon";
-import { describeActs } from "./format";
+import { describeActs, describeCourseActs } from "./format";
 import { useTestCatalog } from "./hooks";
 import { QuickStart } from "./QuickStart";
 import { SourcesSection } from "./SourcesSection";
 
 /**
- * Poziom 1: dziedziny prawa. Każdy widzi wszystkie dziedziny, ale w każdej tylko akty swojej puli (ścieżka, zawężenie
- * i filtr źródeł). Dziedzina bez aktów w puli jest wyszarzona. Pod dziedzinami: te same pytania według źródła.
+ * Poziom 1. Użytkownik aplikacji widzi dziedziny prawa, a w każdej tylko akty swojej puli (ścieżka, zawężenie i filtr
+ * źródeł; dziedzinę bez aktów w puli backend pomija). Pod dziedzinami: te same pytania według źródła.
+ * Student widzi przedmioty (te, które wybrał, albo wszystkie) i nie widzi źródeł: jego pytania to akty przypisane do przedmiotów.
  */
 export function TestsPage() {
   const { data, isLoading, isError, refetch } = useTestCatalog();
   // To samo zapytanie co odznaka „Testy" w menu, więc nie kosztuje dodatkowego żądania. Błąd po prostu nic nie dopisuje.
   const { data: dueTests } = useDueCount("TEST");
+  const subjects = data?.courses ?? [];
+  const studentView = subjects.length > 0;
 
   return (
     <div>
@@ -34,7 +37,7 @@ export function TestsPage() {
 
         <section aria-labelledby="test-fields" className="flex flex-col gap-3">
           <h2 id="test-fields" className="text-sm font-medium text-fg-muted">
-            Wybierz dziedzinę
+            {studentView ? "Wybierz przedmiot" : "Wybierz dziedzinę"}
           </h2>
 
           {isLoading ? (
@@ -45,6 +48,19 @@ export function TestsPage() {
             </TileGrid>
           ) : isError || !data ? (
             <ErrorState message="Nie udało się pobrać listy testów." onRetry={() => refetch()} />
+          ) : studentView ? (
+            <TileGrid>
+              {subjects.map((course) => (
+                <CatalogTile
+                  key={course.id}
+                  to={ROUTES.testsCourse(course.id)}
+                  icon={BookOpen}
+                  title={course.name}
+                  subtitle={describeCourseActs(course.actIds.length)}
+                  counts={course}
+                />
+              ))}
+            </TileGrid>
           ) : data.fields.length === 0 ? (
             <EmptyState icon={FolderOpen} title="Brak testów" description="Wkrótce pojawią się tu pytania." />
           ) : (
@@ -55,16 +71,15 @@ export function TestsPage() {
                   to={ROUTES.testsField(field.id)}
                   icon={fieldIconFor(field.slug)}
                   title={field.name}
-                  subtitle={field.acts.length === 0 ? "Brak aktów w Twojej puli" : describeActs(field.acts)}
+                  subtitle={describeActs(field.acts)}
                   counts={field}
-                  emptyLabel={field.acts.length === 0 ? "Poza pulą" : undefined}
                 />
               ))}
             </TileGrid>
           )}
         </section>
 
-        {data && <SourcesSection sources={data.sources} />}
+        {data && !studentView && <SourcesSection sources={data.sources} />}
       </div>
     </div>
   );

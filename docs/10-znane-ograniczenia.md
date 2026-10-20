@@ -40,7 +40,7 @@ Drobne rzeczy znalezione podczas czytania kodu. Żadna nie psuje zwykłego dzia�
 | # | Gdzie | Co | Skutek |
 |---|-------|----|--------|
 | 1 | `api/axiosInstance.ts` | Brak limitu czasu (`timeout`) żądań | Serwer, który przyjął połączenie i nie odpowiada, zostawia ekran w ładowaniu bez końca |
-| 2 | `features/pool/PoolDialog.tsx` | Przedmioty Studenta są tylko skrótem do zaznaczania aktów: okno zamienia je na wybór aktów i nie pamięta samych przedmiotów | Po ręcznym odznaczeniu pojedynczego aktu przedmiot pokazuje stan „część zaznaczona”, a nie „wybrany” |
+| 2 | `features/flashcards/FlashcardsPage.tsx`, `features/tests/groups.ts` | Student w Fiszkach wybiera akt (pod nazwą przedmiotu), bo sesja fiszek przyjmuje zakres tylko jako dziedzinę, akt albo źródło | Nie da się zacząć fiszek z całego przedmiotu jednym kliknięciem (w Testach i we Własnym teście przedmiot jest zakresem) |
 | 3 | `app/router.tsx`, `ProtectedRoute.tsx`, `VerifyPage.tsx`, `AuthLayout.tsx` | Adresy (`/login`, `/`) wpisane na sztywno obok obiektu `ROUTES` | Zmiana adresu wymaga poprawek w kilku miejscach, kompilator ich nie wskaże |
 | 4 | `package.json` | Nazwa projektu `temp-frontend`, wersja `0.0.0`; w `devDependencies` jest `@tailwindcss/postcss`, którego nic nie używa (nie ma konfiguracji PostCSS, Tailwind działa przez wtyczkę Vite) | Kosmetyka i zbędna zależność |
 | 5 | `public/icons.svg` | Plik nie jest nigdzie przywoływany, a trafia do `dist/` | Zbędny plik w paczce |

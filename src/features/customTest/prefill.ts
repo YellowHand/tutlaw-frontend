@@ -8,6 +8,8 @@ import type { SourceGroup } from "../../lib/source";
 export interface CustomTestPrefill {
   fieldIds: number[];
   actIds: number[];
+  /** Przedmioty Studenta (puste, gdy test układał użytkownik aplikacji albo wybrał akty). */
+  courseIds: number[];
   /** Grupy źródeł, które obowiązywały przy układaniu tamtego testu (do uwagi, gdy filtr jest teraz inny). */
   sourceGroups: SourceGroup[];
   kind: CustomTestKind;

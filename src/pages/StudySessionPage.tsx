@@ -21,6 +21,7 @@ import { BacklogFinishNotice, BacklogNotice } from "../features/review/BacklogNo
 import { KeyboardHint } from "../features/review/KeyboardHint";
 import { EXTRA_DUE_BATCH, useBacklog } from "../features/review/useBacklog";
 import { ReportQuestionButton } from "../features/report/ReportQuestionButton";
+import { LawChangeBadge } from "../features/review/LawChangeBadge";
 import { SourceLabel } from "../features/review/SourceLabel";
 import { HideQuestionButton } from "../features/admin/HideQuestionButton";
 import { LeechHint } from "../features/difficult/LeechHint";
@@ -535,6 +536,7 @@ export function StudySessionPage() {
               examYear={shownCard.examYear}
               className="mb-2 shrink-0 justify-center"
             />
+            <LawChangeBadge change={shownCard.lawChange} className="mb-2 shrink-0 items-center" />
             <div className="flex flex-1 flex-col overflow-y-auto">
               <p className="my-auto text-pretty text-center text-xl font-semibold leading-snug text-fg sm:text-2xl">
                 {shownCard.front}
@@ -572,9 +574,10 @@ export function StudySessionPage() {
               </div>
             </div>
 
-            {(hasSourceInfo || shownCard.legalBasis || shownCard.validAsOf || shownCard.leech) && (
+            {(hasSourceInfo || shownCard.legalBasis || shownCard.validAsOf || shownCard.leech || shownCard.lawChange) && (
               <div className="flex shrink-0 flex-col gap-1 border-t border-line pt-3 text-xs text-fg-muted">
                 <SourceLabel actName={shownCard.actName} sourceName={shownCard.sourceName} examYear={shownCard.examYear} />
+                <LawChangeBadge change={shownCard.lawChange} showNote className="my-0.5" />
                 <LegalBasisLine legalBasis={shownCard.legalBasis} validAsOf={shownCard.validAsOf} />
                 {shownCard.leech && (
                   <LeechHint kind="flashcard" lapses={shownCard.lapses} className="mt-1 text-xs text-fg-muted" />

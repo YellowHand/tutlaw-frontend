@@ -77,26 +77,18 @@ export function TestFieldPage() {
       />
 
       <div className="px-4 pb-8 sm:px-8">
-        {field.acts.length === 0 ? (
-          <EmptyState
-            icon={FolderOpen}
-            title="Brak aktów w Twojej puli"
-            description="Twoja ścieżka nie obejmuje aktów z tej dziedziny. Możesz to zmienić w oknie „Pula pytań”."
-          />
-        ) : (
-          <TileGrid>
-            {field.acts.map((act) => (
-              <CatalogTile
-                key={act.id}
-                to={ROUTES.testScope({ actId: act.id })}
-                icon={Icon}
-                title={act.name}
-                subtitle={act.kind === "TOPIC" ? "Zagadnienie" : undefined}
-                counts={act}
-              />
-            ))}
-          </TileGrid>
-        )}
+        <TileGrid>
+          {field.acts.map((act) => (
+            <CatalogTile
+              key={act.id}
+              to={ROUTES.testScope({ actId: act.id })}
+              icon={Icon}
+              title={act.name}
+              subtitle={act.kind === "TOPIC" ? "Zagadnienie" : undefined}
+              counts={act}
+            />
+          ))}
+        </TileGrid>
       </div>
     </div>
   );

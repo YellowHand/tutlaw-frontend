@@ -48,7 +48,14 @@ export function ProgressCard({ className }: { className?: string }) {
   const total = Math.max(0, stats.data.totalQuestions);
   const done = Math.min(Math.max(0, stats.data.solvedQuestions), total);
   const percent = percentOf(done, total);
-  const rows = (Array.isArray(catalog.data?.fields) ? catalog.data.fields : []).filter((field) => field.questionCount > 0);
+  // Aplikacje widzą postęp w dziedzinach, Student w przedmiotach (jego pytania to akty przypisane do przedmiotów).
+  const courses = (Array.isArray(catalog.data?.courses) ? catalog.data.courses : []).filter((course) => course.questionCount > 0);
+  const studentView = courses.length > 0;
+  const rows = studentView
+    ? courses.map((course) => ({ ...course, to: ROUTES.testsCourse(course.id) }))
+    : (Array.isArray(catalog.data?.fields) ? catalog.data.fields : [])
+        .filter((field) => field.questionCount > 0)
+        .map((field) => ({ ...field, to: ROUTES.testsField(field.id) }));
 
   return (
     <section aria-labelledby="progress-title" className={frame}>
@@ -76,17 +83,21 @@ export function ProgressCard({ className }: { className?: string }) {
           </div>
           <p className="text-xs text-fg-muted">
             Przerobione to pytania, które miały już choć jedną odpowiedź.
-            {pool.data && isPoolRestricted(pool.data) && " Liczymy tylko pytania z Twojej puli (wybrane akty i źródła)."}
+            {pool.data &&
+              isPoolRestricted(pool.data) &&
+              (studentView
+                ? " Liczymy tylko pytania z Twojej puli (wybrane przedmioty)."
+                : " Liczymy tylko pytania z Twojej puli (wybrane akty i źródła).")}
           </p>
         </div>
       )}
 
       {rows.length > 0 && (
-        <ul aria-label="Postęp według dziedzin" className="flex flex-col divide-y divide-line border-t border-line">
+        <ul aria-label={studentView ? "Postęp według przedmiotów" : "Postęp według dziedzin"} className="flex flex-col divide-y divide-line border-t border-line">
           {rows.map((field) => (
             <li key={field.id}>
               <Link
-                to={ROUTES.testsField(field.id)}
+                to={field.to}
                 className="-mx-2 flex min-h-11 flex-col justify-center gap-1.5 rounded-lg px-2 py-2.5 transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink"
               >
                 <span className="flex items-baseline justify-between gap-3">

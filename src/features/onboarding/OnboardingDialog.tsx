@@ -30,7 +30,7 @@ interface SaveInput {
 }
 
 /** Opis pod nazwą ścieżki, gdy nie ma terminu egzaminu (Student) albo go nie pobrano. */
-const STUDENT_HINT = "Bez odliczania i planu dnia. Uczysz się z przedmiotów i aktów prawnych z całego banku pytań";
+const STUDENT_HINT = "Bez odliczania i planu dnia. Uczysz się z wybranych przedmiotów (potem zmienisz je w „Puli pytań”)";
 
 /**
  * Obowiązkowy wybór ścieżki (aplikacja albo Student) i wyglądu strony. Z aplikacji biorą się termin, odliczanie i plan dnia,

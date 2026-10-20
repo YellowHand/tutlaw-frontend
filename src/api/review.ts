@@ -1,5 +1,6 @@
 import { api } from "./axiosInstance";
 import type { SourceKind } from "../lib/source";
+import type { LawChange } from "../lib/lawChange";
 
 /**
  * Zakres sesji, od najwęższego: źródło (arkusz), akt prawny, dziedzina. Bez żadnego z nich serwer bierze całą pulę
@@ -31,6 +32,8 @@ export interface FlashcardQueueItem {
   lapses: number;
   /** Czy fiszka jest już „trudna" (liczba błędów osiągnęła próg), czyli warto zaproponować zawieszenie. */
   leech: boolean;
+  /** Zmiana w prawie dotykająca pytania (null: brak). */
+  lawChange?: LawChange | null;
 }
 
 export interface TestQueueItem {
@@ -44,6 +47,8 @@ export interface TestQueueItem {
   sourceName: string | null;
   sourceKind: SourceKind | null;
   examYear: number | null;
+  /** Zmiana w prawie dotykająca pytania (null: brak). */
+  lawChange?: LawChange | null;
 }
 
 /**
@@ -74,6 +79,8 @@ export interface TestAnswerResult {
   flashcard: FlashcardStatus;
   /** To była pierwsza odpowiedź na to pytanie, czyli użytkownik zaczął się go uczyć właśnie teraz. */
   newQuestion: boolean;
+  /** Zmiana w prawie dotykająca pytania (null: brak). */
+  lawChange?: LawChange | null;
 }
 
 /**

@@ -18,7 +18,7 @@ import { PoolChip } from "../pool/PoolChip";
 import { usePool } from "../pool/hooks";
 import { hiddenGroups } from "../pool/summary";
 import { START_BUTTON } from "../tests/StartButtons";
-import { loadRemembered, saveRemembered } from "./customTestStorage";
+import { loadRemembered, saveRemembered, type RememberedMode } from "./customTestStorage";
 import { useCustomTestCounts, useDebounced } from "./hooks";
 import {
   allActIds,
@@ -26,6 +26,7 @@ import {
   countOptions,
   describeSelection,
   hasSelection,
+  isCourseTree,
   isEverythingSelected,
   pickCountOption,
   restrictToTree,
@@ -47,13 +48,14 @@ const KIND_OPTIONS: KindOption[] = [
   { kind: "NEW", label: "Nowe", hint: "Jeszcze nierozwiązywane", count: (c) => c.newQuestions },
   { kind: "MISTAKES", label: "Moje błędy", hint: "Ostatnia odpowiedź błędna", count: (c) => c.mistakes },
   { kind: "DUE", label: "Zaległe", hint: "Po terminie powtórki", count: (c) => c.due },
+  { kind: "LAW_CHANGE", label: "Zmiany w prawie", hint: "Zmienione w ostatnim roku", count: (c) => c.lawChanges },
 ];
 
 const questionsWord = (n: number) => pluralizePl(n, { one: "pytanie", few: "pytania", many: "pytań" });
 
 /**
- * Własny test: użytkownik składa sesję nauki sam. Wybiera dziedziny i akty prawne z puli, które pytania (wszystkie, nowe, błędy,
- * zaległe) i liczbę pytań (10, 20, 50, 100 albo 150; przy małym zakresie „Wszystkie"). To nauka, nie egzamin: nie ma progu
+ * Własny test: użytkownik składa sesję nauki sam. Wybiera dziedziny i akty prawne z puli (Student: przedmioty), które pytania
+ * (wszystkie, nowe, błędy, zaległe, ze zmianą w prawie z ostatniego roku) i liczbę pytań (10, 20, 50, 100 albo 150; przy małym zakresie „Wszystkie"). To nauka, nie egzamin: nie ma progu
  * ani wyniku „zdał / nie zdał", a odpowiedzi idą zwykłą drogą testu (ocena pamięci, pomyłki trafiają do „Moich błędów").
  * Każdy test zapisuje się w „Moich testach"; stamtąd można ułożyć go ponownie z tymi samymi ustawieniami (`prefill`).
  */
@@ -69,18 +71,21 @@ export function CustomTestPage() {
   const prefill = useMemo(() => (location.state as { prefill?: CustomTestPrefill } | null)?.prefill ?? null, [location.state]);
 
   const tree = useMemo(() => buildTree(catalogQuery.data), [catalogQuery.data]);
+  const coursesMode = isCourseTree(tree);
+  const mode: RememberedMode = coursesMode ? "courses" : "acts";
 
   // null = użytkownik jeszcze nic nie zmieniał: pokazujemy zapamiętany wybór (albo wszystko) w świetle bieżącego katalogu.
   const [picked, setPicked] = useState<Set<number> | null>(null);
   const selected = useMemo(() => {
     if (picked !== null) return restrictToTree(tree, picked);
-    if (prefill) return selectionFromScope(tree, prefill.fieldIds, prefill.actIds).selected;
-    if (remembered && !remembered.all) {
-      const kept = restrictToTree(tree, remembered.actIds);
+    if (prefill) return selectionFromScope(tree, prefill.fieldIds, prefill.actIds, prefill.courseIds).selected;
+    // Zapamiętane numery znaczą akty albo przedmioty: używamy ich tylko, gdy to ten sam rodzaj wyboru co teraz.
+    if (remembered && remembered.mode === mode && !remembered.all) {
+      const kept = restrictToTree(tree, remembered.ids);
       if (kept.size > 0) return kept;
     }
     return allActIds(tree);
-  }, [picked, prefill, remembered, tree]);
+  }, [picked, prefill, remembered, tree, mode]);
 
   const [kind, setKind] = useState<CustomTestKind>(prefill?.kind ?? remembered?.kind ?? "ALL");
   // null = użytkownik nie wybierał: bierzemy zapamiętaną liczbę (albo 20) spośród tych, które mieszczą się w zakresie.
@@ -117,9 +122,10 @@ export function CustomTestPage() {
     try {
       const selection = await drawCustomTest(scope, kind, chosen.sends);
       saveRemembered({
-        version: 2,
+        version: 3,
+        mode,
         all: isEverythingSelected(tree, selected),
-        actIds: Array.from(selected),
+        ids: Array.from(selected),
         kind,
         questionCount: chosen.all ? "all" : chosen.count,
       });
@@ -133,8 +139,12 @@ export function CustomTestPage() {
   // Uwagi przy ustawieniach przeniesionych z zapisanego testu: czego nie da się odtworzyć dokładnie.
   const prefillNotes: string[] = [];
   if (prefill && tree.length > 0) {
-    if (selectionFromScope(tree, prefill.fieldIds, prefill.actIds).missing > 0) {
-      prefillNotes.push("Część aktów prawnych z tamtego testu nie jest teraz w Twojej puli, więc ich nie zaznaczyliśmy.");
+    if (selectionFromScope(tree, prefill.fieldIds, prefill.actIds, prefill.courseIds).missing > 0) {
+      prefillNotes.push(
+        coursesMode
+          ? "Część zakresu z tamtego testu nie jest teraz w Twojej puli, więc jej nie zaznaczyliśmy."
+          : "Część aktów prawnych z tamtego testu nie jest teraz w Twojej puli, więc ich nie zaznaczyliśmy."
+      );
     }
     if (pool && prefill.sourceGroups.length > 0) {
       const then = new Set<SourceGroup>(prefill.sourceGroups);
@@ -152,7 +162,9 @@ export function CustomTestPage() {
       <Breadcrumbs items={[{ label: "Testy", to: ROUTES.tests }, { label: "Własny test" }]} />
       <PageHeader
         title="Własny test"
-        subtitle={`Ułóż sesję z wybranych dziedzin i aktów prawnych. To nauka, nie egzamin: bez wyniku „zdał / nie zdał".`}
+        subtitle={`${
+          coursesMode ? "Ułóż sesję z wybranych przedmiotów." : "Ułóż sesję z wybranych dziedzin i aktów prawnych."
+        } To nauka, nie egzamin: bez wyniku „zdał / nie zdał".`}
         actions={
           <>
             <Link
@@ -215,7 +227,7 @@ export function CustomTestPage() {
   const summaryLine = [describeSelection(tree, selected), kindOption.label].join(", ");
 
   let status: string;
-  if (!selectionMade) status = "Zaznacz co najmniej jedną dziedzinę lub akt.";
+  if (!selectionMade) status = coursesMode ? "Zaznacz co najmniej jeden przedmiot." : "Zaznacz co najmniej jedną dziedzinę lub akt.";
   else if (counts.isError && !counts.data) status = "Nie udało się sprawdzić, ile jest pytań.";
   else if (!countsReady) status = "Liczę pytania…";
   else if (available === 0) status = "Brak takich pytań w wybranym zakresie.";
@@ -249,7 +261,7 @@ export function CustomTestPage() {
 
           <fieldset className="flex flex-col gap-2">
             <legend className="mb-2 text-base font-semibold">Które pytania?</legend>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
               {KIND_OPTIONS.map((option) => {
                 const total = counts.data ? option.count(counts.data) : null;
                 return (
@@ -307,7 +319,9 @@ export function CustomTestPage() {
             ) : (
               <p className="text-sm text-fg-muted">
                 {!selectionMade
-                  ? "Najpierw zaznacz dziedzinę lub akt."
+                  ? coursesMode
+                    ? "Najpierw zaznacz przedmiot."
+                    : "Najpierw zaznacz dziedzinę lub akt."
                   : countsReady
                     ? "W tym zakresie nie ma pytań do ułożenia testu."
                     : "Liczę pytania…"}

@@ -22,6 +22,11 @@ export function progressPercent(counts: TestCounts): number {
   return Math.min(100, Math.round((counts.solvedCount / counts.questionCount) * 100));
 }
 
+/** „3 akty prawne" pod nazwą przedmiotu Studenta. */
+export function describeCourseActs(count: number): string {
+  return `${count} ${pluralizePl(count, { one: "akt prawny", few: "akty prawne", many: "aktów prawnych" })}`;
+}
+
 /**
  * „3 akty prawne", „1 akt prawny", „2 zagadnienia". Dziedzina złożona z samych zagadnień (paremie, prawoznawstwo)
  * mówi o zagadnieniach, a nie o aktach.

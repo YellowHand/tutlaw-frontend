@@ -1,6 +1,7 @@
 import { api } from "./axiosInstance";
 import type { TestQueueItem } from "./review";
 import type { SourceKind } from "../lib/source";
+import type { LawChange } from "../lib/lawChange";
 
 export type OptionKey = "A" | "B" | "C";
 
@@ -79,6 +80,8 @@ export interface ExamQuestionResult {
   examYear: number | null;
   actName: string | null;
   actShortName: string | null;
+  /** Zmiana w prawie dotykająca pytania (null: brak). */
+  lawChange?: LawChange | null;
 }
 
 export interface ExamResult {

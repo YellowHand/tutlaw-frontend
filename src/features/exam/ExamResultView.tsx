@@ -8,6 +8,7 @@ import { ROUTES } from "../../config/routes";
 import { cn } from "../../lib/cn";
 import { pluralizePl } from "../../lib/plural";
 import { LegalBasisLine } from "../review/LegalBasisLine";
+import { LawChangeBadge } from "../review/LawChangeBadge";
 import { SourceLabel } from "../review/SourceLabel";
 import { ReportQuestionButton } from "../report/ReportQuestionButton";
 import { START_BUTTON } from "../tests/StartButtons";
@@ -244,6 +245,7 @@ function ReviewItem({ number, question }: { number: number; question: ExamQuesti
         examYear={question.examYear}
         className="mt-2"
       />
+      <LawChangeBadge change={question.lawChange} showNote className="mt-2" />
       <p className="mt-2 text-base font-semibold leading-snug">{question.body}</p>
 
       <ul className="mt-3 flex flex-col gap-2">

@@ -24,8 +24,20 @@ export interface TestFieldNode extends TestCounts {
   id: number;
   name: string;
   slug: string;
-  /** Tylko akty z puli użytkownika; dziedzina bez nich jest pusta, ale nadal widoczna. */
+  /** Tylko akty z puli użytkownika (dziedziny bez żadnego aktu w puli backend pomija). */
   acts: TestActNode[];
+}
+
+/**
+ * Przedmiot Studenta z licznikami. Przedmioty się nakładają (ten sam akt w dwóch przedmiotach liczy się w obu), więc ich
+ * liczniki nie sumują się do puli.
+ */
+export interface TestCourseNode extends TestCounts {
+  id: number;
+  name: string;
+  slug: string;
+  /** Akty prawne przedmiotu (z nich składa się jego strona w Testach). */
+  actIds: number[];
 }
 
 export interface TestSourceNode extends TestCounts {
@@ -38,14 +50,17 @@ export interface TestSourceNode extends TestCounts {
 }
 
 export interface TestCatalog {
-  /** Czy pula jest zawężona przez użytkownika do wybranych aktów. */
+  /** Czy pula jest zawężona przez użytkownika (aplikacje: do aktów, Student: do wybranych przedmiotów). */
   narrowed: boolean;
   fields: TestFieldNode[];
+  /** Przedmioty Studenta (wybrane albo wszystkie); u użytkownika aplikacji pusta lista. */
+  courses: TestCourseNode[];
   sources: TestSourceNode[];
 }
 
 /** Całe drzewo Testów (dziedzina → akt prawny) i źródła pytań jednym wywołaniem. */
 export async function getTestCatalog(): Promise<TestCatalog> {
   const res = await api.get<TestCatalog>("/api/tests/catalog");
-  return res.data;
+  // Starszy serwer nie zna przedmiotów: brak `courses` to to samo co pusta lista (ścieżka aplikacji).
+  return res.data.courses ? res.data : { ...res.data, courses: [] };
 }

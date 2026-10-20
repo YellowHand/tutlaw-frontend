@@ -1,16 +1,22 @@
 import { api } from "./axiosInstance";
 import type { SourceGroup, SourceKind } from "../lib/source";
-
-/** Które pytania z wybranych działów mają wejść do własnego testu. */
-export type CustomTestKind = "ALL" | "NEW" | "MISTAKES" | "DUE";
+import type { LawChange } from "../lib/lawChange";
 
 /**
- * Zakres własnego testu: suma wskazanych dziedzin i aktów prawnych z puli użytkownika.
- * Bez żadnego z nich backend bierze całą pulę.
+ * Które pytania z wybranego zakresu mają wejść do własnego testu. LAW_CHANGE to pytania ze zmianą w prawie z ostatniego
+ * roku (próg ustawia backend).
+ */
+export type CustomTestKind = "ALL" | "NEW" | "MISTAKES" | "DUE" | "LAW_CHANGE";
+
+/**
+ * Zakres własnego testu: suma wskazanych dziedzin, aktów prawnych i (Student) przedmiotów z puli użytkownika.
+ * Bez żadnego z nich backend bierze całą pulę. Przedmiot zastępuje wszystkie swoje akty.
  */
 export interface CustomTestScope {
   fieldIds: number[];
   actIds: number[];
+  /** Przedmioty Studenta; u użytkownika aplikacji zawsze pusta lista. */
+  courseIds: number[];
 }
 
 /** Liczby pytań do wyboru. Własnej liczby nie ma (serwer przyjmuje tylko te, a przy małym zakresie „wszystkie"). */
@@ -22,6 +28,8 @@ export interface CustomTestCounts {
   newQuestions: number;
   mistakes: number;
   due: number;
+  /** Pytania ze zmianą w prawie z ostatniego roku. */
+  lawChanges: number;
 }
 
 export interface CustomTestSelection {
@@ -41,6 +49,7 @@ export async function getCustomTestCounts(scope: CustomTestScope): Promise<Custo
     params: {
       fieldIds: scope.fieldIds.length > 0 ? scope.fieldIds.join(",") : undefined,
       actIds: scope.actIds.length > 0 ? scope.actIds.join(",") : undefined,
+      courseIds: scope.courseIds.length > 0 ? scope.courseIds.join(",") : undefined,
     },
   });
   return res.data;
@@ -70,7 +79,10 @@ export interface CustomTestSessionSummary {
   scopeLabel: string;
   kind: CustomTestKind;
   fieldIds: number[];
+  /** Akty wybrane wprost oraz akty wybranych przedmiotów. */
   actIds: number[];
+  /** Wybrane przedmioty (Student); puste, gdy test układał użytkownik aplikacji albo wybrał akty. */
+  courseIds: number[];
   /** Grupy źródeł obowiązujące, gdy układano test; wszystkie trzy, gdy filtr był domyślny. */
   sourceGroups: SourceGroup[];
   requestedCount: number;
@@ -102,6 +114,8 @@ export interface CustomTestSessionQuestion {
   sourceName: string | null;
   sourceKind: SourceKind | null;
   examYear: number | null;
+  /** Zmiana w prawie dotykająca pytania (null: brak). */
+  lawChange?: LawChange | null;
 }
 
 export interface CustomTestSessionDetail {

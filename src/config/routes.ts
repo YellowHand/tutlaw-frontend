@@ -30,6 +30,8 @@ export const ROUTES = {
   // Testy: dziedzina → akt prawny. Akt jest liściem: z niego od razu zaczyna się sesja.
   tests: "/app/tests",
   testsField: (fieldId: string | number) => `/app/tests/${fieldId}`,
+  // Student: przedmiot → akty prawne, z których się składa. Liściem jest akt, jak u użytkowników aplikacji.
+  testsCourse: (courseId: string | number) => `/app/tests/subject/${courseId}`,
 
   // Sesje z całej puli użytkownika albo z zakresu podanego w adresie (?fieldId=, ?actId=, ?sourceId=).
   studyAll: "/app/study",

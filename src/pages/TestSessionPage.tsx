@@ -26,6 +26,7 @@ import { BacklogFinishNotice, BacklogNotice } from "../features/review/BacklogNo
 import { KeyboardHint } from "../features/review/KeyboardHint";
 import { EXTRA_DUE_BATCH, useBacklog } from "../features/review/useBacklog";
 import { ReportQuestionButton } from "../features/report/ReportQuestionButton";
+import { LawChangeBadge } from "../features/review/LawChangeBadge";
 import { SourceLabel } from "../features/review/SourceLabel";
 import { HideQuestionButton } from "../features/admin/HideQuestionButton";
 import { FlashcardStatusNote, QuestionFlashcardActions } from "../features/flashcards/QuestionFlashcardActions";
@@ -188,6 +189,7 @@ function QuestionBody({
           examYear={question.examYear}
           className="mb-3"
         />
+        <LawChangeBadge change={question.lawChange} className="mb-3" />
         <p className="text-pretty text-lg font-semibold leading-snug text-fg sm:text-xl">{question.body}</p>
       </div>
 
@@ -300,6 +302,7 @@ function QuestionBody({
               {!result.correct && "Zapisano jako „Nie pamiętam”: pytanie wróci w powtórkach."}
             </p>
             {result.explanation?.trim() && <p className="text-base leading-relaxed text-fg">{result.explanation}</p>}
+            <LawChangeBadge change={result.lawChange ?? question.lawChange} showNote className="mt-3" />
             <LegalBasisLine
               legalBasis={result.legalBasis}
               validAsOf={result.validAsOf}

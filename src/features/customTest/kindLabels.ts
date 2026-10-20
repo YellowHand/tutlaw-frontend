@@ -6,4 +6,5 @@ export const KIND_LABELS: Record<CustomTestKind, string> = {
   NEW: "Nowe",
   MISTAKES: "Moje błędy",
   DUE: "Zaległe",
+  LAW_CHANGE: "Zmiany w prawie",
 };

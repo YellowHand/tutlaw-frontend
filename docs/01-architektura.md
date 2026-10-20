@@ -63,7 +63,7 @@ port-fe/
 | `account` | 8 | Ekran Konto: zmiana hasła, pobranie danych, usunięcie konta, wywołania serwera, dane zalogowanego konta (`useMe`) |
 | `admin` | 1 | Przyciski „Ukryj pytanie” i „Ukryj fiszkę” (tylko dla administratora) |
 | `auth` | 6 | Pola formularzy logowania, „wyślij link ponownie”, odczyt roli z tokenu, czyszczenie sesji |
-| `customTest` | 10 | Własny test: wybór dziedzin i aktów prawnych, rodzaju pytań i liczby pytań (10, 20, 50, 100, 150); pamięć ostatniego wyboru; „Moje testy” (lista, szczegóły, ułożenie ponownie z tymi samymi ustawieniami) |
+| `customTest` | 10 | Własny test: wybór dziedzin i aktów prawnych (Student: przedmiotów), rodzaju pytań i liczby pytań (10, 20, 50, 100, 150); pamięć ostatniego wyboru; „Moje testy” (lista, szczegóły, ułożenie ponownie z tymi samymi ustawieniami) |
 | `dashboard` | 6 | Pulpit: karta „Na dziś” z jednym głównym przyciskiem, „Postęp”, wynik egzaminu próbnego |
 | `difficult` | 4 | Trudne i zawieszone pytania: podpowiedź, zawieszanie, lista w Koncie |
 | `exam` | 8 | Egzamin próbny: ustawienia, przebieg z zegarem, raport, historia, zapis w przeglądarce |
@@ -73,15 +73,16 @@ port-fe/
 | `legal` | 3 | Regulamin i polityka prywatności |
 | `misc` | 1 | Strona 404 |
 | `onboarding` | 1 | Obowiązkowe okno startowe po zalogowaniu: wybór ścieżki (aplikacja albo Student) i wyglądu strony |
-| `pool` | 4 | Pula pytań: znacznik przy tytule, okno wyboru aktów prawnych, przedmiotów Studenta i grup źródeł, hooki i opis puli |
+| `pool` | 4 | Pula pytań: znacznik przy tytule, okno wyboru aktów prawnych (Student: przedmiotów) i grup źródeł, hooki i opis puli |
+| `progress` | 4 | Zerowanie postępów: karta „Wyzeruj postępy” w Koncie, lista tego, co zniknie, pole ze słowem WYZERUJ, hooki i odświeżenie danych po zerowaniu |
 | `report` | 2 | „Zgłoś błąd”: okno na środku ekranu z powodem i komentarzem |
-| `review` | 16 | Elementy wspólne sesji nauki: zakres sesji z adresu (`useScopeParams`), skróty klawiszowe i ich podpowiedź, zaległości, podstawa prawna, etykieta źródła, licznik czasu pytania (widoczny czas), podsumowanie sesji na ekranie „Brawo!” |
-| `settings` | 10 | Ustawienia nauki w Koncie (limity dzienne z trybem automatycznym, retencja, wybór ścieżki), wygląd jasny/ciemny (karta, wybór, synchronizacja z kontem), komunikat o tempie nowych pytań, terminy egzaminów dla administratora |
+| `review` | 17 | Elementy wspólne sesji nauki: zakres sesji z adresu (`useScopeParams`), skróty klawiszowe i ich podpowiedź, zaległości, podstawa prawna, etykieta źródła, plakietka „Zmiana w prawie”, licznik czasu pytania (widoczny czas), podsumowanie sesji na ekranie „Brawo!” |
+| `settings` | 11 | Ustawienia nauki w Koncie (limity dzienne z trybem automatycznym, retencja, wybór ścieżki i okno jej zmiany z opcją „Zacznij od zera”), wygląd jasny/ciemny (karta, wybór, synchronizacja z kontem), komunikat o tempie nowych pytań, terminy egzaminów dla administratora |
 | `statistics` | 15 | Ekran Statystyki: opanowanie pytań według źródła, opanowanie aktów prawnych, „Podsumowanie nauki”, ostatnie 30 dni, aktywność, fiszki; dane statystyk |
 | `studytime` | 3 | Czas nauki: licznik na ekranach nauki (tylko przy widocznej karcie, pauza po 3 minutach bez ruchu) i wysyłanie porcji co ok. 30 s |
-| `tests` | 12 | Ekrany Testów (dziedzina, akt prawny, sekcja „Według źródła”), „Szybki start”, zaległe powtórki, tasowanie odpowiedzi |
+| `tests` | 14 | Ekrany Testów (dziedzina albo przedmiot Studenta, akt prawny, sekcja „Według źródła”), grupowanie aktów pod dziedzinami i przedmiotami, „Szybki start”, zaległe powtórki, tasowanie odpowiedzi |
 
-W repozytorium jest łącznie 194 pliki w `src/`.
+W repozytorium jest łącznie 203 pliki w `src/`.
 
 ### Dlaczego strony są w dwóch miejscach
 

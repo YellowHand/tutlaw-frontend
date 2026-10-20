@@ -52,8 +52,8 @@ prośba o reset hasła i ustawienie nowego hasła) jest wpisanych bezpośrednio 
 
 ## Wszystkie wywołania serwera
 
-Frontend używa **60 z 60** endpointów backendu (łącznie 61 wywołań w kodzie, bo `POST /api/me/study-time` jest wołane z
-dwóch miejsc). Endpointów, których frontend nie używa, nie ma; sekcja o nich jest [niżej](#endpointy-których-frontend-nie-używa).
+Frontend używa **62 z 63** endpointów backendu (łącznie 63 wywołań w kodzie, bo `POST /api/me/study-time` jest wołane z
+dwóch miejsc). Jeden endpoint backendu pozostaje nieużywany (`GET /api/courses`); sekcja o nim jest [niżej](#endpointy-których-frontend-nie-używa).
 Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć wyszukiwarką.
 
 ### Konto i logowanie (bez tokenu)
@@ -77,17 +77,19 @@ Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć w
 | `GET /api/users/me/export` | `fetchAccountExport` | Karta „Pobierz moje dane” w Koncie (plik JSON) |
 | `PUT /api/users/me/password` | `changePassword` | Karta „Zmień hasło”; zwraca nową parę tokenów, która zastępuje starą |
 | `DELETE /api/users/me` | `deleteAccount` | Karta „Usuń konto”; hasło idzie w treści żądania (`data: { password }`) |
+| `GET /api/me/study-progress` | `getStudyProgress` (`api/studyProgress.ts`) | Okna „Wyzeruj postępy” i „Zmień ścieżkę” (po zaznaczeniu „Zacznij od zera”): liczby tego, co zniknie. Pobierane dopiero po otwarciu okna |
+| `DELETE /api/me/study-progress` | `resetStudyProgress` | „Wyzeruj na stałe”: zeruje postępy (nie konto, ścieżkę ani ustawienia). Ciało `{ confirm: "WYZERUJ" }` w `data`; odpowiedź to liczby sprzed kasowania |
 
 ### Ścieżki, pula pytań i katalog Testów
 
 | Wywołanie | Funkcja / plik | Gdzie używane |
 |-----------|----------------|---------------|
 | `GET /api/tracks` | `getTracks` (`api/tracks.ts`) | Lista ścieżek (pięć aplikacji i Student): okno startowe i wybór ścieżki w Koncie |
-| `GET /api/courses` | `getCourses` (`api/courses.ts`) | Przedmioty Studenta w oknie „Pula pytań” (zaznaczają akty hurtem) |
 | `GET /api/me/pool` | `getPool` (`api/pool.ts`) | Znacznik i okno „Pula pytań”; notka o zawężeniu na Pulpicie |
-| `PUT /api/me/pool/acts` | `updatePoolActs` | Okno „Pula pytań”: zawężenie do wybranych aktów (pusta lista zdejmuje zawężenie) |
+| `PUT /api/me/pool/acts` | `updatePoolActs` | Okno „Pula pytań” (aplikacje): zawężenie do wybranych aktów (pusta lista zdejmuje zawężenie) |
+| `PUT /api/me/pool/courses` | `updatePoolCourses` | Okno „Pula pytań” (Student): wybór przedmiotów (pusta lista = wszystkie). Przedmioty przychodzą w `Pool.courses` |
 | `PUT /api/me/pool/source-filter` | `updateSourceFilter` | Okno „Pula pytań”: włączenie i wyłączenie grup źródeł (moje arkusze, arkusze innych ścieżek, autorskie) |
-| `GET /api/tests/catalog` | `getTestCatalog` (`api/tests.ts`) | Testy: dziedziny z aktami i sekcja „Według źródła”; Pulpit: wiersze postępu według dziedzin; Fiszki, Statystyki i Własny test: drzewo aktów |
+| `GET /api/tests/catalog` | `getTestCatalog` (`api/tests.ts`) | Testy: dziedziny z aktami (Student: przedmioty z `actIds`) i sekcja „Według źródła”; Pulpit: wiersze postępu według dziedzin albo przedmiotów; Fiszki, Statystyki i Własny test: drzewo aktów (Student: przedmiotów) |
 
 ### Nauka: kolejki, odpowiedzi, liczniki
 
@@ -99,7 +101,7 @@ Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć w
 | `GET /api/review/mistakes-queue` | `getMistakesQueue` | Sesja „Powtórz moje błędy” |
 | `GET /api/review/mistakes-count` | `getMistakesCount` | Przycisk „Moje błędy” (z liczbą) w „Szybkim starcie” na ekranie Testy, link „Popraw moje błędy” na Pulpicie i w Statystykach |
 | `GET /api/review/custom-test/counts` | `getCustomTestCounts` (`api/customTest.ts`) | Własny test: „Dostępnych: N” przy każdym rodzaju pytań w wybranym zakresie |
-| `POST /api/review/custom-test` | `drawCustomTest` (`api/customTest.ts`) | Własny test: losowanie numerów pytań po „Rozpocznij test” (ciało: `fieldIds`, `actIds`, `kind`, `questionCount`); odpowiedź ma `questionIds` i `sessionId` zapisanego testu. Liczba pytań to 10, 20, 50, 100 albo 150 |
+| `POST /api/review/custom-test` | `drawCustomTest` (`api/customTest.ts`) | Własny test: losowanie numerów pytań po „Rozpocznij test” (ciało: `fieldIds`, `actIds`, `courseIds`, `kind`, `questionCount`; `kind` to `ALL`, `NEW`, `MISTAKES`, `DUE` albo `LAW_CHANGE`); odpowiedź ma `questionIds` i `sessionId` zapisanego testu. Liczba pytań to 10, 20, 50, 100 albo 150 |
 | `GET /api/custom-tests/sessions` | `listCustomTestSessions` (`api/customTest.ts`) | „Moje testy”: lista zapisanych własnych testów (`/app/custom-test/history`) |
 | `GET /api/custom-tests/sessions/{id}` | `getCustomTestSession` (`api/customTest.ts`) | „Moje testy”: szczegóły testu z odpowiedziami (`/app/custom-test/history/:id`) i przycisk „Ułóż ponownie z tymi ustawieniami” |
 | `GET /api/review/due-tomorrow` | `getDueByTomorrow` (`api/review.ts`) | Podsumowanie na ekranie „Brawo!”: „Jutro wróci N powtórek” |
@@ -158,8 +160,14 @@ Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć w
 
 ### Endpointy, których frontend nie używa
 
-Endpointów, których frontend nie używa, jest 0: każdy z 60 endpointów backendu ma w kodzie swoje wywołanie. Treść
-(akty prawne, pytania) administrator wprowadza **skryptami SQL**, a nie przez API, więc nie ma endpointów do jej dodawania.
+Endpointów, których frontend nie używa, jest 1:
+
+| Wywołanie | Dlaczego nie |
+|-----------|--------------|
+| `GET /api/courses` | Lista przedmiotów. Student dostaje przedmioty w puli (`Pool.courses`) i w katalogu Testów (`TestCatalog.courses`), z liczbami pytań i zaznaczeniem, więc osobne pobieranie niczego nie daje |
+
+Treść (akty prawne, przedmioty, pytania, zmiany w prawie) administrator wprowadza **skryptami SQL**, a nie przez API, więc
+nie ma endpointów do jej dodawania.
 
 W aplikacji nie ma panelu administratora. Funkcje administratora w interfejsie to przyciski „Ukryj pytanie” i „Ukryj
 fiszkę” (`PUT /api/questions/{questionId}/hidden` i `/flashcard-hidden`) oraz karta „Terminy egzaminów” w Koncie
@@ -193,7 +201,6 @@ dane po powrocie do karty przeglądarki. Pamięć żyje tylko w otwartej karcie;
 |-------|----------------|-------|--------------------|
 | `["tracks"]` | Lista ścieżek (aplikacje i Student) | 10 min | `features/settings/hooks.ts` |
 | `["pool"]` | Pula pytań użytkownika (ścieżka, zawężenie, filtr źródeł) | 30 s | `features/pool/hooks.ts` |
-| `["pool","courses"]` | Przedmioty Studenta (tylko dla Studenta) | 5 min | j.w. |
 | `["tests","catalog"]` | Dziedziny, akty i źródła z licznikami | **0** | `features/tests/hooks.ts` |
 | `["review","due-count",mode]` | Liczba powtórek do zrobienia | 30 s | `features/review/hooks.ts` |
 | `["review","mistakes-count"]` | Liczba błędów do powtórzenia | 30 s | j.w. |
@@ -209,6 +216,7 @@ dane po powrocie do karty przeglądarki. Pamięć żyje tylko w otwartej karcie;
 | `["statistics","tests"]` | Statystyki Testów | 60 s | j.w. |
 | `["statistics","sources"]` | Statystyki według grup źródeł i arkuszy | 60 s | j.w. |
 | `["statistics","learning-summary"]` | „Podsumowanie nauki” | 60 s | j.w. |
+| `["study-progress"]` | Liczby do zerowania postępów (pobierane dopiero w otwartym oknie) | **0** | `features/progress/hooks.ts` |
 | `["difficult-questions"]` | Trudne i zawieszone pytania | 30 s | `features/difficult/hooks.ts` |
 | `["settings","learning"]` | Ustawienia nauki (ze ścieżką, terminem i planem) | 60 s | `features/settings/hooks.ts` |
 | `["settings","exam-terms"]` | Terminy egzaminów aplikacji | 60 s | j.w. |
@@ -220,8 +228,8 @@ dane po powrocie do karty przeglądarki. Pamięć żyje tylko w otwartej karcie;
 pokazuje się od razu, nowa podmienia ją po chwili). Tak jest wszędzie tam, gdzie liczby zmieniają się po nauce, żeby
 po powrocie z sesji paski postępu i liczniki były aktualne.
 
-Zapytania z warunkiem `enabled` nie wysyłają się, dopóki brakuje parametru: np. przedmioty Studenta są pobierane tylko
-wtedy, gdy wybrana ścieżka ma rodzaj `STUDENT`, a szczegóły zapisanego testu bez poprawnego numeru w adresie
+Zapytania z warunkiem `enabled` nie wysyłają się, dopóki brakuje parametru: np. liczby do zerowania postępów są pobierane
+dopiero, gdy okno jest otwarte, a szczegóły zapisanego testu bez poprawnego numeru w adresie
 (`parseId` zwraca wtedy `undefined`) się nie pobierają.
 
 ### Co jest odświeżane po czynnościach

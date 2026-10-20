@@ -65,7 +65,9 @@ stateDiagram-v2
    interfejsu), pod przełącznikiem stoi jednorazowa podpowiedź „Zaznacz, jeśli zgadujesz. Takie pytanie wróci szybciej, nawet
    przy dobrej odpowiedzi.” (`data-testid="guess-hint"`); po pierwszej odpowiedzi licznik rośnie i podpowiedź już się nie pokazuje.
    Nad pytaniem, obok strzałek podglądu, jest mały [licznik czasu](#licznik-czasu-przy-pytaniu), a pod nim podpis z aktu
-   prawnego i źródła pytania (`SourceLabel`, np. „Kodeks cywilny · Notarialna 2024” albo „… · Pytania autorskie”).
+   prawnego i źródła pytania (`SourceLabel`, np. „Kodeks cywilny · Notarialna 2024” albo „… · Pytania autorskie”). Gdy w treści
+   pytania zmieniło się prawo w ostatnim roku, pod podpisem stoi pomarańczowa plakietka „Zmiana w prawie: 1 października 2026”
+   ([niżej](#zmiany-w-prawie)).
 2. Wybór odpowiedzi blokuje pozostałe i wysyła `POST /api/review/test-answer` z numerem pytania (`questionId`), wybraną opcją (A, B lub C), czasem
    odpowiedzi w sekundach, znacznikiem `guessed` i (w sesji własnego testu) numerem sesji `sessionId`. Czas liczy się od
    pokazania pytania, ale tylko przy widocznej karcie przeglądarki, a podgląd poprzednich pytań go wstrzymuje. Odpowiedź
@@ -73,7 +75,8 @@ stateDiagram-v2
 3. Odpowiedź serwera (`TestAnswerResult`) steruje wynikiem:
    - poprawna odpowiedź podświetla się na zielono, wybrana błędna na czerwono, pozostałe wyszarzają;
    - nagłówek „Poprawnie!” albo „Niepoprawnie” i zdanie o zapisanej ocenie (tabela niżej);
-   - wyjaśnienie (jeśli jest), podstawa prawna (np. „art. 415 k.c.”) i data stanu prawnego (`LegalBasisLine`);
+   - wyjaśnienie (jeśli jest), plakietka „Zmiana w prawie” z krótkim opisem zmiany (gdy pytanie ma zmianę), podstawa prawna
+     (np. „art. 415 k.c.”) i data stanu prawnego (`LegalBasisLine`);
    - podpowiedź o trudnym pytaniu, jeśli `leech` jest prawdą (patrz niżej);
    - informacja o fiszce: „Dodałem fiszkę do tego pytania w Fiszkach.” przy pierwszym pewnym błędzie.
 4. Pod wynikiem są przyciski: **Dodaj do fiszek / Usuń z fiszek**, **Ukryj pytanie** (tylko administrator),
@@ -151,7 +154,8 @@ stateDiagram-v2
   podpowiada całą pulę, dziedzinę albo akt prawny. Zawężenie puli do aktów obowiązuje też w fiszkach, ale filtr źródeł nie
   (fiszka wynika z błędu w teście, więc zostaje w nauce niezależnie od źródła pytania).
 - Karta ma **przód** (pytanie) i **tył** (odpowiedź), a odwracanie to animacja 3D (obrót o 180°). Strona, która jest
-  schowana, ma `aria-hidden`, żeby czytnik ekranu czytał tylko widoczną.
+  schowana, ma `aria-hidden`, żeby czytnik ekranu czytał tylko widoczną. Pytanie ze zmianą w prawie ma plakietkę „Zmiana w
+  prawie” na przodzie, a z opisem zmiany na tyle, w stopce obok podpisu źródła.
 - Cztery oceny, wysyłane przez `POST /api/review` (`questionId`, ocena, czas) jako liczby 1–4:
 
 | Klawisz | Przycisk | Liczba | Kolor |
@@ -324,37 +328,44 @@ przycisku przywracania nie ma.
 
 Użytkownik uczy się z **puli**: pytań z aktów prawnych swojej ścieżki (pięć aplikacji egzaminacyjnych albo Student), po
 opcjonalnym zawężeniu do wybranych aktów i z filtrem źródeł. Pulę liczy serwer (`GET /api/me/pool`, `api/pool.ts`), a
-frontend ją tylko pokazuje i zapisuje wybór. **Każdy widzi wszystkie dziedziny, ale w każdej tylko akty swojej ścieżki**:
-dziedzina bez aktów w ścieżce jest wyszarzona („Poza pulą” na kafelku w Testach, „Brak aktów w Twojej puli” w środku).
+frontend ją tylko pokazuje i zapisuje wybór. Użytkownik aplikacji widzi dziedziny, ale w każdej tylko akty swojej ścieżki
+(dziedzinę bez aktów w puli backend w ogóle nie zwraca). **Student uczy się z przedmiotów**: administrator (skryptem SQL)
+przypisuje przedmiotom akty prawne, a Student wybiera przedmioty i dostaje wszystkie pytania ich aktów. Nie wybrał żadnego =
+uczy się ze wszystkich. Przedmiot bez pytań jest ukryty. Frontend Studenta nie pokazuje wyboru aktów, a pytania nadal należą do
+aktów (ten sam akt w dwóch przedmiotach to te same pytania). Wybór przedmiotów zostaje na koncie przy zmianie ścieżki.
 
 **Znacznik „Pula pytań”** (`features/pool/PoolChip.tsx`, `data-testid="pool-chip"`) stoi przy tytule na liście Testów, na
 ekranie dziedziny, we „Własnym teście” i w ustawieniach egzaminu. Mówi, z czego użytkownik się uczy, np. „Notarialna”,
-„Notarialna, wybrane akty” albo „Student, filtr źródeł” (`describePool`). Gdy pula jest czymś zawężona, znacznik ma złotą
+„Notarialna, wybrane akty”, „Student, wybrane przedmioty” albo „Student, filtr źródeł” (`describePool`). Gdy pula jest czymś zawężona, znacznik ma złotą
 ramkę i kropkę, a podpowiedź (atrybut `title` i tekst dla czytnika ekranu) podaje liczbę pytań w puli. Gdy puli nie uda się
 pobrać, znacznika po prostu nie ma, a nauka działa normalnie.
 
-Kliknięcie otwiera okno **„Pula pytań”** (`PoolDialog`), w którym są trzy części:
+Kliknięcie otwiera okno **„Pula pytań”** (`PoolDialog`), w którym są dwie części do wyboru (zależnie od ścieżki):
 
-- **Przedmioty** (tylko Student; `GET /api/courses`): pola wyboru z trzecim stanem „część zaznaczona”. Przedmiot to wyłącznie
-  podział aktów prawnych: zaznaczenie przedmiotu zaznacza jego akty, a pytania i tak należą do aktów (paremie łacińskie
-  to zwykłe pytania w zagadnieniu, nie osobny rodzaj treści).
-- **Akty prawne**, pogrupowane w 11 dziedzin: pole „Cała dziedzina”, osobny przycisk rozwijania dziedziny (rodzeństwo pola
-  wyboru, nie zagnieżdżone w nim, żeby kontrolki nie siedziały jedna w drugiej) i pola przy każdym akcie z liczbą jego
-  pytań ze wszystkich źródeł. „Zaznacz wszystkie” wraca do całej ścieżki. Akt typu `TOPIC` to zagadnienie bez ustawy.
+- **Przedmioty** (tylko Student; `Pool.courses` z `GET /api/me/pool`): płaska lista pól wyboru z liczbą pytań każdego
+  przedmiotu. Nie ma w niej aktów ani dziedzin. Zaznaczenie wszystkich przedmiotów to brak własnego wyboru.
+- **Akty prawne** (tylko aplikacje), pogrupowane w dziedziny z aktami ścieżki: pole „Cała dziedzina”, osobny przycisk
+  rozwijania dziedziny (rodzeństwo pola wyboru, nie zagnieżdżone w nim, żeby kontrolki nie siedziały jedna w drugiej) i pola
+  przy każdym akcie z liczbą jego pytań ze wszystkich źródeł. „Zaznacz wszystkie” wraca do całej ścieżki. Akt typu `TOPIC`
+  to zagadnienie bez ustawy.
 - **Źródła pytań w Testach**: trzy pola „Moje arkusze”, „Arkusze innych ścieżek” i „Pytania autorskie” (`lib/source.ts`) z
   liczbą pytań każdej grupy; grupa bez pytań w puli jest nieaktywna.
 
 Zasady okna:
 
-- Trzeba zostawić co najmniej jeden akt i jedną grupę źródeł; inaczej „Zapisz” jest nieaktywne, a podpowiedź mówi, czego brakuje.
-- Zapis wysyła tylko to, co się zmieniło: `PUT /api/me/pool/acts` (zaznaczenie **wszystkich** aktów wysyła pustą listę, czyli
-  zdejmuje zawężenie) i `PUT /api/me/pool/source-filter` (`ownSheets`, `otherSheets`, `authored`). Pula jest na koncie, więc
-  działa też na innym urządzeniu.
-- Zmiana ścieżki w Koncie zdejmuje zawężenie i przywraca wszystkie trzy grupy źródeł.
+- Trzeba zostawić co najmniej jeden akt (Student: przedmiot) i jedną grupę źródeł; inaczej „Zapisz” jest nieaktywne, a
+  podpowiedź mówi, czego brakuje. Student nie widzi grupy „Moje arkusze” (nie ma własnych arkuszy).
+- Zapis wysyła tylko to, co się zmieniło: `PUT /api/me/pool/acts` (aplikacje; zaznaczenie **wszystkich** aktów wysyła pustą
+  listę, czyli zdejmuje zawężenie), `PUT /api/me/pool/courses` (Student, tak samo z pustą listą) i
+  `PUT /api/me/pool/source-filter` (`ownSheets`, `otherSheets`, `authored`). Pula jest na koncie, więc działa też na innym
+  urządzeniu.
+- Zmiana ścieżki w Koncie zdejmuje zawężenie do aktów i przywraca wszystkie trzy grupy źródeł. Wybrane przedmioty Studenta
+  zostają, więc powrót na tę ścieżkę nie wymaga ponownego wyboru. Postępy zostają zawsze, chyba że sam zaznaczysz „Zacznij od zera”
+  (patrz [Zerowanie postępów](#zerowanie-postępów)).
 
 **Gdzie pula obowiązuje** (stosuje ją serwer, frontend niczego nie filtruje u siebie):
 
-| Obszar | Zawężenie do aktów | Filtr źródeł |
+| Obszar | Zawężenie do aktów (Student: przedmiotów) | Filtr źródeł |
 |--------|--------------------|--------------|
 | Testy: katalog, kolejki, powtórki, „Moje błędy”, własny test | tak | tak |
 | Egzamin próbny | **nie** (losuje ze wszystkich aktów ścieżki) | tak |
@@ -366,6 +377,15 @@ Zasady okna:
 Po zapisie frontend unieważnia dane, które liczą pytania: katalog Testów, liczniki powtórek, błędów i własnego testu,
 ustawienia (plan nauki) i statystyki (`invalidateAfterPoolChange` w `features/pool/hooks.ts`).
 Gdy pula zawęża katalog, puste pozycje mają napis „Brak w filtrze źródeł” zamiast „Wkrótce”.
+
+### Student w Testach, Fiszkach i na Pulpicie
+
+Student widzi **przedmioty zamiast dziedzin**: `TestsPage` pokazuje kafelki przedmiotów („Wybierz przedmiot”, bez sekcji źródeł),
+a przedmiot otwiera `TestCoursePage` z kafelkami jego aktów. Pulpit pokazuje postęp „według przedmiotów”, Fiszki i filtr aktu
+w Statystykach grupują akty pod przedmiotami (`actGroups` w `features/tests/groups.ts`; fiszki nie mają zakresu „cały
+przedmiot”, bo zakres sesji to dziedzina, akt albo źródło). Przedmioty przychodzą w katalogu Testów (`TestCatalog.courses`,
+każdy z `actIds` i licznikami) i w puli (`Pool.courses`). Przedmioty nakładają się (ten sam akt w dwóch), więc ich liczniki nie
+sumują się do puli.
 
 ## Ustawienia nauki (Konto)
 
@@ -399,8 +419,13 @@ Gdy pula zawęża katalog, puste pozycje mają napis „Brak w filtrze źródeł
   albo „termin nieogłoszony”) albo **Studenta**, a termin ustawia administrator (niżej). Przycisk nazywa się „Zmień
   ścieżkę” (albo „Wybierz ścieżkę”, gdy nic jeszcze nie wybrano) i wywołuje `PUT /api/me/track` (`chooseTrack`, hook
   `useChooseTrack` w `features/settings/trackChoice.ts`). **Serwer przy tym zdejmuje zawężenie puli do aktów i przywraca
-  filtr źródeł**, więc po wyborze frontend odświeża pulę, katalog Testów, liczniki powtórek i błędów, Własny test oraz
-  statystyki (`refreshAfterTrackChosen`). Pod listą jedno zdanie opisuje stan egzaminu (`ExamInfo`): ile dni zostało, że
+  filtr źródeł, ale postępów nie rusza**, więc po wyborze frontend odświeża pulę, katalog Testów, liczniki powtórek i błędów,
+  Własny test oraz statystyki (`refreshAfterTrackChosen`). Pierwszy wybór zapisuje się od razu; **zmiana** istniejącej ścieżki
+  otwiera okno potwierdzenia (`TrackChangeDialog`): „Zmieniasz ścieżkę z X na Y”, ramka **„Twoje postępy zostają”** (stan
+  pytań, terminy powtórek, historia, własne testy, egzaminy, statystyki) i niezaznaczone pole **„Zacznij od zera”**. Po jego
+  zaznaczeniu okno pokazuje, co zniknie, i wymaga wpisania WYZERUJ; wtedy przycisk mówi „Zmień ścieżkę i wyzeruj”. Najpierw
+  zmienia się ścieżka, potem zerują postępy (gdyby zmiana się nie udała, nic nie ginie); gdyby zawiodło samo zerowanie, okno
+  mówi, że ścieżka już jest zmieniona, i odsyła do karty „Wyzeruj postępy” w Koncie. Pod listą jedno zdanie opisuje stan egzaminu (`ExamInfo`): ile dni zostało, że
   tryb egzaminacyjny jest włączony, że termin jest nieogłoszony albo że egzamin już się odbył; Student zamiast tego widzi
   „Jako Student nie masz odliczania ani dziennego planu.”.
 - **Plan do egzaminu**: gdy wybrana aplikacja ma przyszły termin (Student go nie ma), serwer zwraca plan (ile nowych pytań i fiszek zostało, ile
@@ -431,8 +456,8 @@ wybrało ścieżki), otwiera okno modalne „Witaj w Gradus iuris”. **Wybór j
 - Dwie grupy wyboru: „Do czego się przygotowujesz?” (lista ścieżek z `GET /api/tracks`: pięć aplikacji z wierszem terminu, a na
   końcu **Student**) i „Wygląd strony” (Ciemny zaznaczony z góry, Jasny). Z aplikacji biorą się odliczanie, plan dnia i pula
   pytań (własne arkusze aplikacji oraz akty prawne, które obejmuje; potem zawęzisz ją w „Puli pytań”). **Student** nie ma
-  terminu ani odliczania, a pulę składa z przedmiotów i aktów z całego banku pytań (pod nazwą stoi podpis „Bez odliczania i
-  planu dnia…”). Obie opcje to ten sam `PUT /api/me/track` z numerem ścieżki, a tę samą listę ma „Moja ścieżka” w Koncie,
+  terminu ani odliczania, a pulę składa z wybranych przedmiotów (pod nazwą stoi podpis „Bez odliczania i planu dnia. Uczysz
+  się z wybranych przedmiotów…”). Obie opcje to ten sam `PUT /api/me/track` z numerem ścieżki, a tę samą listę ma „Moja ścieżka” w Koncie,
   więc wybór można zmienić.
 - „Zacznij naukę” jest nieaktywne, dopóki nic nie wybrano, a pod przyciskiem stoi podpowiedź „Wybierz aplikację albo
   Studenta, żeby przejść dalej.” Okno nie ma przycisku zamknięcia, Esc i kliknięcie w tło nic nie robią (`Dialog` z
@@ -458,8 +483,8 @@ wybrało ścieżki), otwiera okno modalne „Witaj w Gradus iuris”. **Wybór j
 
 ## Własny test (`features/customTest`)
 
-Sesja nauki ułożona przez użytkownika: wybiera dziedziny i akty prawne z puli (`ScopeTree`), rodzaj pytań (wszystkie, nowe,
-„Moje błędy”, zaległe) i liczbę pytań. Opis ekranu jest w [02](02-routing-i-strony.md). Zasady:
+Sesja nauki ułożona przez użytkownika: wybiera dziedziny i akty prawne z puli (`ScopeTree`; Student: przedmioty), rodzaj pytań
+(wszystkie, nowe, „Moje błędy”, zaległe, „Zmiany w prawie”) i liczbę pytań. Opis ekranu jest w [02](02-routing-i-strony.md). Zasady:
 
 - **To nauka, nie egzamin.** Nie ma progu, wyniku „zdał / nie zdał” ani zegara. Sesja kończy się zwykłym ekranem
   „Brawo! Własny test zakończony.”.
@@ -472,12 +497,18 @@ Sesja nauki ułożona przez użytkownika: wybiera dziedziny i akty prawne z puli
   jedną z liczb, wysyła na serwer najmniejszą dozwoloną liczbę nie mniejszą niż N (dla N do 150), więc serwer daje tyle, ile jest.
 - **Co jest wybrane domyślnie** (`pickCountOption`): zapamiętana liczba, a gdy jej nie ma wśród dostępnych, **największa
   dostępna nieprzekraczająca zapamiętanej** (kto prosił o 100, a ma 35 pytań, dostaje „Wszystkie (35)”). Bez zapamiętanego
-  wyboru proponujemy 20. Zapamiętywane są rodzaj pytań i liczba (`customTestStorage.ts`).
+  wyboru proponujemy 20. Zapamiętywane są rodzaj pytań i liczba (`customTestStorage.ts`) oraz zakres: wersja `v3` zapisuje też, czy numery znaczą akty,
+  czy przedmioty (`mode`), i stosuje je tylko wtedy, gdy zgadza się z obecnym rodzajem drzewa.
+- **Przedmioty Studenta.** `buildTree` buduje z `catalog.courses` płaską listę (`TreeField.course`, bez rozwijania; `isCourseTree`),
+  a `toScope` zwraca `courseIds` (przy zaznaczeniu wszystkiego puste, czyli cała pula). Zapisany test pamięta przedmioty
+  (`courseIds`) oraz ich akty (w `actIds`), więc „Ułóż ponownie” działa także po zmianie ścieżki albo przedmiotów.
 - **Dwa kroki.** Ekran pyta serwer o liczby pytań (`GET /api/review/custom-test/counts`), a po „Rozpocznij test”
   losuje numery i **zapisuje sesję** (`POST /api/review/custom-test` zwraca `questionIds` i `sessionId`). Sesja
   `/app/test/custom?questionIds=…&sessionId=…` pobiera te pytania kolejką ćwiczeń.
 - **Pula obowiązuje automatycznie** (serwer: akty ścieżki po zawężeniu i filtr źródeł), a drzewo wyboru pokazuje tylko
   działy, w których po filtrze jest co rozwiązywać; gdy filtr źródeł wyciął wszystko, ekran mówi „Brak w filtrze źródeł”. Zawieszone, ukryte i niedostępne pytania nie wchodzą do testu.
+- **Rodzaj „Zmiany w prawie”** to pytania, w których zmiana prawa (data `lawChange.changedAt`) przypada na ostatnie 365 dni;
+  liczy je serwer (`lawChanges` w `custom-test/counts`).
 - **Dzienny limit nowych pytań go nie dotyczy.** Użytkownik sam wybiera, ile pytań chce rozwiązać.
 - W podsumowaniu nad przyciskiem opis zakresu i rodzaju łączą się przecinkiem („Cały materiał, Wszystkie”), bez środkowych kropek.
 
@@ -494,7 +525,7 @@ Każdy własny test jest **zapisywany w chwili startu**, nie dopiero po ukończe
   Błędne i bez odpowiedzi”. Do nieukończonego testu nie da się wrócić, ekran mówi o tym wprost. Gdy test nie istnieje albo nie
   należy do użytkownika, ekran pokazuje błąd z linkiem „Wróć do listy testów”.
 - **„Ułóż ponownie z tymi ustawieniami”** otwiera ekran układania ze wstępnie zaznaczonymi tymi samymi działami, rodzajem pytań
-  i liczbą (ustawienia jadą w stanie nawigacji, `CustomTestPrefill`). Akty i dziedziny, których nie ma już w puli (np. po zmianie
+  i liczbą (ustawienia jadą w stanie nawigacji, `CustomTestPrefill`, z `courseIds` dla Studenta). Akty i dziedziny, których nie ma już w puli (np. po zmianie
   ścieżki), są pomijane z komunikatem; komunikat jest też, gdy od tamtego czasu zmienił się filtr źródeł (test pamięta grupy
   źródeł z chwili układania).
   Przycisk niczego nie uruchamia sam: użytkownik klika „Rozpocznij test”, więc powstaje nowa sesja.
@@ -576,9 +607,41 @@ Podejście bez progu w punktach (`passPoints: null`, spoza stałego formatu) ma 
 poprawnych odpowiedzi, której wymagał (`pointsNeeded`), i nazwę wybranego wtedy zakresu.
 Dodatkowo: informacja o automatycznym zakończeniu po czasie, informacja o pytaniach, których nie dało się ocenić (usunięte
 albo już niedostępne; nie wliczają się do wyniku), wyniki według źródeł (gdy źródeł jest więcej niż jedno) oraz przegląd
-pytań z poprawnymi odpowiedziami, wyjaśnieniami i podstawą prawną (domyślnie tylko błędne, z przełącznikiem na wszystkie).
+pytań z poprawnymi odpowiedziami, wyjaśnieniami, podstawą prawną i plakietką „Zmiana w prawie” (domyślnie tylko błędne, z przełącznikiem na wszystkie).
+Plakietki nie ma w trakcie egzaminu (`ExamRunner`), tylko w raporcie.
 Przycisk **„Przerób błędne i pominięte”** otwiera zwykłą sesję testową z tych pytań (`/app/test/practice?questionIds=...`);
 dopiero ta sesja zapisuje odpowiedzi w powtórkach.
+
+## Zmiany w prawie
+
+Pytanie może mieć **datę zmiany w prawie** (`lawChange.changedAt`) i krótki opis (`note`); wpisuje je administrator skryptem
+SQL. Frontend nic nie liczy: dostaje `lawChange` przy pytaniu (kolejki fiszek i testów, wynik odpowiedzi, sesja własnego
+testu, raport egzaminu) albo `null`.
+
+- **Plakietka** (`features/review/LawChangeBadge.tsx`, `data-testid="law-change"`): „Zmiana w prawie: 1 października 2026”
+  (`lib/lawChange.ts`). Stoi pod podpisem źródła w teście i na przodzie fiszki; opis zmiany (`law-change-note`) pokazuje się
+  dopiero po odpowiedzi (w teście), na tyle fiszki, w raporcie egzaminu i w szczegółach „Moich testów”. W trakcie egzaminu
+  plakietki nie ma.
+- **Powrót do powtórki.** Serwer w dniu zmiany ustawia pytanie jako zaległe u każdego, kto odpowiadał na nie wcześniej (osobno
+  w testach i w fiszkach), więc zaległości po prostu rosną; frontend nie ma na to osobnego kodu.
+- **Własny test „Zmiany w prawie”** to kategoria z ostatniego roku (`CustomTestKind` `LAW_CHANGE`, etykieta w
+  `features/customTest/kindLabels.ts`).
+
+## Zerowanie postępów
+
+`features/progress` ↔ `GET` i `DELETE /api/me/study-progress` (`api/studyProgress.ts`). Użytkownik może zacząć od zera na dwa
+sposoby: karta **„Wyzeruj postępy”** w Koncie (`ResetProgressCard`) albo pole „Zacznij od zera” w oknie zmiany ścieżki.
+
+- Okno pokazuje, **co zniknie, z liczbami** (`ProgressLossList`, `progressLines`): pytania w nauce (testy i fiszki), zapisane
+  odpowiedzi, fiszki dodane ręcznie, własne testy, egzaminy próbne i czas nauki. Liczby pobiera `GET /api/me/study-progress`
+  dopiero po otwarciu okna. Bez postępów okno mówi „Nie masz jeszcze żadnych postępów” i nie ma czego zerować.
+- **Potwierdzenie słowem WYZERUJ** (`ConfirmWordField`): przycisk „Wyzeruj na stałe” jest nieaktywny, dopóki użytkownik nie wpisze
+  słowa (spacje wokół i wielkość liter nie mają znaczenia; `isResetConfirmed`). Frontend zawsze wysyła dosłowne `WYZERUJ`
+  w ciele `DELETE` (`{ confirm: "WYZERUJ" }`), a serwer sprawdza je jeszcze raz.
+- **Co zostaje:** konto, ścieżka, ustawienia nauki (limity, retencja), wybrane przedmioty i akty, grupy źródeł, zgłoszenia błędów
+  i same pytania. Czyścimy też szkic egzaminu z pamięci przeglądarki.
+- Po zerowaniu frontend unieważnia wszystkie zapytania (`refreshAfterProgressReset` w `features/progress/hooks.ts`), bo liczniki,
+  statystyki, katalog Testów, „Moje testy” i historia egzaminów zmieniają się naraz.
 
 ## Statystyki i Pulpit
 

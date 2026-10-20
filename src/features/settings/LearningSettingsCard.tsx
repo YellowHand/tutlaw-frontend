@@ -1,4 +1,4 @@
-import { useId, useState, type FormEvent } from "react";
+import { useId, useRef, useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateLearningSettings, type LearningSettings, type LearningSettingsUpdate } from "../../api/settings";
 import type { Track } from "../../api/tracks";
@@ -14,6 +14,7 @@ import { invalidateReviewData } from "../review/hooks";
 import { LEARNING_SETTINGS_KEY, useExamTerms, useLearningSettings, useTracks } from "./hooks";
 import { LimitNotice } from "./LimitNotice";
 import { limitIssue, maxPerDay } from "./newQuestionsLimit";
+import { TrackChangeDialog } from "./TrackChangeDialog";
 import { useChooseTrack } from "./trackChoice";
 
 const RETENTION_CHOICES = [
@@ -323,9 +324,12 @@ function TrackChoiceSettings({ settings }: { settings: LearningSettings }) {
   const current = settings.track?.id ?? null;
   const [picked, setPicked] = useState<number | null>(current);
   const [saved, setSaved] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const changeButton = useRef<HTMLButtonElement>(null);
   const tracks = tracksQuery.data ?? [];
   const termList = Array.isArray(terms.data) ? terms.data : [];
   const changed = picked !== null && picked !== current;
+  const pickedTrack = tracks.find((track) => track.id === picked) ?? null;
 
   function optionLabel(track: Track): string {
     if (track.kind !== "EXAM") return track.name;
@@ -364,20 +368,24 @@ function TrackChoiceSettings({ settings }: { settings: LearningSettings }) {
             ))}
           </select>
           <Button
+            ref={changeButton}
             type="button"
             variant="secondary"
             disabled={!changed || choose.isPending}
             onClick={() => {
               if (picked === null) return;
-              choose.mutate(picked, { onSuccess: () => setSaved(true) });
+              // Pierwszy wybór nie ma czego zachowywać ani zerować, więc zapisuje się od razu. Zmiana idzie przez okno.
+              if (current === null) choose.mutate(picked, { onSuccess: () => setSaved(true) });
+              else setConfirming(true);
             }}
           >
             {choose.isPending ? "Zapisuję..." : current === null ? "Wybierz ścieżkę" : "Zmień ścieżkę"}
           </Button>
         </div>
         <p id={`${selectId}-hint`} className="text-xs text-fg-muted">
-          Termin egzaminu ustawia administrator, więc tu go nie wpisujesz. Zmiana ścieżki zmienia pulę pytań: zdejmuje wybór
-          aktów prawnych i przywraca domyślny filtr źródeł (potem zmienisz je w „Puli pytań").
+          Termin egzaminu ustawia administrator, więc tu go nie wpisujesz. Zmiana ścieżki zmienia pulę pytań, ale Twoje postępy
+          zostają (chyba że sam zaznaczysz „Zacznij od zera”). Wybrane przedmioty Studenta też zostają, więc powrót na tę ścieżkę
+          nie wymaga ponownego wyboru.
         </p>
       </div>
       {tracksQuery.isError && (
@@ -399,6 +407,18 @@ function TrackChoiceSettings({ settings }: { settings: LearningSettings }) {
         </p>
       )}
       <ExamInfo settings={settings} />
+      {confirming && pickedTrack && (
+        <TrackChangeDialog
+          from={settings.track}
+          to={pickedTrack}
+          returnFocusTo={changeButton}
+          onClose={() => setConfirming(false)}
+          onDone={() => {
+            setConfirming(false);
+            setSaved(true);
+          }}
+        />
+      )}
     </section>
   );
 }
