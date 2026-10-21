@@ -145,6 +145,7 @@ export interface AdminAct {
 /** Skrócona pozycja aktu do list wyboru (przypisywanie do aplikacji i przedmiotów). */
 export interface AdminActOption {
   id: number;
+  slug: string;
   name: string;
   shortName: string;
   fieldId: number;
@@ -308,4 +309,301 @@ export async function setAdminSheetHidden(id: number, hidden: boolean): Promise<
 
 export async function deleteAdminSheet(id: number): Promise<void> {
   await api.delete(`/api/admin/sheets/${id}`);
+}
+
+// ---------- pytania ----------
+
+export type CorrectOption = "A" | "B" | "C";
+export type MarkType = "TIME_LIMIT" | "TRAP_NEGATION" | "TRAP_ABSOLUTE" | "TRAP_NUMBERS" | "TRAP_CONJUNCTION" | "TRAP_OUTDATED_LAW";
+export type MarkStatus = "SUGGESTED" | "CONFIRMED" | "REJECTED";
+export type MarkOrigin = "AUTO" | "MANUAL";
+export type SourceKind = "EXAM_SHEET" | "AUTHORED";
+
+export interface AdminQuestionMark {
+  mark: MarkType;
+  status: MarkStatus;
+}
+
+export interface AdminQuestion {
+  id: number;
+  actId: number;
+  actName: string;
+  actShortName: string;
+  sectionId: number | null;
+  sectionName: string | null;
+  sourceId: number;
+  sourceName: string;
+  body: string;
+  optionA: string;
+  optionB: string;
+  optionC: string;
+  correctOption: CorrectOption;
+  explanation: string | null;
+  legalBasis: string | null;
+  validAsOf: string | null;
+  lawChangedAt: string | null;
+  lawChangeNote: string | null;
+  hidden: boolean;
+  flashcardHidden: boolean;
+  createdAt: string;
+  /** Ile otwartych zgłoszeń błędu ma to pytanie. */
+  openReports: number;
+  marks: AdminQuestionMark[];
+}
+
+/** Źródło pytań do list wyboru: pytania autorskie albo arkusz (także ukryty). */
+export interface AdminSource {
+  id: number;
+  slug: string;
+  name: string;
+  kind: SourceKind;
+  hidden: boolean;
+}
+
+export interface QuestionInput {
+  actId: number;
+  sectionId: number | null;
+  sourceId: number;
+  body: string;
+  optionA: string;
+  optionB: string;
+  optionC: string;
+  correctOption: CorrectOption | null;
+  explanation: string | null;
+  legalBasis: string | null;
+  validAsOf: string | null;
+  lawChangedAt: string | null;
+  lawChangeNote: string | null;
+}
+
+/** Filtry listy pytań. Pusty filtr = bez ograniczenia. */
+export interface QuestionFilter {
+  query?: string;
+  actId?: number;
+  sectionId?: number;
+  sourceId?: number;
+  hidden?: boolean;
+  withoutSection?: boolean;
+  /** Tylko pytania z otwartym zgłoszeniem błędu. */
+  reported?: boolean;
+  mark?: MarkType;
+  markStatus?: MarkStatus;
+  page?: number;
+  size?: number;
+}
+
+export async function getAdminQuestions(filter: QuestionFilter): Promise<PageResponse<AdminQuestion>> {
+  const params: Record<string, string | number | boolean> = {};
+  if (filter.query?.trim()) params.query = filter.query.trim();
+  if (filter.actId !== undefined) params.actId = filter.actId;
+  if (filter.sectionId !== undefined) params.sectionId = filter.sectionId;
+  if (filter.sourceId !== undefined) params.sourceId = filter.sourceId;
+  if (filter.hidden !== undefined) params.hidden = filter.hidden;
+  if (filter.withoutSection) params.withoutSection = true;
+  if (filter.reported) params.reported = true;
+  if (filter.mark !== undefined) {
+    params.mark = filter.mark;
+    if (filter.markStatus !== undefined) params.markStatus = filter.markStatus;
+  }
+  if (filter.page !== undefined) params.page = filter.page;
+  if (filter.size !== undefined) params.size = filter.size;
+  const res = await api.get<PageResponse<AdminQuestion>>("/api/admin/questions", { params });
+  return res.data;
+}
+
+export async function getAdminQuestion(id: number): Promise<AdminQuestion> {
+  const res = await api.get<AdminQuestion>(`/api/admin/questions/${id}`);
+  return res.data;
+}
+
+export async function getAdminSources(): Promise<AdminSource[]> {
+  const res = await api.get<AdminSource[]>("/api/admin/questions/sources");
+  return res.data;
+}
+
+export async function createAdminQuestion(input: QuestionInput): Promise<AdminQuestion> {
+  const res = await api.post<AdminQuestion>("/api/admin/questions", input);
+  return res.data;
+}
+
+export async function updateAdminQuestion(id: number, input: QuestionInput): Promise<AdminQuestion> {
+  const res = await api.put<AdminQuestion>(`/api/admin/questions/${id}`, input);
+  return res.data;
+}
+
+// ---------- oznaczenia pytań (kolejka do zatwierdzenia) ----------
+
+export interface MarkSummaryRow {
+  mark: MarkType;
+  suggested: number;
+  confirmed: number;
+  rejected: number;
+}
+
+export interface MarkSummary {
+  /** Wszystkie pytania w bazie (do porównania z liczbą oznaczonych). */
+  questions: number;
+  marks: MarkSummaryRow[];
+}
+
+export interface MarkAnalysis {
+  questionsScanned: number;
+  suggested: number;
+  suggestedByMark: Record<MarkType, number>;
+}
+
+/** Oznaczenie razem z pytaniem, do przejrzenia. */
+export interface MarkedQuestion {
+  id: number;
+  questionId: number;
+  mark: MarkType;
+  origin: MarkOrigin;
+  status: MarkStatus;
+  body: string;
+  optionA: string;
+  optionB: string;
+  optionC: string;
+  correctOption: CorrectOption;
+  sourceName: string;
+  actShortName: string;
+}
+
+export interface MarkListFilter {
+  status: MarkStatus;
+  mark?: MarkType;
+  page?: number;
+  size?: number;
+}
+
+export async function getMarkSummary(): Promise<MarkSummary> {
+  const res = await api.get<MarkSummary>("/api/admin/question-marks/summary");
+  return res.data;
+}
+
+/** Uruchamia automat: dodaje propozycje (niczego nie zatwierdza i nie nadpisuje decyzji). */
+export async function analyzeMarks(): Promise<MarkAnalysis> {
+  const res = await api.post<MarkAnalysis>("/api/admin/question-marks/analyze");
+  return res.data;
+}
+
+export async function getMarkedQuestions(filter: MarkListFilter): Promise<PageResponse<MarkedQuestion>> {
+  const params: Record<string, string | number> = { status: filter.status };
+  if (filter.mark !== undefined) params.mark = filter.mark;
+  if (filter.page !== undefined) params.page = filter.page;
+  if (filter.size !== undefined) params.size = filter.size;
+  const res = await api.get<PageResponse<MarkedQuestion>>("/api/admin/question-marks", { params });
+  return res.data;
+}
+
+/** Hurtowa zmiana stanu: wszystkie oznaczenia w stanie `from` (podanych rodzajów albo wszystkich) dostają stan `to`. */
+export async function bulkDecideMarks(from: MarkStatus, to: "CONFIRMED" | "REJECTED", marks: MarkType[]): Promise<{ updated: number }> {
+  const res = await api.post<{ updated: number }>("/api/admin/question-marks/bulk", { from, to, marks });
+  return res.data;
+}
+
+/** Decyzja o jednym oznaczeniu jednego pytania: CONFIRMED nadaje je (albo zatwierdza propozycję), REJECTED cofa. */
+export async function decideMark(questionId: number, mark: MarkType, status: "CONFIRMED" | "REJECTED"): Promise<void> {
+  await api.put(`/api/admin/question-marks/questions/${questionId}/${mark}`, { status });
+}
+
+// ---------- zgłoszenia błędów w pytaniach ----------
+
+export type ReportStatus = "NEW" | "RESOLVED" | "REJECTED";
+export type ReportReasonCode = "WRONG_ANSWER" | "OUTDATED" | "UNCLEAR" | "OTHER";
+
+export interface AdminReport {
+  id: number;
+  questionId: number;
+  questionBody: string;
+  optionA: string;
+  optionB: string;
+  optionC: string;
+  correctOption: CorrectOption;
+  questionHidden: boolean;
+  reason: ReportReasonCode;
+  comment: string | null;
+  status: ReportStatus;
+  createdAt: string;
+  resolvedAt: string | null;
+  /** Ile otwartych zgłoszeń ma to samo pytanie (razem z tym). */
+  openForQuestion: number;
+}
+
+export interface ReportSummary {
+  open: number;
+  resolved: number;
+  rejected: number;
+}
+
+export interface ReportFilter {
+  status: ReportStatus;
+  reason?: ReportReasonCode;
+  page?: number;
+  size?: number;
+}
+
+export async function getAdminReports(filter: ReportFilter): Promise<PageResponse<AdminReport>> {
+  const params: Record<string, string | number> = { status: filter.status };
+  if (filter.reason !== undefined) params.reason = filter.reason;
+  if (filter.page !== undefined) params.page = filter.page;
+  if (filter.size !== undefined) params.size = filter.size;
+  const res = await api.get<PageResponse<AdminReport>>("/api/admin/reports", { params });
+  return res.data;
+}
+
+export async function getReportSummary(): Promise<ReportSummary> {
+  const res = await api.get<ReportSummary>("/api/admin/reports/summary");
+  return res.data;
+}
+
+export async function decideReport(id: number, status: ReportStatus): Promise<AdminReport> {
+  const res = await api.put<AdminReport>(`/api/admin/reports/${id}`, { status });
+  return res.data;
+}
+
+/** Rozpatruje wszystkie otwarte zgłoszenia jednego pytania naraz (po jego poprawieniu). */
+export async function decideReportsOfQuestion(questionId: number, status: "RESOLVED" | "REJECTED"): Promise<{ updated: number }> {
+  const res = await api.put<{ updated: number }>(`/api/admin/reports/questions/${questionId}`, { status });
+  return res.data;
+}
+
+// ---------- import pytań z CSV i JSON ----------
+
+export type ImportFormat = "CSV" | "JSON";
+export type ImportRowStatus = "OK" | "DUPLICATE" | "ERROR";
+
+export interface ImportRequest {
+  format: ImportFormat;
+  /** Tekst pliku. */
+  content: string;
+  /** Prawda (domyślnie): tylko sprawdza plik i zwraca raport. Fałsz: zapisuje, ale tylko plik bez błędów. */
+  dryRun: boolean;
+  defaultAct?: string;
+  defaultSource?: string;
+}
+
+export interface ImportRowResult {
+  row: number;
+  status: ImportRowStatus;
+  message: string | null;
+  preview: string;
+}
+
+export interface ImportReport {
+  dryRun: boolean;
+  saved: boolean;
+  total: number;
+  ok: number;
+  duplicates: number;
+  errors: number;
+  created: number;
+  newSheets: string[];
+  ignoredColumns: string[];
+  rows: ImportRowResult[];
+  rowsTruncated: boolean;
+}
+
+export async function importQuestions(request: ImportRequest): Promise<ImportReport> {
+  const res = await api.post<ImportReport>("/api/admin/import/questions", request);
+  return res.data;
 }

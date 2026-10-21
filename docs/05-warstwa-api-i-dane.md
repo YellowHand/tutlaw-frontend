@@ -52,8 +52,8 @@ prośba o reset hasła i ustawienie nowego hasła) jest wpisanych bezpośrednio 
 
 ## Wszystkie wywołania serwera
 
-Frontend używa **95 z 101** endpointów backendu (łącznie 96 wywołań w kodzie, bo `POST /api/me/study-time` jest wołane z
-dwóch miejsc). Sześć endpointów backendu pozostaje nieużywanych (`GET /api/courses` oraz pięć endpointów oznaczeń pytań, na które nie ma jeszcze ekranu); sekcja o nich jest [niżej](#endpointy-których-frontend-nie-używa).
+Frontend używa **110 z 111** endpointów backendu (łącznie 111 wywołań w kodzie, bo `POST /api/me/study-time` jest wołane z
+dwóch miejsc). Jeden endpoint backendu pozostaje nieużywany (`GET /api/courses`); sekcja o nim jest [niżej](#endpointy-których-frontend-nie-używa).
 Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć wyszukiwarką.
 
 ### Konto i logowanie (bez tokenu)
@@ -199,25 +199,35 @@ istniejących `GET /api/exam-terms` i `PUT /api/exam-terms/{trackId}` (tabela wy
 | `PUT /api/admin/sheets/{id}` | `updateAdminSheet` | „Edytuj” arkusz (rok i nazwa; nazwa wyprowadzona z roku idzie za rokiem) |
 | `PUT /api/admin/sheets/{id}/hidden` | `setAdminSheetHidden` | „Ukryj” i „Przywróć” arkusz |
 | `DELETE /api/admin/sheets/{id}` | `deleteAdminSheet` | „Usuń” arkusz (`409`, gdy ma pytania) |
+| `GET /api/admin/questions` | `getAdminQuestions` | Lista pytań (strona po 20; `query`, `actId`, `sectionId`, `sourceId`, `hidden`, `withoutSection`, `reported`, `mark` z `markStatus`, `page`, `size`; odpowiedź `PageResponse`) |
+| `GET /api/admin/questions/sources` | `getAdminSources` | Źródła pytań (autorskie i arkusze, także ukryte): filtr listy, formularz pytania, źródło domyślne importu |
+| `GET /api/admin/questions/{id}` | `getAdminQuestion` | Aktualna treść pytania w oknie edycji (także otwartym ze zgłoszenia) |
+| `POST /api/admin/questions` | `createAdminQuestion` | „Dodaj pytanie” (`400` z komunikatem przy złej treści, `409` przy powtórzeniu w źródle) |
+| `PUT /api/admin/questions/{id}` | `updateAdminQuestion` | „Zapisz zmiany” w oknie edycji pytania |
+| `GET /api/admin/question-marks` | `getMarkedQuestions` | Kolejka oznaczeń (stan `status`, opcjonalnie `mark`, `page`, `size`) |
+| `GET /api/admin/question-marks/summary` | `getMarkSummary` | Podsumowanie oznaczeń w tabeli na ekranie Oznaczenia: liczby propozycji, zatwierdzonych i odrzuconych dla każdego rodzaju |
+| `POST /api/admin/question-marks/analyze` | `analyzeMarks` | „Uruchom automat”: dodaje propozycje, niczego nie zatwierdza |
+| `POST /api/admin/question-marks/bulk` | `bulkDecideMarks` | „Zatwierdź wszystkie” i „Odrzuć wszystkie” propozycje (całość albo jeden rodzaj); odpowiedź `{updated}` |
+| `PUT /api/admin/question-marks/questions/{questionId}/{mark}` | `decideMark` | Zatwierdzenie, odrzucenie, ręczne nadanie i cofnięcie jednego oznaczenia (kolejka i okno oznaczeń pytania) |
+| `GET /api/admin/reports` | `getAdminReports` | Zgłoszenia błędów (`status`, opcjonalnie `reason`, `page`, `size`); administrator nie widzi zgłaszającego |
+| `GET /api/admin/reports/summary` | `getReportSummary` | Liczby zgłoszeń na zakładkach (nowe, poprawione, odrzucone) |
+| `PUT /api/admin/reports/{id}` | `decideReport` | „Poprawione”, „Odrzuć” i „Otwórz ponownie” jedno zgłoszenie |
+| `PUT /api/admin/reports/questions/{questionId}` | `decideReportsOfQuestion` | „Wszystkie zgłoszenia tego pytania: poprawione”; odpowiedź `{updated}` |
+| `POST /api/admin/import/questions` | `importQuestions` | Import z CSV albo JSON: `dryRun: true` sprawdza plik i zwraca raport, `dryRun: false` zapisuje (tylko plik bez błędów); treść pliku idzie w polu `content` |
 
 ### Endpointy, których frontend nie używa
 
-Endpointów, których frontend nie używa, jest 6:
+Endpointów, których frontend nie używa, jest 1:
 
 | Wywołanie | Dlaczego nie |
 |-----------|--------------|
-| `GET /api/admin/question-marks` | Oznaczenia pytań (terminy, pułapki): tylko dla administratora, na razie przez Swagger albo `curl`; ekran (kolejka propozycji do zatwierdzenia) dojdzie w osobnym etapie. Użytkownik oznaczeń nigdy nie widzi (lista oznaczeń w danym stanie) |
-| `GET /api/admin/question-marks/summary` | Oznaczenia pytań (terminy, pułapki): tylko dla administratora, na razie przez Swagger albo `curl`; ekran (kolejka propozycji do zatwierdzenia) dojdzie w osobnym etapie. Użytkownik oznaczeń nigdy nie widzi (liczby oznaczeń) |
-| `POST /api/admin/question-marks/analyze` | Oznaczenia pytań (terminy, pułapki): tylko dla administratora, na razie przez Swagger albo `curl`; ekran (kolejka propozycji do zatwierdzenia) dojdzie w osobnym etapie. Użytkownik oznaczeń nigdy nie widzi (uruchomienie automatu) |
-| `POST /api/admin/question-marks/bulk` | Oznaczenia pytań (terminy, pułapki): tylko dla administratora, na razie przez Swagger albo `curl`; ekran (kolejka propozycji do zatwierdzenia) dojdzie w osobnym etapie. Użytkownik oznaczeń nigdy nie widzi (zmiana stanu hurtem) |
-| `PUT /api/admin/question-marks/questions/{questionId}/{mark}` | Oznaczenia pytań (terminy, pułapki): tylko dla administratora, na razie przez Swagger albo `curl`; ekran (kolejka propozycji do zatwierdzenia) dojdzie w osobnym etapie. Użytkownik oznaczeń nigdy nie widzi (decyzja o jednym oznaczeniu) |
 | `GET /api/courses` | Lista przedmiotów. Student dostaje przedmioty w puli (`Pool.courses`) i w katalogu Testów (`TestCatalog.courses`), z liczbami pytań i zaznaczeniem, więc osobne pobieranie niczego nie daje |
 
-**Pytania** i zmiany w prawie administrator nadal wprowadza **skryptami SQL**: nie ma endpointów do ich dodawania ani edycji (dojdą w
-osobnym etapie razem z ekranem pytań). Aplikacjami, przedmiotami Studenta, aktami prawnymi z rozdziałami i arkuszami egzaminów
-administrator zarządza w panelu (`/admin`, tabela [wyżej](#panel-administratora-apiadmints)). Pozostałe funkcje administratora w
-interfejsie to przyciski „Ukryj pytanie” i „Ukryj fiszkę” (`PUT /api/questions/{questionId}/hidden` i `/flashcard-hidden`) oraz karta
-„Terminy egzaminów” w Koncie i w panelu (`PUT /api/exam-terms/{trackId}`).
+**Pytania** (także zmiany w prawie), oznaczenia, zgłoszenia błędów i import z CSV/JSON administrator obsługuje w panelu (`/admin`, tabela
+[wyżej](#panel-administratora-apiadmints)); razem z aplikacjami, przedmiotami Studenta, aktami prawnymi z rozdziałami i arkuszami egzaminów.
+Pytań nie da się usunąć, tylko ukryć. Poza panelem administrator ma przyciski „Ukryj pytanie” i „Ukryj fiszkę”
+(`PUT /api/questions/{questionId}/hidden` i `/flashcard-hidden`) oraz kartę „Terminy egzaminów” w Koncie i w panelu
+(`PUT /api/exam-terms/{trackId}`). Przywrócenie pytania i fiszki jest w panelu (Pytania).
 
 ## Parametry zapytań, które łatwo pomylić
 

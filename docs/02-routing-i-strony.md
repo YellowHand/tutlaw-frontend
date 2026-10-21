@@ -149,6 +149,10 @@ miejsce, bo dolna belka go nie ma). Strony panelu ładują się leniwie, więc z
 | `/admin/akty/:id` | `AdminActPage` (`features/admin/AdminActPage.tsx`) | Jeden akt: dane, edycja, ukrycie, usunięcie, przypisanie do aplikacji i przedmiotów (jedno „Zapisz”) oraz rozdziały (`ActSectionsCard`: dodawanie pojedyncze i wklejony spis, zmiana nazwy, kolejność strzałkami, usuwanie rozdziałów bez pytań). Zły numer w adresie daje komunikat, a nie wyjątek |
 | `/admin/arkusze` | `AdminSheetsPage` (`features/admin/AdminSheetsPage.tsx`) | Arkusze egzaminów (aplikacja i rok): filtr aplikacji, dodawanie, zmiana roku i nazwy, ukrywanie i przywracanie, usuwanie arkuszy bez pytań |
 | `/admin/terminy` | `AdminTermsPage` (`features/admin/AdminTermsPage.tsx`) | Terminy egzaminów: ta sama karta `ExamTermsCard` co w Koncie (`PUT /api/exam-terms/{trackId}`) |
+| `/admin/pytania` | `AdminQuestionsPage` (`features/admin/AdminQuestionsPage.tsx`) | Pytania: lista po 20 na stronie z wyszukiwarką i filtrami w adresie (`q`, `act`, `section`, `source`, `vis`, `extra`, `mark`, `page`), dodawanie i edycja w oknie `QuestionDialog`, oznaczenia jednego pytania (`QuestionMarksDialog`), ukrywanie pytania (z potwierdzeniem) i fiszki, przywracanie. Pytań nie da się usunąć |
+| `/admin/import` | `AdminImportPage` (`features/admin/AdminImportPage.tsx`) | Import pytań z pliku CSV albo JSON: wybór pliku lub wklejona treść, format (z auto-wykryciem), akt i źródło domyślne, „Sprawdź plik” (raport bez zapisu, `ImportReportView`) i „Zapisz”. Wzory plików do pobrania, opis kolumn |
+| `/admin/oznaczenia` | `AdminMarksPage` (`features/admin/AdminMarksPage.tsx`) | Oznaczenia pytań (terminy i pułapki): podsumowanie, „Uruchom automat”, zakładki Propozycje / Zatwierdzone / Odrzucone z filtrem rodzaju, zatwierdzanie i odrzucanie pojedynczo albo hurtem (z potwierdzeniem) |
+| `/admin/zgloszenia` | `AdminReportsPage` (`features/admin/AdminReportsPage.tsx`) | Zgłoszenia błędów w pytaniach: zakładki Nowe / Poprawione / Odrzucone (z licznikami) i filtr powodu; z karty można poprawić pytanie, ukryć je, rozpatrzyć zgłoszenie albo wszystkie otwarte zgłoszenia tego pytania naraz. Zgłaszającego nie widać |
 | `/admin/*` | przekierowanie na `/admin` (czyli na przegląd) | Nieznany adres w panelu wraca na przegląd |
 
 Zasady wspólne dla ekranów panelu:
@@ -162,6 +166,10 @@ Zasady wspólne dla ekranów panelu:
 - Okna (`Dialog`) z formularzami nie zamykają się kliknięciem w tło; Esc i „Anuluj” działają. Nazwy są unikalne w swoim zakresie, a duplikat
   daje komunikat serwera (`409`).
 - Adresy (slugi) powstają raz z nazwy i nie są edytowalne; z interfejsu wynika to z braku pola.
+- **Pytań się nie usuwa, tylko ukrywa** (jak aktów i arkuszy): ukryte znika u wszystkich użytkowników, historia odpowiedzi zostaje, a „Przywróć pytanie” cofa to bez pytania o potwierdzenie.
+- Filtry list (Pytania, Oznaczenia, Zgłoszenia) leżą w adresie (`useAdminListParams`), więc odświeżenie strony i powrót z innego ekranu je zachowują. Wyszukiwanie trafia do adresu po 300 ms; zmiana dowolnego filtra zeruje stronę, a zmiana aktu czyści rozdział (jedna zmiana adresu, `setParams`). Wyszukiwarka rozróżnia polskie znaki (ignoruje tylko wielkość liter); numer pytania (`123` albo `#123`) też trafia.
+- **Import jest „wszystko albo nic”**: „Zapisz” jest aktywny dopiero po sprawdzeniu pliku bez błędów i tylko dla treści oraz ustawień, które sprawdzono (każda zmiana unieważnia raport). Powtórzenia (to samo pytanie w tym samym źródle) serwer pomija, więc plik można wczytać drugi raz. Plik czytany jest w przeglądarce jako UTF-8, a gdy to się nie uda, jako Windows-1250 (tak zapisuje polski Excel; ekran ostrzega). Limit pliku to 4 MB, a pytań 5000.
+- Oznaczenia (terminy i pułapki) układają testy „Pytania z terminów” i „Pułapki” dopiero po zatwierdzeniu. Automat tylko proponuje i niczego nie nadpisuje, więc można go uruchamiać po każdym imporcie.
 - Na telefonie menu panelu to przewijany pasek zakładek pod nagłówkiem, a na komputerze lewa kolumna z „Wróć do aplikacji” na dole.
 
 ## Menu aplikacji

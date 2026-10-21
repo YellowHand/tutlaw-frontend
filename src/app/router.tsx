@@ -45,6 +45,10 @@ const AdminActsPage = lazy(() => import("../features/admin/AdminActsPage").then(
 const AdminActPage = lazy(() => import("../features/admin/AdminActPage").then((m) => ({ default: m.AdminActPage })));
 const AdminSheetsPage = lazy(() => import("../features/admin/AdminSheetsPage").then((m) => ({ default: m.AdminSheetsPage })));
 const AdminTermsPage = lazy(() => import("../features/admin/AdminTermsPage").then((m) => ({ default: m.AdminTermsPage })));
+const AdminQuestionsPage = lazy(() => import("../features/admin/AdminQuestionsPage").then((m) => ({ default: m.AdminQuestionsPage })));
+const AdminImportPage = lazy(() => import("../features/admin/AdminImportPage").then((m) => ({ default: m.AdminImportPage })));
+const AdminMarksPage = lazy(() => import("../features/admin/AdminMarksPage").then((m) => ({ default: m.AdminMarksPage })));
+const AdminReportsPage = lazy(() => import("../features/admin/AdminReportsPage").then((m) => ({ default: m.AdminReportsPage })));
 
 export function Router() {
   return (
@@ -107,6 +111,10 @@ export function Router() {
                   <Route path="akty/:id" element={<AdminActPage />} />
                   <Route path="arkusze" element={<AdminSheetsPage />} />
                   <Route path="terminy" element={<AdminTermsPage />} />
+                  <Route path="pytania" element={<AdminQuestionsPage />} />
+                  <Route path="import" element={<AdminImportPage />} />
+                  <Route path="oznaczenia" element={<AdminMarksPage />} />
+                  <Route path="zgloszenia" element={<AdminReportsPage />} />
                   <Route path="*" element={<Navigate to="/admin" replace />} />
                 </Route>
               </Route>

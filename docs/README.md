@@ -4,7 +4,7 @@ Ten katalog opisuje, jak działa strona internetowa (frontend) aplikacji **Gradu
 ekrany, jak rozmawia z serwerem, jak działa sesja nauki i gdzie w kodzie szukać konkretnej rzeczy. Wszystko jest po
 polsku i pisane tak, żeby dało się to zrozumieć bez znajomości kodu.
 
-> Stan dokumentacji: frontend po **Etapie 32** (pula pytań i ścieżki zamiast filtra pochodzenia, fiszka jako tryb pytania).
+> Stan dokumentacji: frontend po **Etapie 36** (pula pytań i ścieżki, fiszka jako tryb pytania oraz panel administratora: aplikacje, przedmioty, akty, arkusze, terminy, pytania, oznaczenia, zgłoszenia błędów i import z CSV/JSON).
 > Opisuje to, co faktycznie jest w kodzie. Tam, gdzie coś jest niedoskonałe albo celowo odłożone na koniec, jest to powiedziane wprost w
 > [Znanych ograniczeniach](10-znane-ograniczenia.md).
 

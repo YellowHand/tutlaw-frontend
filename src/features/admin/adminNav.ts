@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { AppWindow, CalendarDays, GraduationCap, LayoutDashboard, ScrollText, Scale } from "lucide-react";
+import { AppWindow, CalendarDays, CircleHelp, FileUp, Flag, GraduationCap, LayoutDashboard, ScrollText, Scale, Tags } from "lucide-react";
 import { ROUTES } from "../../config/routes";
 
 export interface AdminNavItem {
@@ -17,6 +17,10 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { to: ROUTES.adminActs, label: "Akty prawne", icon: Scale },
   { to: ROUTES.adminSheets, label: "Arkusze egzaminów", icon: ScrollText },
   { to: ROUTES.adminTerms, label: "Terminy egzaminów", icon: CalendarDays },
+  { to: ROUTES.adminQuestions, label: "Pytania", icon: CircleHelp },
+  { to: ROUTES.adminImport, label: "Import pytań", icon: FileUp },
+  { to: ROUTES.adminMarks, label: "Oznaczenia", icon: Tags },
+  { to: ROUTES.adminReports, label: "Zgłoszenia", icon: Flag },
 ];
 
 export function isAdminNavActive(item: AdminNavItem, pathname: string): boolean {

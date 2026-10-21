@@ -1,4 +1,4 @@
-import { useId, type ReactNode, type SelectHTMLAttributes } from "react";
+import { useId, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
 import { Button } from "../../components/ui/Button";
 import { Dialog } from "../../components/ui/Dialog";
 import { cn } from "../../lib/cn";
@@ -19,6 +19,35 @@ export function SelectField({
       <select id={id} className={cn("min-h-11 rounded-xl border border-field bg-surface-2 px-3", className)} {...props}>
         {children}
       </select>
+    </div>
+  );
+}
+
+/** Pole tekstowe wieloliniowe z etykietą (treść pytania, odpowiedzi, wyjaśnienie). */
+export function TextAreaField({
+  label,
+  hint,
+  className,
+  ...props
+}: { label: string; hint?: ReactNode } & Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "id">) {
+  const id = useId();
+  const hintId = `${id}-hint`;
+  return (
+    <div className="flex flex-col gap-1">
+      <label htmlFor={id} className="text-sm text-fg-muted">
+        {label}
+      </label>
+      <textarea
+        id={id}
+        aria-describedby={hint ? hintId : undefined}
+        className={cn("min-h-11 rounded-xl border border-field bg-surface-2 px-3 py-2", className)}
+        {...props}
+      />
+      {hint && (
+        <p id={hintId} className="text-xs text-fg-muted">
+          {hint}
+        </p>
+      )}
     </div>
   );
 }

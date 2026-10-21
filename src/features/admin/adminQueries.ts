@@ -6,10 +6,20 @@ import {
   getAdminCourses,
   getAdminFields,
   getAdminOverview,
+  getAdminQuestion,
+  getAdminQuestions,
+  getAdminReports,
   getAdminSections,
   getAdminSheets,
+  getAdminSources,
   getAdminTracks,
+  getMarkedQuestions,
+  getMarkSummary,
+  getReportSummary,
   type ActFilter,
+  type MarkListFilter,
+  type QuestionFilter,
+  type ReportFilter,
 } from "../../api/admin";
 
 /** Wspólny początek kluczy panelu: po każdej zmianie unieważniamy wszystko pod nim. */
@@ -54,6 +64,52 @@ export function useAdminSections(actId: number) {
 
 export function useAdminSheets(trackId?: number) {
   return useQuery({ queryKey: [...ADMIN, "sheets", trackId ?? "all"], queryFn: () => getAdminSheets(trackId) });
+}
+
+export function useAdminQuestions(filter: QuestionFilter) {
+  return useQuery({
+    queryKey: [...ADMIN, "questions", filter],
+    queryFn: () => getAdminQuestions(filter),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useAdminQuestion(id: number | null) {
+  return useQuery({
+    queryKey: [...ADMIN, "question", id],
+    queryFn: () => getAdminQuestion(id as number),
+    enabled: id !== null,
+    // Edytujemy aktualną treść, a nie kopię sprzed chwili.
+    gcTime: 0,
+  });
+}
+
+export function useAdminSources(enabled = true) {
+  return useQuery({ queryKey: [...ADMIN, "sources"], queryFn: getAdminSources, enabled });
+}
+
+export function useMarkSummary() {
+  return useQuery({ queryKey: [...ADMIN, "mark-summary"], queryFn: getMarkSummary });
+}
+
+export function useMarkedQuestions(filter: MarkListFilter) {
+  return useQuery({
+    queryKey: [...ADMIN, "marked", filter],
+    queryFn: () => getMarkedQuestions(filter),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useAdminReports(filter: ReportFilter) {
+  return useQuery({
+    queryKey: [...ADMIN, "reports", filter],
+    queryFn: () => getAdminReports(filter),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useReportSummary() {
+  return useQuery({ queryKey: [...ADMIN, "report-summary"], queryFn: getReportSummary });
 }
 
 /**

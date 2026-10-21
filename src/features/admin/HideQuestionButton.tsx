@@ -26,8 +26,9 @@ const LINK_CLASS =
 
 /**
  * „Ukryj" – tylko dla administratora. Ukrywa pytanie (albo samą jego fiszkę) wszystkim użytkownikom: znika z sesji,
- * liczników i egzaminu, a historia odpowiedzi zostaje. Przywraca się je w bazie (UPDATE questions SET hidden = false …,
- * dla fiszki flashcard_hidden). Ukrycie wymaga potwierdzenia, bo dotyczy wszystkich. Ten sam wzorzec co „Zawieś pytanie".
+ * liczników i egzaminu, a historia odpowiedzi zostaje. Przywraca się je w panelu administratora
+ * (Pytania, przycisk „Przywróć pytanie” albo „Przywróć fiszkę”). Ukrycie wymaga potwierdzenia, bo dotyczy wszystkich.
+ * Ten sam wzorzec co „Zawieś pytanie".
  */
 export function HideQuestionButton({ questionId, scope, alreadyHidden = false, onHidden }: HideQuestionButtonProps) {
   const isAdmin = useIsAdmin();

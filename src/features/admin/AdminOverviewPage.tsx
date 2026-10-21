@@ -13,7 +13,7 @@ export function AdminOverviewPage() {
 
   return (
     <div>
-      <PageHeader title="Panel administratora" subtitle="Aplikacje, przedmioty Studenta, akty prawne z rozdziałami, arkusze i terminy egzaminów" />
+      <PageHeader title="Panel administratora" subtitle="Aplikacje, przedmioty, akty prawne, arkusze, terminy, pytania, oznaczenia i zgłoszenia błędów" />
       <div className="flex max-w-5xl flex-col gap-6 px-4 pb-8 sm:px-8">
         {isLoading && <Skeleton className="h-56 w-full" />}
         {isError && <ErrorState message="Nie udało się pobrać przeglądu." onRetry={() => refetch()} />}
@@ -36,6 +36,7 @@ export function AdminOverviewPage() {
                 note={data.hiddenSheets > 0 ? `w tym ukrytych: ${formatCount(data.hiddenSheets)}` : "żaden nie jest ukryty"}
               />
               <Tile
+                to={ROUTES.adminQuestions}
                 label="Pytania"
                 value={data.questions}
                 note={data.hiddenQuestions > 0 ? `w tym ukrytych: ${formatCount(data.hiddenQuestions)}` : "żadne nie jest ukryte"}
@@ -46,6 +47,17 @@ export function AdminOverviewPage() {
               <p className="mt-1 text-sm text-fg-muted" data-testid="admin-new-reports">
                 {data.newReports === 0 ? "Nie ma nowych zgłoszeń." : `Nowych zgłoszeń: ${formatCount(data.newReports)}.`}
               </p>
+              <div className="mt-2 flex flex-wrap gap-x-5">
+                <Link to={ROUTES.adminReports} className={LINK} data-testid="admin-link-reports">
+                  Przejrzyj zgłoszenia
+                </Link>
+                <Link to={ROUTES.adminMarks} className={LINK} data-testid="admin-link-marks">
+                  Oznaczenia pytań
+                </Link>
+                <Link to={ROUTES.adminImport} className={LINK} data-testid="admin-link-import">
+                  Importuj pytania
+                </Link>
+              </div>
             </Card>
           </>
         )}
@@ -53,6 +65,9 @@ export function AdminOverviewPage() {
     </div>
   );
 }
+
+const LINK =
+  "inline-flex min-h-11 items-center text-sm font-medium text-accent-ink underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink";
 
 function Tile({ to, label, value, note }: { to?: string; label: string; value: number; note: string }) {
   const body = (
