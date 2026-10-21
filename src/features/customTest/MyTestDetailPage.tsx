@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { CheckCircle2, MinusCircle, RotateCcw, XCircle } from "lucide-react";
 import type { CustomTestSessionDetail, CustomTestSessionQuestion } from "../../api/customTest";
+import { PageContainer } from "../../components/layout/PageContainer";
 import { PageHeader } from "../../components/layout/PageHeader";
 import { Card } from "../../components/ui/Card";
 import { ErrorState } from "../../components/ui/ErrorState";
@@ -65,11 +66,11 @@ export function MyTestDetailPage() {
   }
 
   return (
-    <div>
+    <PageContainer>
       <Breadcrumbs items={crumbs} />
       <PageHeader title="Test" subtitle={data.summary.scopeLabel} />
       <Detail detail={data} />
-    </div>
+    </PageContainer>
   );
 }
 
@@ -90,7 +91,7 @@ function Detail({ detail }: { detail: CustomTestSessionDetail }) {
       kind: summary.kind,
       requestedCount: summary.requestedCount,
     };
-    navigate(ROUTES.tests, { state: { prefill } });
+    navigate(prefill.kind === "DUE" ? ROUTES.testsReview : ROUTES.testsStudy, { state: { prefill } });
   }
 
   return (

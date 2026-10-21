@@ -4,7 +4,7 @@ import { pluralizePl } from "../../lib/plural";
 import { useCustomTestCounts, useStartCustomTest } from "../customTest/hooks";
 import { formatCount } from "./format";
 
-/** Ile pytań losuje szybki zestaw. Inny zakres albo liczbę ustawia się w kreatorze („Nauka"). */
+/** Ile pytań losuje szybki zestaw. Stała, bez ustawienia w Koncie; inny zakres albo liczbę ustawia się w kreatorze („Nauka"). */
 export const QUICK_SET_SIZE = 20;
 
 interface QuickSet {
@@ -22,7 +22,8 @@ const SETS: QuickSet[] = [
 
 /**
  * „Szybkie zestawy": trzy kafelki, które od razu zaczynają test z całej puli (do 20 pytań danego rodzaju), bez kreatora.
- * Liczba na kafelku to wszystkie dostępne pytania tego rodzaju; zestaw bez pytań jest wyszarzony.
+ * Liczba na kafelku to wszystkie dostępne pytania tego rodzaju; zestaw bez pytań jest wyszarzony. Rozmiar zestawu jest
+ * tylko w podpowiedzi kafelka (title), nie ma osobnego napisu na ekranie.
  */
 export function QuickSets() {
   const counts = useCustomTestCounts(EMPTY_SCOPE, "ALL");
@@ -30,12 +31,9 @@ export function QuickSets() {
 
   return (
     <section aria-labelledby="quick-sets" className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
-        <h2 id="quick-sets" className="text-sm font-medium text-fg-muted">
-          Szybkie zestawy
-        </h2>
-        <p className="text-xs text-fg-muted">Start od razu, do {QUICK_SET_SIZE} pytań. Własny zakres ustawisz w „Nauce".</p>
-      </div>
+      <h2 id="quick-sets" className="text-sm font-medium text-fg-muted">
+        Szybkie zestawy
+      </h2>
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
         {SETS.map((set, index) => {

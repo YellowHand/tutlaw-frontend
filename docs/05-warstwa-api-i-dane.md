@@ -52,7 +52,7 @@ prośba o reset hasła i ustawienie nowego hasła) jest wpisanych bezpośrednio 
 
 ## Wszystkie wywołania serwera
 
-Frontend używa **61 z 62** endpointów backendu (łącznie 62 wywołań w kodzie, bo `POST /api/me/study-time` jest wołane z
+Frontend używa **63 z 64** endpointów backendu (łącznie 64 wywołań w kodzie, bo `POST /api/me/study-time` jest wołane z
 dwóch miejsc). Jeden endpoint backendu pozostaje nieużywany (`GET /api/courses`); sekcja o nim jest [niżej](#endpointy-których-frontend-nie-używa).
 Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć wyszukiwarką.
 
@@ -127,8 +127,10 @@ Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć w
 
 | Wywołanie | Funkcja / plik | Gdzie używane |
 |-----------|----------------|---------------|
-| `POST /api/exams/start` | `startExam` (`api/exam.ts`) | Przycisk „Rozpocznij egzamin” w ustawieniach egzaminu. **Bez ciała**: format jest stały, serwer losuje 150 pytań i zwraca `passPoints` |
-| `POST /api/exams/submit` | `submitExam` | Wysłanie odpowiedzi po zakończeniu (ręcznym albo przez zegar). Ciało: `timeLimitMinutes`, `durationSeconds`, `timedOut`, `answers`; **bez zakresu i progu**, bo ocenia serwer |
+| `POST /api/exams/start` | `startExam` (`api/exam.ts`) | Przycisk „Rozpocznij egzamin” w ustawieniach egzaminu. **Bez ciała**: format jest stały. Parametr `source` (`ALL`, `MINISTRY`, `AUTHORED`) wybiera źródło losowania 150 pytań, a `sheetId` (numer z `exams/sheets`) cały egzamin MS z wybranego roku. Odpowiedź ma `scopeLabel` i `passPoints` |
+| `GET /api/exams/availability` | `getExamAvailability` | Ustawienia egzaminu: liczby pytań przy kartach źródeł (`all`, `ministry`, `authored`) |
+| `GET /api/exams/sheets` | `getExamSheets` | Ustawienia egzaminu, karta „Egzaminy MS”: aplikacje i lata egzaminów z liczbą pytań (`ExamSheets`) |
+| `POST /api/exams/submit` | `submitExam` | Wysłanie odpowiedzi po zakończeniu (ręcznym albo przez zegar). Ciało: `timeLimitMinutes`, `durationSeconds`, `timedOut`, `answers` oraz `source` albo `sheetId` (tylko do podpisu w historii); **bez zakresu i progu**, bo ocenia serwer |
 | `GET /api/exams/history` | `getExamHistory` | Historia egzaminów (do 50) oraz karta „Egzamin próbny” na Pulpicie. Wpis ma `passPoints`; `null` oznacza podejście sprzed stałego formatu |
 
 ### Statystyki
@@ -221,6 +223,8 @@ dane po powrocie do karty przeglądarki. Pamięć żyje tylko w otwartej karcie;
 | `["settings","exam-terms"]` | Terminy egzaminów aplikacji | 60 s | j.w. |
 | `["settings","interface"]` | Ustawienia interfejsu (podpowiedzi skrótów, licznik czasu) | **0** | `features/interface/hooks.ts` |
 | `["exam","history"]` | Historia egzaminów | **0** | `features/exam/hooks.ts` |
+| `["exam","availability"]` | Liczby pytań w źródłach egzaminu | **0** | j.w. |
+| `["exam","sheets"]` | Egzaminy MS (aplikacje i lata) | **0** | j.w. |
 | `["me"]` | Adres e-mail zalogowanego | 5 min | `features/account/hooks.ts`, `ExamPage.tsx` |
 
 `staleTime` równy **0** znaczy: za każdym razem, gdy ekran się pojawia, dane są pobierane na nowo (stara kopia
@@ -299,6 +303,7 @@ serwer przestał je wysyłać. Najważniejsze typy:
 | `FlashcardStatus` | `api/review.ts` | `UNAVAILABLE`, `AVAILABLE`, `ADDED_MANUALLY`, `ADDED_BY_MISTAKE` |
 | `Backlog` | `api/review.ts` | `dueNow`, `deferred`, `dailyLimit`, `doneToday` |
 | `ExamStart`, `ExamResult`, `ExamAttempt` | `api/exam.ts` | Losowanie (z `passPoints`), wynik z rozbiciem na źródła i pytania, wpis historii (z `passPoints`) |
+| `ExamAvailability`, `ExamSheets` (`ExamSheetApplication`, `ExamSheet`) | `api/exam.ts` | Liczby pytań w źródłach egzaminu; aplikacje z egzaminami MS według lat (`trackId`, `slug`, `shortName`, `own`, `sheets[]` z `id`, `year`, `questionCount`) |
 | `Track` | `api/tracks.ts` | Ścieżka: `id`, `slug`, `name`, `shortName`, `kind` (`EXAM` albo `STUDENT`) |
 | `Pool` | `api/pool.ts` | Pula użytkownika: `track`, `narrowed`, `questionCount`, `fields` (dziedziny z aktami i polem `selected`), `sourceGroups` (grupa, `selected`, `questionCount`) |
 | `TestCatalog` | `api/tests.ts` | `narrowed`, `fields` (dziedziny z aktami i licznikami `questionCount`, `solvedCount`), `sources` (arkusze i pytania autorskie z grupą i rokiem egzaminu) |

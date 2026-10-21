@@ -370,7 +370,7 @@ Zasady okna:
 |--------|--------------------|--------------|
 | Testy: kreator (Nauka i Powtórki) | tak | wybierane w kreatorze |
 | Testy: „Losuj z całej puli”, szybkie zestawy, pasek zaległych, „Moje błędy” z Pulpitu | tak | wszystkie |
-| Egzamin próbny | **nie** (losuje ze wszystkich aktów ścieżki) | wszystkie |
+| Egzamin próbny | **nie** (losuje ze wszystkich aktów ścieżki; egzamin MS to cały arkusz dowolnej aplikacji) | wybierane na ekranie egzaminu (wszystkie, Ministerstwo, autorskie albo egzamin MS) |
 | Fiszki | tak | wszystkie |
 | Statystyki testów (przegląd, opanowanie aktów, „Postęp” na Pulpicie) | tak | wszystkie |
 | Statystyki fiszek | tak | wszystkie |
@@ -485,7 +485,9 @@ wybrało ścieżki), otwiera okno modalne „Witaj w Gradus iuris”. **Wybór j
 
 Test z puli zaczyna się na trzy sposoby, wszystkie z ekranu Testy (opis ekranu: [02](02-routing-i-strony.md)):
 **„Losuj z całej puli”** (liczba pytań i Start), **szybki zestaw** („Moje błędy”, „Zmiany w prawie”, „Nowe pytania”; start
-od razu) i **kreator** (karty „Nauka” i „Powtórki”). Wszystkie trzy kończą tak samo: serwer losuje pytania, zapisuje test w
+od razu) i **kreator** (karty „Nauka” i „Powtórki”, każda prowadzi na własną podstronę: `/app/tests/nauka` i `/app/tests/powtorki`).
+Kreator to **jedna strona** z sekcjami „Źródło pytań”, „Przepisy”, „Które pytania?” i „Ile pytań?” oraz przyklejonym podsumowaniem
+„Twój test” (na telefonie przycisk startu jest w dolnym pasku). Wszystkie trzy kończą tak samo: serwer losuje pytania, zapisuje test w
 „Moich testach” i otwiera sesję `/app/test/custom`. Zasady:
 
 - **To nauka, nie egzamin.** Nie ma progu, wyniku „zdał / nie zdał” ani zegara. Sesja kończy się zwykłym ekranem
@@ -523,21 +525,22 @@ od razu) i **kreator** (karty „Nauka” i „Powtórki”). Wszystkie trzy ko�
   `LAW_CHANGE`, `NEW`) z całej puli i wszystkich źródeł. Liczba na kafelku to wszystkie dostępne pytania tego rodzaju, a start
   daje ich mniej, gdy jest ich mniej niż 20. Zestaw bez pytań jest wyszarzony. Własny zakres i liczbę ustawia się w „Nauce”.
   Pasek zaległych na górze Testów to nie jest zestaw losowany: prowadzi do `/app/test/due` (zwykła sesja z samych zaległych).
-- **Powtórki w kreatorze** są odmianą `REVIEW`: kroki te same, ale rodzaj jest stały (`DUE`), a liczby przy kartach źródeł
-  i w zakresie to liczby zaległych pytań. Karta „Powtórki” jest nieaktywna, gdy nic nie zalega.
+- **Powtórki w kreatorze** są odmianą `REVIEW`: ta sama strona (pod `/app/tests/powtorki`), ale bez sekcji „Które pytania?”,
+  bo rodzaj jest stały (`DUE`), a liczby przy kartach źródeł i w zakresie to liczby zaległych pytań. Karta „Powtórki” jest
+  nieaktywna, gdy nic nie zalega.
 - **Przedmioty Studenta.** `buildTree` buduje z `catalog.courses` przedmioty z aktami i rozdziałami (`isCourseTree`), a
   `toScope` zwraca `courseIds`. Zapisany test pamięta przedmioty (`courseIds`) oraz ich akty (w `actIds`), więc „Ułóż
   ponownie” działa także po zmianie ścieżki albo przedmiotów.
-- **Dwa kroki serwera.** Kreator pyta o liczby (`GET /api/review/custom-test/counts` z zakresem i źródłem, z opóźnieniem
+- **Dwa zapytania serwera.** Kreator pyta o liczby (`GET /api/review/custom-test/counts` z zakresem i źródłem, z opóźnieniem
   250 ms), a po „Zacznij test” losuje numery i **zapisuje sesję** (`POST /api/review/custom-test` zwraca `questionIds` i
   `sessionId`). Sesja `/app/test/custom?questionIds=…&sessionId=…` pobiera te pytania kolejką ćwiczeń.
 - **Zapamiętany wybór** (`customTestStorage.ts`, klucz `gradus.customTest.v4`): źródło, „cała pula” albo numery aktów i
   rozdziałów, rodzaj pytań (bez `DUE`) i liczba. Przy następnym otwarciu kreator odtwarza wybór w świetle bieżącego drzewa
-  (pozycje, których już nie ma, odpadają). Ustawienia z „Moich testów” i z Pulpitu (`prefill`) mają pierwszeństwo i otwierają
-  kreator na kroku 2.
+  (pozycje, których już nie ma, odpadają). Ustawienia z „Moich testów” i z Pulpitu (`prefill`, w stanie nawigacji) mają
+  pierwszeństwo.
 - **Zawieszone, ukryte i niedostępne pytania** nie wchodzą do testu. **Dzienny limit nowych pytań go nie dotyczy**: użytkownik
   sam wybiera, ile pytań chce rozwiązać.
-- W podsumowaniu („Twój test”) zakres opisuje `describeSelection`: „Cała pula”, „Kodeks karny”, „Kodeks karny, rozdziały XIX i
+- W podsumowaniu („Twój test”, po prawej, a na telefonie pod formularzem) zakres opisuje `describeSelection`: „Cała pula”, „Kodeks karny”, „Kodeks karny, rozdziały XIX i
   XXXV”, a przy większej liczbie pozycji „5 pozycji w 2 dziedzinach” (Student: „3 przedmioty”).
 
 ### Moje testy
@@ -552,7 +555,7 @@ Każdy własny test jest **zapisywany w chwili startu**, nie dopiero po ukończe
   pewien”), czas odpowiadania oraz lista pytań z odpowiedziami, wyjaśnieniami i oznaczeniem, jak poszły; przełącznik „Wszystkie /
   Błędne i bez odpowiedzi”. Do nieukończonego testu nie da się wrócić, ekran mówi o tym wprost. Gdy test nie istnieje albo nie
   należy do użytkownika, ekran pokazuje błąd z linkiem „Wróć do listy testów”.
-- **„Ułóż ponownie z tymi ustawieniami”** otwiera w Testach kreator na kroku 2 z tym samym źródłem, zakresem (dziedziny, przedmioty, akty i
+- **„Ułóż ponownie z tymi ustawieniami”** otwiera kreator (Nauka albo Powtórki) wypełniony tym samym źródłem, zakresem (dziedziny, przedmioty, akty i
   rozdziały), rodzajem pytań i liczbą (ustawienia jadą w stanie nawigacji, `CustomTestPrefill`, z `courseIds` dla Studenta;
   test z rodzajem `DUE` otwiera odmianę „Powtórki”). Pozycje, których nie ma już w drzewie (np. po zmianie ścieżki, zakresu
   nauki albo źródła), są pomijane, a kreator pokazuje notkę, że część przepisów nie jest teraz dostępna.
@@ -563,10 +566,10 @@ Każdy własny test jest **zapisywany w chwili startu**, nie dopiero po ukończe
 
 ## Egzamin próbny (`features/exam`)
 
-Egzamin ma **stały format**: zawsze **150 pytań** z całej puli ścieżki, a zaliczenie jest od **100 punktów**
-(1 punkt za poprawną odpowiedź, bez punktów ujemnych). Użytkownik niczego z tego nie wybiera: ani zakresu, ani liczby pytań,
-ani progu. Pytania losuje serwer (ze wszystkich aktów ścieżki i wszystkich źródeł, **bez zawężenia do wybranych aktów**), a serwer
-także ocenia egzamin i sam ustala próg, więc frontend tylko wyświetla to, co dostał.
+Egzamin ma **stały format**: **150 pytań** i zaliczenie od **100 punktów** (1 punkt za poprawną odpowiedź, bez punktów
+ujemnych). Użytkownik nie wybiera ani zakresu, ani liczby pytań, ani progu. Wybiera **źródło pytań** (cztery możliwości, niżej)
+i limit czasu. Serwer wybiera pytania (losuje z całej puli ścieżki, **bez zawężenia do wybranych aktów**, albo bierze cały
+arkusz egzaminu MS), serwer także ocenia egzamin i sam ustala próg, więc frontend tylko wyświetla to, co dostał.
 Ćwiczenie jednego działu to osobna funkcja, [test z kreatora](#testy-do-ułożenia-kreator-i-szybkie-zestawy), który niczego nie zalicza.
 
 Egzamin ma trzy fazy na jednym adresie `/app/exam`: **ustawienia → przebieg → raport**. Nie zmienia harmonogramu powtórek
@@ -574,7 +577,7 @@ Egzamin ma trzy fazy na jednym adresie `/app/exam`: **ustawienia → przebieg �
 
 ```mermaid
 flowchart LR
-    S["Ustawienia<br/>ExamSetup"] -->|"Rozpocznij egzamin<br/>POST /api/exams/start"| R["Przebieg<br/>ExamRunner"]
+    S["Ustawienia<br/>ExamSetup: źródło albo egzamin MS"] -->|"Rozpocznij egzamin<br/>POST /api/exams/start"| R["Przebieg<br/>ExamRunner"]
     R -->|"Zakończ i sprawdź albo koniec czasu<br/>POST /api/exams/submit"| W["Raport<br/>ExamResultView"]
     R -->|Porzuć| S
     W -->|"Nowy egzamin"| S
@@ -584,44 +587,69 @@ flowchart LR
 
 ### Ustawienia
 
-- **Format** pokazują dwa kafelki: „150 pytań z całej puli ścieżki” i „100 punktów do zaliczenia”. To opis, a nie pola
-  formularza (stałe `EXAM_QUESTION_COUNT` i `EXAM_PASS_POINTS` w `features/exam/format.ts` służą tylko do wyświetlania;
-  prawdziwy próg przychodzi z serwera).
-- **Pula pytań:** informacja, ile pytań jest do wylosowania. Gdy zakres nauki nie jest zawężony do aktów, liczba to
-  `questionCount` z `GET /api/me/pool`; przy zawężeniu serwer nie podaje liczby pytań całej ścieżki, więc ekran tylko tłumaczy,
-  że egzamin losuje ze wszystkich aktów ścieżki (także tych wyłączonych w „Zakresie nauki” w Koncie), niczego nie zgaduje i nie
-  blokuje startu. Źródła pytań egzamin nie zawęża: zawsze losuje ze wszystkich.
+Ekran ma **to samo rozmieszczenie co kreator testu**: po lewej sekcje „Źródło pytań”, (dla egzaminów MS) „Wybierz egzamin MS” i
+„Czas”, po prawej przyklejony panel „Twój egzamin” (liczba pytań, próg, źródło, czas) z przyciskiem „Rozpocznij egzamin”. Na
+telefonie panel jest pod formularzem. Treść jest rozciągnięta na całą szerokość strony (`PageContainer`).
+
+- **Źródło pytań**: cztery karty (`EXAM_SOURCE_ORDER`), każda z liczbą:
+  - **Wszystkie źródła**, **Ministerstwo Sprawiedliwości** i **Autorskie**: serwer **losuje** 150 pytań z wybranego źródła
+    (`POST /api/exams/start?source=`). Liczby przy kartach to liczby pytań możliwych do wylosowania (`GET /api/exams/availability`),
+    liczone bez zawężenia do aktów i bez pytań zawieszonych w testach. Źródło bez pytań jest wyszarzone.
+  - **Egzaminy MS**: cały egzamin z wybranego roku (`POST /api/exams/start?sheetId=`), liczba przy karcie to liczba egzaminów do
+    wyboru. Zob. niżej.
+- **Egzaminy MS** (`ExamSheetPicker`, panel „Wybierz egzamin MS” widoczny po wyborze tej karty). Dane z `GET /api/exams/sheets`:
+  aplikacje, które mają arkusze, każda z latami (zwykle od 2016 do 2026) i liczbą pytań każdego. Wybór ma dwie części:
+  1. **Aplikacja**: przyciski z nazwą, liczbą egzaminów i plakietką „Twoja” przy aplikacji użytkownika (stoi pierwsza). Można
+     wybrać egzamin dowolnej aplikacji, nie tylko swojej.
+  2. **Rok**: kafelki od najnowszego (`sheetYears` buduje ciągły zakres lat ze wszystkich aplikacji), każdy z liczbą pytań.
+     Rok, w którym wybrana aplikacja nie ma egzaminu, jest wyłączony i podpisany „brak”. Przy zmianie aplikacji wybrany rok
+     zostaje, jeśli ta aplikacja ma w nim egzamin.
+
+  Obie części to grupy przycisków opcji (strzałki, Tab, czytnik ekranu). Dopóki użytkownik nic nie wybierze, ekran proponuje
+  jego aplikację i jej najnowszy egzamin. Panel „Twój egzamin” pokazuje wtedy wiersz „Egzamin” (np. „Notarialna 2024”).
+  Pod listą jest stan ładowania, błąd z „Spróbuj ponownie” i komunikat, gdy egzaminów nie ma.
+- **Co daje egzamin MS:** wszystkie pytania tego arkusza w kolejności z arkusza, bez losowania i bez pytań, które użytkownik
+  zawiesił w testach (serwer obcina do 150). Jeśli pytań jest mniej niż 150, egzamin jest krótszy, a próg niższy.
+- **Format** pokazują kafelki w panelu: liczba pytań (150 albo mniej) i „pkt do zaliczenia” (100 albo proporcjonalnie mniej).
+  To opis, a nie pola formularza (stałe `EXAM_QUESTION_COUNT` i `EXAM_PASS_POINTS` w `features/exam/format.ts` służą tylko
+  do wyświetlania; prawdziwy próg przychodzi z serwera).
+- **Notka pod kartami źródeł:** ile pytań jest do wylosowania (albo ile ma wybrany egzamin MS). Przy zawężonym zakresie nauki
+  dopisuje, że egzamin losuje ze wszystkich aktów ścieżki (także tych wyłączonych w „Zakresie nauki” w Koncie). Błąd pobrania
+  liczb niczego nie zgaduje i nie blokuje startu.
 - **Limit czasu:** 1–600 minut albo „Bez limitu czasu”. Dopóki użytkownik nie ustawi własnego, czas jest równy liczbie pytań w
   minutach (minuta na pytanie, czyli 150 min). Prawdziwy czas egzaminu nie jest tu odtwarzany, to wybór użytkownika.
-- Zapamiętywany jest tylko ostatnio użyty limit czasu (`gradus.exam.settings.v1`).
-- **Mniej niż 150 pytań w materiale:** egzamin ma tyle pytań, ile jest, a próg jest proporcjonalnie niższy
+- Zapamiętywane są ostatnio użyte **źródło**, wybrany **egzamin MS** (aplikacja i rok) i limit czasu (`gradus.exam.settings.v1`).
+  Zapamiętany egzamin, którego już nie ma, jest zastępowany najnowszym egzaminem tej samej aplikacji.
+- **Mniej niż 150 pytań w źródle albo egzaminie:** egzamin ma tyle pytań, ile jest, a próg jest proporcjonalnie niższy
   (100 z 150, w górę do pełnego punktu, np. 12 pytań to 8 punktów). Ekran uprzedza o tym przed startem.
 - Obok przycisku „Rozpocznij egzamin” jest link „Chcesz poćwiczyć jeden dział? Ułóż test w Testach” do `/app/tests`.
-- Pod formularzem jest **historia** ostatnich podejść (do 50; `GET /api/exams/history`): wynik, zakres, data, próg, czas.
+- Pod formularzem jest **historia** ostatnich podejść (do 50; `GET /api/exams/history`): wynik, zakres (np. „Egzamin MS:
+  Notarialna 2024”), data, próg, czas.
   Frontend nadal rozumie podejście bez progu w punktach (`passPoints: null`, próg w procentach, własny zakres); w bazie
   założonej od nowa takich podejść nie ma (zob. „Raport”).
 
 ### Przebieg
 
-- Serwer losuje pytania (`POST /api/exams/start`, bez ciała) i zwraca też próg w punktach (`passPoints`), a frontend od razu
-  zapisuje **szkic** w przeglądarce. Termin końca
+- Serwer wybiera pytania (`POST /api/exams/start`, bez ciała, z parametrem `source` albo `sheetId`), zwraca podpis egzaminu
+  (`scopeLabel`) i próg w punktach (`passPoints`), a frontend od razu zapisuje **szkic** w przeglądarce. Termin końca
   (`deadlineMs`) jest liczony raz, przy starcie, więc czas płynie dalej także po odświeżeniu strony (jak na prawdziwym egzaminie).
 - **Zegar** liczy od terminu końca, a nie od licznika: nie „dryfuje” i nie staje w ukrytej karcie. Czytniki ekranu dostają
   zapowiedzi przy 10, 5 i 1 minucie do końca (nie co sekundę). Ostatnia minuta jest czerwona.
 - Użytkownik wybiera odpowiedzi, może **oznaczać pytania „do sprawdzenia”** i skakać po pytaniach przez paletę (lista numerów z
   oznaczeniem odpowiedzianych i oznaczonych) albo strzałkami. Ponowny wybór tej samej odpowiedzi ją odznacza.
-- Gdy w materiale jest mniej niż 150 pytań, pod paskiem górnym jest informacja „Wylosowano N z 150 pytań” i o niższym progu.
+- Gdy pytań jest mniej niż 150, pod paskiem górnym jest informacja „Wylosowano N z 150 pytań” i o niższym progu.
 - Każda zmiana zapisuje szkic. Zamknięcie karty w trakcie egzaminu pokazuje ostrzeżenie przeglądarki.
 - **Zakończenie:** okno „Zakończyć egzamin?” podaje liczbę pytań bez odpowiedzi (liczą się jako błędne) i oznaczonych.
   „Porzuć egzamin” kasuje szkic bez oceniania.
 - **Koniec czasu** kończy egzamin sam, dokładnie raz.
 - **Wysłanie:** `POST /api/exams/submit` z limitem czasu, czasem trwania (ucięty do limitu i do 48 godzin), znacznikiem
-  `timedOut` i odpowiedziami (pusta odpowiedź to `null`). Zakresu ani progu klient nie wysyła: ocenia serwer. **Szkic kasuje się dopiero po udanym wysłaniu**: przy
+  `timedOut` i odpowiedziami (pusta odpowiedź to `null`). Dodaje też `source` albo `sheetId`, ale **tylko do podpisu w historii** (np.
+  „Egzamin MS: Notarialna 2024”); zakresu ani progu klient nie wysyła: ocenia serwer. **Szkic kasuje się dopiero po udanym wysłaniu**: przy
   błędzie ekran mówi, że odpowiedzi są zapisane w tej przeglądarce, i pozwala spróbować jeszcze raz.
 
 ### Wznawianie
 
-Szkic leży pod kluczem `gradus.exam.draft.v2` i ma numer wersji (3) oraz adres konta właściciela. Klucz zmieniono w Etapie 32,
+Szkic leży pod kluczem `gradus.exam.draft.v2` i ma numer wersji (3), adres konta właściciela, wybrane źródło i numer egzaminu MS (`sheetId`, gdy to egzamin MS; szkic zapisany przed tą zmianą nie ma go i jest czytany jako `null`). Klucz zmieniono w Etapie 32,
 bo pytania dostały nowe numery po przebudowie bazy: zapis pod starym kluczem (z „v1” w nazwie) jest ignorowany, a jego numery
 pytań i tak do niczego by nie pasowały. Przy wejściu na `/app/exam` aplikacja czyta szkic z pamięci i sprawdza kształt danych:
 uszkodzony, nieznanej wersji albo cudzy (inne konto w tej przeglądarce) szkic jest po prostu pomijany. Jeśli szkic jest

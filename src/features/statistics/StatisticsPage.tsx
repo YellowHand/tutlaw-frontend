@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PageContainer } from "../../components/layout/PageContainer";
 import { PageHeader } from "../../components/layout/PageHeader";
 import { ActMasteryList } from "./ActMasteryList";
 import { ActivityChart } from "./ActivityChart";
@@ -16,7 +17,7 @@ export function StatisticsPage() {
   const [actId, setActId] = useState<number | undefined>(undefined);
 
   return (
-    <div className="mx-auto w-full max-w-6xl">
+    <PageContainer>
       <PageHeader title="Statystyki" subtitle="Co już umiesz, jak Ci idzie i jak często się uczysz" />
       <div className="flex flex-col gap-6 px-4 pb-8 sm:px-8">
         <MasterySection />
@@ -28,6 +29,6 @@ export function StatisticsPage() {
         </div>
         <FlashcardsSection actId={actId} onActChange={setActId} />
       </div>
-    </div>
+    </PageContainer>
   );
 }

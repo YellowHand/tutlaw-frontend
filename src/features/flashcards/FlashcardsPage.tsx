@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Layers, Play } from "lucide-react";
 import { getAvailableNewQuestionsCount, type ReviewScope } from "../../api/review";
+import { PageContainer } from "../../components/layout/PageContainer";
 import { PageHeader } from "../../components/layout/PageHeader";
 import { Card } from "../../components/ui/Card";
 import { EmptyState } from "../../components/ui/EmptyState";
@@ -39,7 +40,7 @@ export function FlashcardsPage() {
   const noFlashcardsYet = overview.data?.totalQuestions === 0;
 
   return (
-    <div>
+    <PageContainer>
       <PageHeader title="Fiszki" />
       <div className="flex flex-col gap-6 px-4 pb-8 sm:px-8">
         {noFlashcardsYet ? (
@@ -63,7 +64,7 @@ export function FlashcardsPage() {
           </>
         )}
       </div>
-    </div>
+    </PageContainer>
   );
 }
 

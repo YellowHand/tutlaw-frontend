@@ -23,11 +23,11 @@ function Head({ icon: Icon, title, text }: { icon: LucideIcon; title: string; te
   );
 }
 
-function Foot({ children, muted }: { children: string; muted?: boolean }) {
+function Foot({ children }: { children: string }) {
   return (
-    <span className={cn("hidden items-center justify-between font-semibold sm:flex", muted ? "text-fg-muted" : "text-accent-ink")}>
+    <span className="hidden items-center justify-between font-semibold text-accent-ink sm:flex">
       <span>{children}</span>
-      {!muted && <ChevronRight size={18} aria-hidden="true" />}
+      <ChevronRight size={18} aria-hidden="true" />
     </span>
   );
 }
@@ -35,15 +35,13 @@ function Foot({ children, muted }: { children: string; muted?: boolean }) {
 interface TestKindCardsProps {
   /** Ile pytań czeka na powtórkę (ta sama liczba co na odznace „Testy" w menu). */
   dueCount: number;
-  onStudy: () => void;
-  onReview: () => void;
 }
 
 /**
- * „Ułóż test": trzy rodzaje. Nauka i Powtórki otwierają kreator (źródło, przepisy, liczba pytań), Egzamin próbny ma swój
- * ekran. Na telefonie karty są wąskimi wierszami jedna pod drugą.
+ * „Ułóż test": trzy rodzaje. Nauka i Powtórki prowadzą na podstrony z kreatorem (źródło, przepisy, liczba pytań), Egzamin
+ * próbny na swój ekran. Na telefonie karty są wąskimi wierszami jedna pod drugą.
  */
-export function TestKindCards({ dueCount, onStudy, onReview }: TestKindCardsProps) {
+export function TestKindCards({ dueCount }: TestKindCardsProps) {
   const questions = pluralizePl(dueCount, { one: "pytanie", few: "pytania", many: "pytań" });
 
   return (
@@ -52,27 +50,23 @@ export function TestKindCards({ dueCount, onStudy, onReview }: TestKindCardsProp
         Ułóż test
       </h2>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
-        <button type="button" onClick={onStudy} data-testid="kind-study" className={cn(CARD, CARD_ACTIVE)}>
+        <Link to={ROUTES.testsStudy} data-testid="kind-study" className={cn(CARD, CARD_ACTIVE)}>
           <Head icon={BookOpen} title="Nauka" text="Wybierz przepisy, rozdziały i źródło pytań. Po każdej odpowiedzi od razu wyjaśnienie." />
           <Foot>Wybierz zakres</Foot>
           <ChevronRight size={18} aria-hidden="true" className="shrink-0 text-fg-muted sm:hidden" />
-        </button>
+        </Link>
 
-        <button
-          type="button"
-          onClick={onReview}
-          disabled={dueCount <= 0}
-          data-testid="kind-review"
-          className={cn(CARD, dueCount > 0 ? CARD_ACTIVE : "cursor-not-allowed opacity-60")}
-        >
-          <Head
-            icon={RotateCcw}
-            title="Powtórki"
-            text={dueCount > 0 ? "Pytania, którym minął termin powtórki. Bez nowych pytań." : "Nic nie czeka na powtórkę."}
-          />
-          <Foot muted={dueCount <= 0}>{dueCount > 0 ? `${dueCount} ${questions} do powtórki` : "Wróć, gdy minie któryś termin"}</Foot>
-          {dueCount > 0 && <ChevronRight size={18} aria-hidden="true" className="shrink-0 text-fg-muted sm:hidden" />}
-        </button>
+        {dueCount > 0 ? (
+          <Link to={ROUTES.testsReview} data-testid="kind-review" className={cn(CARD, CARD_ACTIVE)}>
+            <Head icon={RotateCcw} title="Powtórki" text="Pytania, którym minął termin powtórki. Bez nowych pytań." />
+            <Foot>{`${dueCount} ${questions} do powtórki`}</Foot>
+            <ChevronRight size={18} aria-hidden="true" className="shrink-0 text-fg-muted sm:hidden" />
+          </Link>
+        ) : (
+          <button type="button" disabled data-testid="kind-review" className={cn(CARD, "cursor-not-allowed opacity-60")}>
+            <Head icon={RotateCcw} title="Powtórki" text="Nic nie czeka na powtórkę." />
+          </button>
+        )}
 
         <Link to={ROUTES.exam} data-testid="kind-exam" className={cn(CARD, CARD_ACTIVE)}>
           <Head

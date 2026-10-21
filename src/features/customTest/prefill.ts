@@ -2,8 +2,9 @@ import { isSourceMode, type SourceMode } from "../../lib/sourceMode";
 import { CUSTOM_TEST_KINDS, type CustomTestKind, type CustomTestScope } from "../../api/customTest";
 
 /**
- * Ustawienia przekazywane do kreatora Testów w stanie nawigacji: „Ułóż ponownie z tymi ustawieniami" z Moich testów
- * i skróty z Pulpitu (np. kliknięcie dziedziny w „Postępie"). Kreator otwiera się wtedy od razu na kroku „Pytania i start".
+ * Ustawienia przekazywane do kreatora testu (podstrony Testy → Nauka albo Powtórki) w stanie nawigacji: „Ułóż ponownie
+ * z tymi ustawieniami" z Moich testów i skróty z Pulpitu (np. kliknięcie dziedziny w „Postępie"). Kreator jest wtedy
+ * od razu wypełniony tym wyborem.
  */
 export interface CustomTestPrefill extends CustomTestScope {
   source: SourceMode;
@@ -12,7 +13,7 @@ export interface CustomTestPrefill extends CustomTestScope {
   requestedCount: number;
 }
 
-/** Stan nawigacji do `/app/tests`: otwórz kreator z tymi ustawieniami. */
+/** Stan nawigacji do `/app/tests/nauka` albo `/app/tests/powtorki`: wypełnij kreator tymi ustawieniami. */
 export interface WizardLaunchState {
   prefill: CustomTestPrefill;
 }

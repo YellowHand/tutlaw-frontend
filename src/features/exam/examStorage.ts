@@ -1,5 +1,6 @@
 import type { OptionKey } from "../../api/exam";
 import type { TestQueueItem } from "../../api/review";
+import { isSourceMode, type SourceMode } from "../../lib/sourceMode";
 
 /**
  * Niedokończony egzamin zapisany w przeglądarce, żeby odświeżenie strony albo zamknięta karta nie kasowały
@@ -11,11 +12,25 @@ import type { TestQueueItem } from "../../api/review";
 const DRAFT_KEY = "gradus.exam.draft.v2";
 const SETTINGS_KEY = "gradus.exam.settings.v1";
 
+/**
+ * Co użytkownik wybiera jako źródło egzaminu: trzy źródła pytań do losowania albo konkretny egzamin MS z poprzedniego
+ * roku (cały arkusz). Serwer zna tylko `SourceMode` i numer arkusza; „SHEETS" to wybór po stronie ekranu.
+ */
+export type ExamSourceChoice = SourceMode | "SHEETS";
+
+export function isExamSourceChoice(value: unknown): value is ExamSourceChoice {
+  return value === "SHEETS" || isSourceMode(value);
+}
+
 export interface ExamDraft {
   version: 3;
   /** Adres konta, żeby cudzy niedokończony egzamin nie pojawił się po zmianie użytkownika w tej samej przeglądarce. */
   owner: string;
   scopeLabel: string;
+  /** Źródło, z którego losowano pytania (do podpisu w historii po wysłaniu); zapis sprzed wyboru źródła to „ALL". */
+  source: SourceMode;
+  /** Numer arkusza, gdy to egzamin MS z wybranego roku (do podpisu w historii po wysłaniu); w pozostałych null. */
+  sheetId: number | null;
   requestedCount: number;
   /** Próg zaliczenia w punktach z serwera. */
   passPoints: number | null;
@@ -72,6 +87,8 @@ function parseDraft(raw: string, owner: string): ExamDraft | null {
     version: 3,
     owner,
     scopeLabel: value.scopeLabel,
+    source: isSourceMode(value.source) ? value.source : "ALL",
+    sheetId: typeof value.sheetId === "number" ? value.sheetId : null,
     requestedCount: value.requestedCount,
     passPoints: typeof value.passPoints === "number" ? value.passPoints : null,
     timeLimitMinutes: value.timeLimitMinutes,
@@ -110,10 +127,18 @@ export function clearDraft(): void {
 }
 
 /**
- * Ostatnio użyty limit czasu egzaminu (wygoda: formularz pamięta wybór). Zakres, liczbę pytań i próg zaliczenia
- * ustala od Etapu 28 format egzaminu, więc nie są pamiętane; zapis ze starszych wersji ma je jeszcze w sobie i są pomijane.
+ * Ostatnio użyty limit czasu i źródło pytań egzaminu (wygoda: formularz pamięta wybór). Zakres, liczbę pytań i próg
+ * zaliczenia ustala od Etapu 28 format egzaminu, więc nie są pamiętane; zapis ze starszych wersji ma je jeszcze w sobie
+ * i są pomijane. Zapis sprzed wyboru źródła nie ma pola `source` (to „wszystkie źródła"). Egzamin MS pamięta aplikację
+ * i rok (a nie numer arkusza, który zmienia się po przebudowie bazy).
  */
 export interface RememberedExamSettings {
+  /** Źródło pytań egzaminu albo egzamin MS z wybranego roku. */
+  source: ExamSourceChoice;
+  /** Aplikacja ostatnio wybranego egzaminu MS (null: jeszcze żadnej). */
+  sheetTrackId: number | null;
+  /** Rok ostatnio wybranego egzaminu MS (null: jeszcze żadnego). */
+  sheetYear: number | null;
   /** null = bez limitu czasu. */
   timeLimitMinutes: number | null;
   /** Czy użytkownik sam ustawił czas; gdy nie, czas jest równy liczbie pytań w minutach (minuta na pytanie). */
@@ -130,7 +155,13 @@ export function loadRememberedSettings(): RememberedExamSettings | null {
       (v.timeLimitMinutes === null || typeof v.timeLimitMinutes === "number") &&
       typeof v.timeCustomised === "boolean"
     ) {
-      return { timeLimitMinutes: v.timeLimitMinutes, timeCustomised: v.timeCustomised };
+      return {
+        source: isExamSourceChoice(v.source) ? v.source : "ALL",
+        sheetTrackId: typeof v.sheetTrackId === "number" ? v.sheetTrackId : null,
+        sheetYear: typeof v.sheetYear === "number" ? v.sheetYear : null,
+        timeLimitMinutes: v.timeLimitMinutes,
+        timeCustomised: v.timeCustomised,
+      };
     }
     return null;
   } catch {

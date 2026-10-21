@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { submitExam, type ExamAnswerPayload, type ExamResult, type ExamStart } from "../../api/exam";
+import { PageContainer } from "../../components/layout/PageContainer";
 import { PageHeader } from "../../components/layout/PageHeader";
 import { Skeleton } from "../../components/ui/Skeleton";
 import { serverMessage } from "../../lib/errors";
@@ -23,12 +24,12 @@ export function ExamPage() {
 
   if (isLoading) {
     return (
-      <div>
+      <PageContainer>
         <PageHeader title="Egzamin próbny" />
         <div className="px-4 pb-8 sm:px-8">
           <Skeleton className="h-64 w-full" />
         </div>
-      </div>
+      </PageContainer>
     );
   }
   // Bez adresu konta nie wiadomo, czyj to egzamin, więc niczego nie zapisujemy ani nie wznawiamy.
@@ -50,6 +51,8 @@ function ExamFlow({ owner }: { owner: string }) {
         version: 3,
         owner,
         scopeLabel: start.scopeLabel,
+        source: config.source,
+        sheetId: config.sheetId,
         requestedCount: start.requestedCount,
         passPoints: start.passPoints,
         timeLimitMinutes: config.timeLimitMinutes,
@@ -82,6 +85,8 @@ function ExamFlow({ owner }: { owner: string }) {
           durationSeconds: Math.min(elapsedSeconds, cap, MAX_DURATION_SECONDS),
           timedOut,
           answers,
+          source: exam.source,
+          sheetId: exam.sheetId,
         });
         // Zapis niedokończonego egzaminu kasujemy dopiero po udanym wysłaniu: błąd sieci nie może zabrać odpowiedzi.
         clearDraft();
@@ -126,7 +131,7 @@ function ExamFlow({ owner }: { owner: string }) {
   }
 
   return (
-    <div>
+    <PageContainer>
       <PageHeader
         title="Egzamin próbny"
         subtitle={`Sprawdź się w warunkach zbliżonych do egzaminu: ${EXAM_QUESTION_COUNT} pytań, zaliczenie od ${EXAM_PASS_POINTS} punktów i raport z błędami.`}
@@ -139,6 +144,6 @@ function ExamFlow({ owner }: { owner: string }) {
           onStarted={handleStarted}
         />
       </div>
-    </div>
+    </PageContainer>
   );
 }

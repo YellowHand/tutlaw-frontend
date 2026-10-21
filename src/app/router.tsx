@@ -29,6 +29,9 @@ const MyTestDetailPage = lazy(() =>
   import("../features/customTest/MyTestDetailPage").then((m) => ({ default: m.MyTestDetailPage }))
 );
 const TestsPage = lazy(() => import("../features/tests/TestsPage").then((m) => ({ default: m.TestsPage })));
+const TestBuilderPage = lazy(() =>
+  import("../features/customTest/TestBuilderPage").then((m) => ({ default: m.TestBuilderPage }))
+);
 const StatisticsPage = lazy(() => import("../features/statistics/StatisticsPage").then((m) => ({ default: m.StatisticsPage })));
 const AccountPage = lazy(() => import("../features/account/AccountPage").then((m) => ({ default: m.AccountPage })));
 
@@ -68,6 +71,9 @@ export function Router() {
                 <Route path="exam" element={<ExamPage />} />
 
                 <Route path="tests" element={<TestsPage />} />
+                {/* Kreator testu: osobne podstrony Nauki i Powtórek (źródło, przepisy, rozdziały i liczba pytań w jednym widoku) */}
+                <Route path="tests/nauka" element={<TestBuilderPage flavor="STUDY" />} />
+                <Route path="tests/powtorki" element={<TestBuilderPage flavor="REVIEW" />} />
                 {/* Dawne strony dziedziny i przedmiotu: wybór zakresu jest w kreatorze */}
                 <Route path="tests/*" element={<Navigate to="/app/tests" replace />} />
 

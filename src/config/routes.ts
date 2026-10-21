@@ -27,8 +27,11 @@ export const ROUTES = {
   // Fiszki: ekran startowy (zaległe, nowe, zakres) i sesja. Fiszka to tryb pytania, a nie osobna karta.
   flashcards: "/app/flashcards",
 
-  // Testy: strona główna z losowaniem, rodzajami testu i szybkimi zestawami; zakres wybiera się w kreatorze (okno).
+  // Testy: strona główna z losowaniem, rodzajami testu i szybkimi zestawami. Nauka i Powtórki mają własne podstrony
+  // z kreatorem (źródło, przepisy, rozdziały, liczba pytań w jednym widoku).
   tests: "/app/tests",
+  testsStudy: "/app/tests/nauka",
+  testsReview: "/app/tests/powtorki",
 
   // Sesje z całej puli użytkownika albo z zakresu podanego w adresie (?fieldId=, ?actId=, ?sourceId=).
   studyAll: "/app/study",

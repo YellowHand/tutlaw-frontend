@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { CheckCircle2, ChevronRight, CircleDashed } from "lucide-react";
 import type { CustomTestSessionSummary } from "../../api/customTest";
+import { PageContainer } from "../../components/layout/PageContainer";
 import { PageHeader } from "../../components/layout/PageHeader";
 import { Card } from "../../components/ui/Card";
 import { ErrorState } from "../../components/ui/ErrorState";
@@ -19,7 +20,7 @@ export function MyTestsPage() {
   const { data, isLoading, isError, refetch } = useCustomTestSessions();
 
   return (
-    <div>
+    <PageContainer>
       <Breadcrumbs items={[{ label: "Testy", to: ROUTES.tests }, { label: "Moje testy" }]} />
       <PageHeader title="Moje testy" subtitle="Testy, które ułożyłeś. Zaczęty i niedokończony test też zostaje na liście." />
 
@@ -47,7 +48,7 @@ export function MyTestsPage() {
           </ul>
         )}
       </div>
-    </div>
+    </PageContainer>
   );
 }
 

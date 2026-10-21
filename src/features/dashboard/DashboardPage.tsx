@@ -1,3 +1,4 @@
+import { PageContainer } from "../../components/layout/PageContainer";
 import { PageHeader } from "../../components/layout/PageHeader";
 import { formatFullDatePl } from "../../lib/date";
 import { ExamCard } from "./ExamCard";
@@ -18,11 +19,11 @@ import { TodayCard } from "./TodayCard";
  */
 export function DashboardPage() {
   return (
-    <div className="mx-auto w-full max-w-6xl">
+    <PageContainer>
       <PageHeader title="Pulpit" subtitle={formatFullDatePl(new Date())} />
 
       <div className="flex flex-col gap-4 px-4 pb-8 sm:px-8">
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)] lg:items-start">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)] 2xl:grid-cols-[minmax(0,1fr)_minmax(400px,480px)] lg:items-start">
           <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-4">
             <TodayCard />
             <ProgressCard />
@@ -32,6 +33,6 @@ export function DashboardPage() {
           </div>
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }

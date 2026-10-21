@@ -52,7 +52,7 @@ export function ProgressCard({ className }: { className?: string }) {
   // Aplikacje widzą postęp w dziedzinach, Student w przedmiotach (jego pytania to akty przypisane do przedmiotów).
   const courses = (Array.isArray(catalog.data?.courses) ? catalog.data.courses : []).filter((course) => course.questionCount > 0);
   const studentView = courses.length > 0;
-  // Kliknięcie wiersza otwiera w Testach kreator „Nauka" z tą dziedziną (przedmiotem) już wybraną, od razu na kroku „Pytania i start".
+  // Kliknięcie wiersza otwiera kreator „Nauka" (podstrona Testów) z tą dziedziną (przedmiotem) już wybraną.
   const launch = (scope: Pick<CustomTestPrefill, "fieldIds" | "courseIds">): { prefill: CustomTestPrefill } => ({
     prefill: { actIds: [], sectionIds: [], source: "ALL", kind: "ALL", requestedCount: 20, ...scope },
   });
@@ -102,7 +102,7 @@ export function ProgressCard({ className }: { className?: string }) {
           {rows.map((field) => (
             <li key={field.id}>
               <Link
-                to={ROUTES.tests}
+                to={ROUTES.testsStudy}
                 state={field.state}
                 className="-mx-2 flex min-h-11 flex-col justify-center gap-1.5 rounded-lg px-2 py-2.5 transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink"
               >

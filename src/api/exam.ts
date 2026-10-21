@@ -2,12 +2,14 @@ import { api } from "./axiosInstance";
 import type { TestQueueItem } from "./review";
 import type { SourceKind } from "../lib/source";
 import type { LawChange } from "../lib/lawChange";
+import type { SourceMode } from "../lib/sourceMode";
 
 export type OptionKey = "A" | "B" | "C";
 
 /**
- * Egzamin ma stały format: zawsze 150 pytań z całej puli ścieżki, zaliczenie od 100 punktów. Losuje je i ocenia serwer,
- * użytkownik niczego nie wybiera (poza czasem, który liczy tylko frontend).
+ * Egzamin ma stały format: zawsze 150 pytań z całej puli ścieżki, zaliczenie od 100 punktów. Losuje je i ocenia serwer;
+ * użytkownik wybiera tylko źródło pytań (wszystkie, Ministerstwo Sprawiedliwości, autorskie) albo konkretny egzamin MS
+ * z poprzedniego roku (cały arkusz) oraz czas, który liczy frontend.
  */
 export interface ExamStart {
   scopeLabel: string;
@@ -32,6 +34,43 @@ export interface ExamSubmitPayload {
   /** Czy egzamin zakończył się sam, bo skończył się czas. */
   timedOut: boolean;
   answers: ExamAnswerPayload[];
+  /** Źródło, z którego losowano pytania (tylko do podpisu w historii); brak = wszystkie. */
+  source?: SourceMode;
+  /** Numer arkusza, gdy był to egzamin MS z wybranego roku (tylko do podpisu w historii); ma pierwszeństwo przed `source`. */
+  sheetId?: number | null;
+}
+
+/** Ile pytań można teraz wylosować na egzamin z każdego źródła (bez zawężenia puli do aktów). */
+export interface ExamAvailability {
+  all: number;
+  ministry: number;
+  authored: number;
+}
+
+/** Jeden egzamin MS: arkusz jednej aplikacji z jednego roku. */
+export interface ExamSheet {
+  /** Numer arkusza; z nim startuje egzamin. */
+  id: number;
+  year: number;
+  /** Ile pytań będzie na egzaminie (bez zawieszonych w testach, najwyżej 150). */
+  questionCount: number;
+}
+
+/** Aplikacja z arkuszami egzaminów MS (od najnowszego roku). */
+export interface ExamSheetApplication {
+  trackId: number;
+  slug: string;
+  name: string;
+  /** Skrót aplikacji, np. „Notarialna": taki jak w nazwach arkuszy. */
+  shortName: string;
+  /** Czy to aplikacja wybrana przez użytkownika (taka jest na liście pierwsza). */
+  own: boolean;
+  sheets: ExamSheet[];
+}
+
+/** Egzaminy MS do wyboru: tylko aplikacje i arkusze, z których da się teraz ułożyć egzamin. */
+export interface ExamSheets {
+  applications: ExamSheetApplication[];
 }
 
 export interface ExamAttempt {
@@ -92,8 +131,23 @@ export interface ExamResult {
   questions: ExamQuestionResult[];
 }
 
-export async function startExam(): Promise<ExamStart> {
-  const res = await api.post<ExamStart>("/api/exams/start");
+/**
+ * Rozpoczyna egzamin. Z `sheetId` (numer arkusza z `getExamSheets`) to cały egzamin MS z wybranego roku, w oryginalnej
+ * kolejności; wtedy źródło jest pomijane. Bez niego serwer losuje pytania z wybranego źródła.
+ */
+export async function startExam(source: SourceMode = "ALL", sheetId?: number): Promise<ExamStart> {
+  const params = sheetId === undefined ? { source } : { source, sheetId };
+  const res = await api.post<ExamStart>("/api/exams/start", null, { params });
+  return res.data;
+}
+
+export async function getExamSheets(): Promise<ExamSheets> {
+  const res = await api.get<ExamSheets>("/api/exams/sheets");
+  return res.data;
+}
+
+export async function getExamAvailability(): Promise<ExamAvailability> {
+  const res = await api.get<ExamAvailability>("/api/exams/availability");
   return res.data;
 }
 

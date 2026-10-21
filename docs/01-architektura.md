@@ -63,10 +63,10 @@ port-fe/
 | `account` | 8 | Ekran Konto: zmiana hasła, pobranie danych, usunięcie konta, wywołania serwera, dane zalogowanego konta (`useMe`) |
 | `admin` | 1 | Przyciski „Ukryj pytanie” i „Ukryj fiszkę” (tylko dla administratora) |
 | `auth` | 6 | Pola formularzy logowania, „wyślij link ponownie”, odczyt roli z tokenu, czyszczenie sesji |
-| `customTest` | 12 | Kreator testu (dwa kroki: źródło i przepisy z rozdziałami, potem rodzaj i liczba pytań), model wyboru (akty, rozdziały, przedmioty), pamięć ostatniego wyboru; „Moje testy” (lista, szczegóły, ułożenie ponownie z tymi samymi ustawieniami) |
+| `customTest` | 11 | Kreator testu (jedna strona `TestBuilderPage`: źródło, przepisy z rozdziałami, rodzaj i liczba pytań, z przyklejonym podsumowaniem), model wyboru (akty, rozdziały, przedmioty), pamięć ostatniego wyboru; „Moje testy” (lista, szczegóły, ułożenie ponownie z tymi samymi ustawieniami) |
 | `dashboard` | 6 | Pulpit: karta „Na dziś” z jednym głównym przyciskiem, „Postęp”, wynik egzaminu próbnego |
 | `difficult` | 4 | Trudne i zawieszone pytania: podpowiedź, zawieszanie, lista w Koncie |
-| `exam` | 8 | Egzamin próbny: ustawienia, przebieg z zegarem, raport, historia, zapis w przeglądarce |
+| `exam` | 10 | Egzamin próbny: ustawienia (źródło pytań, wybór egzaminu MS: aplikacja i rok), przebieg z zegarem, raport, historia, zapis w przeglądarce |
 | `flashcards` | 2 | Ekran Fiszki (powtórki na dziś i nauka z wybranego zakresu) oraz „Dodaj do fiszek” przy pytaniu |
 | `interface` | 1 | Ustawienia interfejsu zapisane na koncie: ukrycie podpowiedzi skrótów klawiszowych i licznika czasu pytania (hooki) |
 | `landing` | 17 | Strona główna: sekcje, teksty, demo pytania, ilustracja |
@@ -82,7 +82,7 @@ port-fe/
 | `studytime` | 3 | Czas nauki: licznik na ekranach nauki (tylko przy widocznej karcie, pauza po 3 minutach bez ruchu) i wysyłanie porcji co ok. 30 s |
 | `tests` | 11 | Ekran Testów (pasek zaległych, „Losuj z całej puli”, rodzaje testu, szybkie zestawy), grupowanie aktów pod dziedzinami i przedmiotami, tasowanie odpowiedzi |
 
-W repozytorium jest łącznie 203 pliki w `src/`.
+W repozytorium jest łącznie 206 plików w `src/`.
 
 ### Dlaczego strony są w dwóch miejscach
 
