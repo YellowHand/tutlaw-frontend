@@ -1,11 +1,11 @@
 /**
  * Źródło pytania: arkusz egzaminu wstępnego jednej aplikacji w danym roku albo pytania autorskie. Kody takie same jak
- * w backendzie (enum SourceKind i grupy filtra źródeł), polskie etykiety tylko tutaj.
+ * w backendzie (enum SourceKind i grupy źródeł w statystykach), polskie etykiety tylko tutaj.
  */
 export type SourceKind = "EXAM_SHEET" | "AUTHORED";
 
 /**
- * Trzy grupy filtra źródeł w Testach:
+ * Trzy grupy źródeł w statystykach (w Testach źródło wybiera się osobno przy teście: patrz sourceMode.ts):
  * - OWN_SHEETS: arkusze wybranej ścieżki,
  * - OTHER_SHEETS: arkusze innych ścieżek (pytania z tych samych aktów, tylko z cudzego egzaminu),
  * - AUTHORED: pytania autorskie.
@@ -18,13 +18,6 @@ export const SOURCE_GROUP_LABELS: Record<SourceGroup, string> = {
   OWN_SHEETS: "Moje arkusze",
   OTHER_SHEETS: "Arkusze innych ścieżek",
   AUTHORED: "Pytania autorskie",
-};
-
-/** Dłuższy opis grupy do okna „Pula pytań". */
-export const SOURCE_GROUP_HINTS: Record<SourceGroup, string> = {
-  OWN_SHEETS: "Pytania z egzaminów wstępnych Twojej ścieżki.",
-  OTHER_SHEETS: "Pytania z egzaminów innych aplikacji, z aktów prawnych Twojej puli.",
-  AUTHORED: "Pytania napisane w Gradus iuris, w tym paremie łacińskie.",
 };
 
 /**

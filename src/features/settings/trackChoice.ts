@@ -6,9 +6,8 @@ import { invalidateAfterPoolChange, POOL_KEY } from "../pool/hooks";
 import { LEARNING_SETTINGS_KEY } from "./hooks";
 
 /**
- * Po wyborze ścieżki serwer zmienia pulę pytań (akty ścieżki albo własne arkusze), zdejmuje zawężenie do aktów i
- * przywraca domyślny filtr źródeł, więc odświeżamy wszystko, co liczy pytania: pulę, katalog Testów, liczniki
- * powtórek i błędów, własny test oraz statystyki.
+ * Po wyborze ścieżki serwer zmienia pulę pytań (akty ścieżki albo własne arkusze) i zdejmuje zawężenie do aktów, więc
+ * odświeżamy wszystko, co liczy pytania: pulę, katalog Testów, liczniki powtórek i błędów, kreator testu oraz statystyki.
  */
 export function refreshAfterTrackChosen(queryClient: QueryClient, settings: LearningSettings): void {
   queryClient.setQueryData(LEARNING_SETTINGS_KEY, settings);

@@ -1,32 +1,34 @@
-import type { CustomTestKind } from "../../api/customTest";
+import { CUSTOM_TEST_KINDS, type CustomTestKind } from "../../api/customTest";
+import { isSourceMode, type SourceMode } from "../../lib/sourceMode";
 
 /**
- * Ostatnio ułożony własny test, żeby formularz pamiętał wybór (wygoda, jak przy ustawieniach egzaminu).
- * Wszystkie operacje są w try/catch: bez dostępu do pamięci przeglądarki ekran działa, tylko od zera.
+ * Ostatnio ułożony test „Nauka", żeby kreator pamiętał wybór (wygoda, jak przy ustawieniach egzaminu).
+ * Wszystkie operacje są w try/catch: bez dostępu do pamięci przeglądarki kreator działa, tylko od zera.
  * Klucz zaczyna się od „gradus.", więc znika przy wylogowaniu (zob. clearSession).
  */
-// v3: zakres to akty prawne (aplikacje) albo przedmioty (Student); `mode` mówi, który z nich, bo numery się pokrywają.
-const SETTINGS_KEY = "gradus.customTest.v3";
-
-/** Z czego składa się zapamiętany wybór: akty prawne użytkownika aplikacji albo przedmioty Studenta. */
-export type RememberedMode = "acts" | "courses";
+// v4: źródło pytań wybiera się przy każdym teście, a zakres to akty i rozdziały (też u Studenta, który widzi je w przedmiotach).
+const SETTINGS_KEY = "gradus.customTest.v4";
 
 export interface RememberedCustomTest {
-  version: 3;
-  mode: RememberedMode;
-  /** Zaznaczono wszystko: wtedy nowe pozycje też są zaznaczone, zamiast ginąć z listą numerów. */
+  version: 4;
+  source: SourceMode;
+  /** Wybrano całą pulę (bez wskazywania przepisów): nowe akty też wchodzą do testu, zamiast ginąć z listą numerów. */
   all: boolean;
-  /** Numery zaznaczonych aktów prawnych albo przedmiotów (zależnie od `mode`); przy `all` pusta. */
-  ids: number[];
+  /** Numery aktów zaznaczonych w całości; przy `all` pusta. */
+  actIds: number[];
+  /** Numery rozdziałów zaznaczonych osobno; przy `all` pusta. */
+  sectionIds: number[];
   kind: CustomTestKind;
   /** Wybrana liczba pytań (10, 20, 50, 100, 150) albo „all" dla „Wszystkie". */
   questionCount: number | "all";
 }
 
-export const KINDS: readonly CustomTestKind[] = ["ALL", "NEW", "MISTAKES", "DUE", "LAW_CHANGE"];
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isIdList(value: unknown): value is number[] {
+  return Array.isArray(value) && value.every((id) => typeof id === "number");
 }
 
 export function loadRemembered(): RememberedCustomTest | null {
@@ -36,20 +38,21 @@ export function loadRemembered(): RememberedCustomTest | null {
     const v: unknown = JSON.parse(raw);
     if (
       isRecord(v) &&
-      v.version === 3 &&
-      (v.mode === "acts" || v.mode === "courses") &&
+      v.version === 4 &&
+      isSourceMode(v.source) &&
       typeof v.all === "boolean" &&
-      Array.isArray(v.ids) &&
-      v.ids.every((id) => typeof id === "number") &&
+      isIdList(v.actIds) &&
+      isIdList(v.sectionIds) &&
       typeof v.kind === "string" &&
-      (KINDS as readonly string[]).includes(v.kind) &&
+      (CUSTOM_TEST_KINDS as readonly string[]).includes(v.kind) &&
       (typeof v.questionCount === "number" || v.questionCount === "all")
     ) {
       return {
-        version: 3,
-        mode: v.mode,
+        version: 4,
+        source: v.source,
         all: v.all,
-        ids: v.ids as number[],
+        actIds: v.actIds,
+        sectionIds: v.sectionIds,
         kind: v.kind as CustomTestKind,
         questionCount: v.questionCount as number | "all",
       };
@@ -64,6 +67,6 @@ export function saveRemembered(settings: RememberedCustomTest): void {
   try {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   } catch {
-    // Brak miejsca albo tryb prywatny: ekran działa dalej, tylko bez zapamiętywania wyboru.
+    // Brak miejsca albo tryb prywatny: kreator działa dalej, tylko bez zapamiętywania wyboru.
   }
 }

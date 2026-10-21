@@ -21,7 +21,6 @@ export interface LearningSettings {
   track: Track | null;
   /** Termin egzaminu wybranej aplikacji (RRRR-MM-DD, ustawia go administrator) albo null = nieogłoszony / Student / brak wyboru. */
   examDate: string | null;
-  shuffleOptions: boolean;
   /** Wygląd aplikacji zapisany na koncie (domyślnie ciemny). */
   theme: Theme;
   daysToExam: number | null;
@@ -60,7 +59,6 @@ export interface LearningSettingsUpdate {
   newTestQuestionsPerDay: number | null;
   maxReviewsPerDay: number | null;
   desiredRetention: number | null;
-  shuffleOptions: boolean;
 }
 
 export async function getLearningSettings(): Promise<LearningSettings> {
@@ -75,7 +73,7 @@ export async function updateLearningSettings(update: LearningSettingsUpdate): Pr
 
 /**
  * Wybór ścieżki: aplikacji albo Studenta. Od ścieżki zależy pula pytań (własne arkusze albo akty prawne ścieżki)
- * i termin egzaminu. Zmiana ścieżki zdejmuje zawężenie puli do aktów i przywraca domyślny filtr źródeł.
+ * i termin egzaminu. Zmiana ścieżki zdejmuje zawężenie puli do aktów.
  */
 export async function chooseTrack(trackId: number): Promise<LearningSettings> {
   const res = await api.put<LearningSettings>("/api/me/track", { trackId });

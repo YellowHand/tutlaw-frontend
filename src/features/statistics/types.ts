@@ -95,7 +95,7 @@ export interface SourceGroupEntry {
   sources: SourceEntry[];
 }
 
-/** Statystyki Testów według źródła: zawsze trzy grupy, bez filtra źródeł z Testów i bez zawężenia do aktów. */
+/** Statystyki Testów według źródła: zawsze trzy grupy, niezależnie od źródła wybieranego w teście i bez zawężenia do aktów. */
 export interface SourceStats {
   groups: SourceGroupEntry[];
 }

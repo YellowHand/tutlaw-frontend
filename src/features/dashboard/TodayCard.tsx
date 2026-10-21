@@ -139,8 +139,8 @@ function TodayActions({ action }: { action: ReturnType<typeof pickTodayAction> }
         </Link>
       )}
       {action.kind === "all-done" && (
-        <Link to={ROUTES.customTest} className={QUIET_BUTTON}>
-          Ułóż własny test
+        <Link to={ROUTES.tests} className={QUIET_BUTTON}>
+          Ułóż test
         </Link>
       )}
 

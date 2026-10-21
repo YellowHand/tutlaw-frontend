@@ -24,14 +24,11 @@ const FlashcardsPage = lazy(() =>
 const StudySessionPage = lazy(() => import("../pages/StudySessionPage").then((m) => ({ default: m.StudySessionPage })));
 const TestSessionPage = lazy(() => import("../pages/TestSessionPage").then((m) => ({ default: m.TestSessionPage })));
 const ExamPage = lazy(() => import("../features/exam/ExamPage").then((m) => ({ default: m.ExamPage })));
-const CustomTestPage = lazy(() => import("../features/customTest/CustomTestPage").then((m) => ({ default: m.CustomTestPage })));
 const MyTestsPage = lazy(() => import("../features/customTest/MyTestsPage").then((m) => ({ default: m.MyTestsPage })));
 const MyTestDetailPage = lazy(() =>
   import("../features/customTest/MyTestDetailPage").then((m) => ({ default: m.MyTestDetailPage }))
 );
 const TestsPage = lazy(() => import("../features/tests/TestsPage").then((m) => ({ default: m.TestsPage })));
-const TestFieldPage = lazy(() => import("../features/tests/TestFieldPage").then((m) => ({ default: m.TestFieldPage })));
-const TestCoursePage = lazy(() => import("../features/tests/TestCoursePage").then((m) => ({ default: m.TestCoursePage })));
 const StatisticsPage = lazy(() => import("../features/statistics/StatisticsPage").then((m) => ({ default: m.StatisticsPage })));
 const AccountPage = lazy(() => import("../features/account/AccountPage").then((m) => ({ default: m.AccountPage })));
 
@@ -64,14 +61,15 @@ export function Router() {
                 <Route path="test/due" element={<TestSessionPage mode="due" />} />
                 <Route path="test/practice" element={<TestSessionPage mode="practice" />} />
                 <Route path="test/custom" element={<TestSessionPage mode="custom" />} />
-                <Route path="custom-test" element={<CustomTestPage />} />
+                {/* Dawny ekran „Własny test": kreator jest teraz w Testach (stare zakładki i linki trafiają tam) */}
+                <Route path="custom-test" element={<Navigate to="/app/tests" replace />} />
                 <Route path="custom-test/history" element={<MyTestsPage />} />
                 <Route path="custom-test/history/:id" element={<MyTestDetailPage />} />
                 <Route path="exam" element={<ExamPage />} />
 
                 <Route path="tests" element={<TestsPage />} />
-                <Route path="tests/subject/:courseId" element={<TestCoursePage />} />
-                <Route path="tests/:fieldId" element={<TestFieldPage />} />
+                {/* Dawne strony dziedziny i przedmiotu: wybór zakresu jest w kreatorze */}
+                <Route path="tests/*" element={<Navigate to="/app/tests" replace />} />
 
                 <Route path="statistics" element={<StatisticsPage />} />
                 <Route path="account" element={<AccountPage />} />

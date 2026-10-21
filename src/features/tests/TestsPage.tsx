@@ -1,86 +1,90 @@
-import { BookOpen, FolderOpen } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { History } from "lucide-react";
 import { PageHeader } from "../../components/layout/PageHeader";
-import { EmptyState } from "../../components/ui/EmptyState";
-import { ErrorState } from "../../components/ui/ErrorState";
-import { Skeleton } from "../../components/ui/Skeleton";
 import { ROUTES } from "../../config/routes";
-import { PoolChip } from "../pool/PoolChip";
+import { TestWizard, type WizardFlavor } from "../customTest/TestWizard";
+import { readPrefill, type CustomTestPrefill } from "../customTest/prefill";
+import { usePool } from "../pool/hooks";
 import { useDueCount } from "../review/hooks";
-import { CatalogTile, TileGrid } from "./CatalogTile";
-import { DueReviewsCard } from "./DueReviewsCard";
-import { fieldIconFor } from "./fieldIcon";
-import { describeActs, describeCourseActs } from "./format";
-import { useTestCatalog } from "./hooks";
-import { QuickStart } from "./QuickStart";
-import { SourcesSection } from "./SourcesSection";
+import { DrawFromPoolCard } from "./DrawFromPoolCard";
+import { DueBar } from "./DueBar";
+import { formatCount } from "./format";
+import { QuickSets } from "./QuickSets";
+import { TestKindCards } from "./TestKindCards";
+
+interface WizardState {
+  flavor: WizardFlavor;
+  prefill: CustomTestPrefill | null;
+}
 
 /**
- * Poziom 1. Użytkownik aplikacji widzi dziedziny prawa, a w każdej tylko akty swojej puli (ścieżka, zawężenie i filtr
- * źródeł; dziedzinę bez aktów w puli backend pomija). Pod dziedzinami: te same pytania według źródła.
- * Student widzi przedmioty (te, które wybrał, albo wszystkie) i nie widzi źródeł: jego pytania to akty przypisane do przedmiotów.
+ * Testy: od góry pasek „do powtórki" (jedyny ze złotą obwódką), „Losuj z całej puli" (liczba pytań i Start), trzy rodzaje
+ * testu do ułożenia (Nauka, Powtórki, Egzamin próbny) i szybkie zestawy (błędy, zmiany w prawie, nowe pytania), które
+ * zaczynają się od razu. Nauka i Powtórki otwierają kreator w oknie: źródło pytań, przepisy z rozdziałami, liczba pytań.
+ * Kreator otwiera się też od razu, gdy ktoś tu wraca z gotowymi ustawieniami (Moje testy, Pulpit) w stanie nawigacji.
  */
 export function TestsPage() {
-  const { data, isLoading, isError, refetch } = useTestCatalog();
+  const location = useLocation();
+  const navigate = useNavigate();
   // To samo zapytanie co odznaka „Testy" w menu, więc nie kosztuje dodatkowego żądania. Błąd po prostu nic nie dopisuje.
   const { data: dueTests } = useDueCount("TEST");
-  const subjects = data?.courses ?? [];
-  const studentView = subjects.length > 0;
+  const pool = usePool().data;
+  const dueCount = dueTests ?? 0;
+
+  const [wizard, setWizard] = useState<WizardState | null>(() => {
+    const prefill = readPrefill(location.state);
+    return prefill ? { flavor: prefill.kind === "DUE" ? "REVIEW" : "STUDY", prefill } : null;
+  });
+
+  // Ustawienia ze stanu nawigacji zużywamy raz: po odświeżeniu strony kreator nie ma się otwierać ponownie.
+  const hasLaunchState = readPrefill(location.state) !== null;
+  useEffect(() => {
+    if (hasLaunchState) navigate(location.pathname, { replace: true, state: null });
+  }, [hasLaunchState, location.pathname, navigate]);
 
   return (
     <div>
-      <PageHeader title="Testy" actions={<PoolChip />} />
+      <PageHeader
+        title="Testy"
+        subtitle="Wybierz, co chcesz zrobić. Resztę ustawisz w następnym kroku."
+        actions={
+          <Link
+            to={ROUTES.myTests}
+            data-testid="my-tests-link"
+            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line bg-surface px-4 text-sm transition-colors hover:bg-surface-2"
+          >
+            <History size={16} aria-hidden="true" className="text-fg-muted" />
+            Moje testy
+          </Link>
+        }
+      />
 
-      <div className="flex flex-col gap-6 px-4 pb-8 sm:px-8">
-        <DueReviewsCard count={dueTests ?? 0} />
+      <div className="flex max-w-[1080px] flex-col gap-6 px-4 pb-8 sm:gap-7 sm:px-8">
+        {pool?.narrowed && (
+          <p data-testid="narrowed-note" className="rounded-xl border border-line bg-surface-2 px-4 py-3 text-sm text-fg-muted">
+            Uczysz się z wybranego zakresu: {formatCount(pool.questionCount)} pytań. Zmienisz to w{" "}
+            <Link to={ROUTES.account} className="text-accent-ink underline underline-offset-2">
+              Koncie
+            </Link>
+            .
+          </p>
+        )}
 
-        <QuickStart />
+        <DueBar count={dueCount} />
 
-        <section aria-labelledby="test-fields" className="flex flex-col gap-3">
-          <h2 id="test-fields" className="text-sm font-medium text-fg-muted">
-            {studentView ? "Wybierz przedmiot" : "Wybierz dziedzinę"}
-          </h2>
+        <DrawFromPoolCard />
 
-          {isLoading ? (
-            <TileGrid>
-              {[0, 1, 2, 3, 4, 5].map((i) => (
-                <Skeleton key={i} className="h-36 w-full" />
-              ))}
-            </TileGrid>
-          ) : isError || !data ? (
-            <ErrorState message="Nie udało się pobrać listy testów." onRetry={() => refetch()} />
-          ) : studentView ? (
-            <TileGrid>
-              {subjects.map((course) => (
-                <CatalogTile
-                  key={course.id}
-                  to={ROUTES.testsCourse(course.id)}
-                  icon={BookOpen}
-                  title={course.name}
-                  subtitle={describeCourseActs(course.actIds.length)}
-                  counts={course}
-                />
-              ))}
-            </TileGrid>
-          ) : data.fields.length === 0 ? (
-            <EmptyState icon={FolderOpen} title="Brak testów" description="Wkrótce pojawią się tu pytania." />
-          ) : (
-            <TileGrid>
-              {data.fields.map((field) => (
-                <CatalogTile
-                  key={field.id}
-                  to={ROUTES.testsField(field.id)}
-                  icon={fieldIconFor(field.slug)}
-                  title={field.name}
-                  subtitle={describeActs(field.acts)}
-                  counts={field}
-                />
-              ))}
-            </TileGrid>
-          )}
-        </section>
+        <TestKindCards
+          dueCount={dueCount}
+          onStudy={() => setWizard({ flavor: "STUDY", prefill: null })}
+          onReview={() => setWizard({ flavor: "REVIEW", prefill: null })}
+        />
 
-        {data && !studentView && <SourcesSection sources={data.sources} />}
+        <QuickSets />
       </div>
+
+      {wizard && <TestWizard flavor={wizard.flavor} prefill={wizard.prefill} onClose={() => setWizard(null)} />}
     </div>
   );
 }

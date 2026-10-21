@@ -8,9 +8,7 @@ import { Field } from "../../components/ui/Field";
 import { ROUTES } from "../../config/routes";
 import { serverMessage } from "../../lib/errors";
 import { pluralizePl } from "../../lib/plural";
-import { PoolChip } from "../pool/PoolChip";
 import { usePool } from "../pool/hooks";
-import { hiddenGroups } from "../pool/summary";
 import { EXAM_PASS_POINTS, EXAM_QUESTION_COUNT, formatClock } from "./format";
 import { loadRememberedSettings, saveRememberedSettings, type ExamDraft } from "./examStorage";
 import { ExamHistory } from "./ExamHistory";
@@ -40,9 +38,9 @@ interface ExamSetupProps {
 
 /**
  * Ekran przed egzaminem. Format jest stały: 150 pytań z całej puli ścieżki, zaliczenie od 100 punktów (losuje i liczy
- * serwer), więc do ustawienia zostaje tylko limit czasu. Egzamin ignoruje zawężenie puli do wybranych aktów (losuje
- * z wszystkich aktów ścieżki), ale respektuje filtr źródeł. Ćwiczenie z wybranego działu to osobny „Własny test",
- * który niczego nie zalicza.
+ * serwer), więc do ustawienia zostaje tylko limit czasu. Egzamin ignoruje zawężenie zakresu nauki do wybranych aktów
+ * (losuje z wszystkich aktów ścieżki) i bierze pytania ze wszystkich źródeł. Ćwiczenie z wybranego działu to osobny
+ * test „Nauka" w Testach, który niczego nie zalicza.
  */
 export function ExamSetup({ draft, onResume, onDiscard, onStarted }: ExamSetupProps) {
   const poolQuery = usePool();
@@ -62,7 +60,6 @@ export function ExamSetup({ draft, onResume, onDiscard, onStarted }: ExamSetupPr
   // z większej puli, a serwer nie podaje jej liczby. Wtedy nie zgadujemy i niczego nie blokujemy.
   const pool = poolQuery.data;
   const narrowed = pool?.narrowed ?? false;
-  const filterActive = pool !== undefined && hiddenGroups(pool).length > 0;
   const catalogKnown = pool !== undefined && !narrowed;
   const available = catalogKnown ? pool.questionCount : 0;
   const nothingAvailable = catalogKnown && available === 0;
@@ -123,25 +120,18 @@ export function ExamSetup({ draft, onResume, onDiscard, onStarted }: ExamSetupPr
           </li>
         </ul>
 
-        <PoolChip className="mb-2" />
         <p className="mb-5 max-w-xl text-xs text-fg-muted">
           {poolQuery.isError
             ? "Nie udało się sprawdzić, ile jest dostępnych pytań."
             : pool === undefined
               ? "Sprawdzam, ile jest dostępnych pytań…"
               : narrowed
-                ? "Egzamin losuje z wszystkich aktów Twojej ścieżki, także tych, których nie masz zaznaczonych w puli. Źródła pytań zależą od filtra w oknie „Pula pytań”."
+                ? "Egzamin losuje z wszystkich aktów Twojej ścieżki, także tych, które masz wyłączone w zakresie nauki (Konto)."
                 : nothingAvailable
-                  ? filterActive
-                    ? "Nie ma pytań z wybranych źródeł. Zmień filtr w oknie „Pula pytań”."
-                    : "Nie ma teraz pytań testowych."
+                  ? "Nie ma teraz pytań testowych."
                   : shortExam
-                    ? `Do wylosowania jest tylko ${available} ${questionsWord(available)}${
-                        filterActive ? " z wybranych źródeł" : ""
-                      }, więc egzamin będzie krótszy, a próg zaliczenia proporcjonalnie niższy.`
-                    : `Do wylosowania: ${available} ${questionsWord(available)}${
-                        filterActive ? " z wybranych źródeł" : ""
-                      } (bez pytań zawieszonych przez Ciebie w testach).`}
+                    ? `Do wylosowania jest tylko ${available} ${questionsWord(available)}, więc egzamin będzie krótszy, a próg zaliczenia proporcjonalnie niższy.`
+                    : `Do wylosowania: ${available} ${questionsWord(available)} (bez pytań zawieszonych przez Ciebie w testach).`}
         </p>
 
         <form onSubmit={handleSubmit} noValidate className="flex max-w-xl flex-col gap-5" aria-describedby={error ? formErrorId : undefined}>
@@ -194,10 +184,10 @@ export function ExamSetup({ draft, onResume, onDiscard, onStarted }: ExamSetupPr
               {starting ? "Losuję pytania…" : "Rozpocznij egzamin"}
             </Button>
             <Link
-              to={ROUTES.customTest}
+              to={ROUTES.tests}
               className="inline-flex min-h-11 items-center rounded-lg px-1 text-sm text-fg-muted underline hover:text-fg"
             >
-              Chcesz poćwiczyć jeden dział? Ułóż własny test
+              Chcesz poćwiczyć jeden dział? Ułóż test w Testach
             </Link>
           </div>
         </form>

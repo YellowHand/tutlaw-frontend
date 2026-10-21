@@ -37,10 +37,14 @@ export function LimitNotice({ issue, withSettingsLink = true, className }: { iss
       ) : (
         <span>
           Wszystkich nowych pytań nie zdążysz zacząć przed ostatnimi dwoma tygodniami: trzeba by {needed(issue.required)} dziennie, a{" "}
-          {issue.max} dziennie to rozsądne maksimum.{issue.auto ? ` Limit ustawiliśmy na ${issue.max}.` : ""} Zawęź pulę, np. w oknie{" "}
-          <Link to={ROUTES.tests} className={LINK}>
-            „Pula pytań” w Testach
-          </Link>
+          {issue.max} dziennie to rozsądne maksimum.{issue.auto ? ` Limit ustawiliśmy na ${issue.max}.` : ""} Zawęź pulę, np. w{" "}
+          {withSettingsLink ? (
+            <Link to={ROUTES.account} className={LINK}>
+              Zakresie nauki w Koncie
+            </Link>
+          ) : (
+            "karcie „Zakres nauki” poniżej"
+          )}
           , albo skup się na tym, co najważniejsze.
         </span>
       )}

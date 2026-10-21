@@ -25,7 +25,7 @@ const ALL = "ALL" as const;
 /**
  * „Opanowanie pytań": ile pytań jest opanowanych, ile w nauce, a ile nowych, dla jednej grupy źródeł (moje arkusze,
  * arkusze innych ścieżek, pytania autorskie) albo całej puli, z rozbiciem na arkusze i z wyjaśnieniem, co znaczy
- * „opanowane". Nie zależy od filtra źródeł z Testów ani od zawężenia puli do aktów. Domyślnie pokazuje moje arkusze,
+ * „opanowane". Nie zależy od źródła wybranego w teście ani od zawężenia puli do aktów. Domyślnie pokazuje moje arkusze,
  * a gdy ich nie ma (Student), całą pulę.
  */
 export function MasterySection() {
@@ -57,7 +57,7 @@ export function MasterySection() {
           <h2 className="text-lg font-semibold">Opanowanie pytań</h2>
           <p className="mt-1 max-w-prose text-sm text-fg-muted">
             Ile pytań masz już mocno w głowie, ile jest w trakcie nauki, a ile jeszcze nietkniętych. Liczby obejmują całą
-            pulę Twojej ścieżki, niezależnie od filtra źródeł w Testach.
+            pulę Twojej ścieżki, niezależnie od tego, z jakiego źródła układasz test.
           </p>
         </div>
         {/* Na telefonie podpis nad listą, a lista na całą szerokość: nazwy grup są długie. */}

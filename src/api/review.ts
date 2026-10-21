@@ -4,7 +4,7 @@ import type { LawChange } from "../lib/lawChange";
 
 /**
  * Zakres sesji, od najwęższego: źródło (arkusz), akt prawny, dziedzina. Bez żadnego z nich serwer bierze całą pulę
- * użytkownika. Zakres liczy się razem z pulą (ścieżka, zawężenie do aktów, filtr źródeł).
+ * użytkownika. Zakres liczy się razem z pulą (ścieżka i zawężenie do aktów).
  */
 export interface ReviewScope {
   fieldId?: number;

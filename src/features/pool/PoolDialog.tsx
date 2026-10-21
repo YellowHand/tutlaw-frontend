@@ -1,32 +1,18 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { Link } from "react-router-dom";
-import type { Pool, PoolCourse, PoolField, SourceFilterUpdate } from "../../api/pool";
+import type { Pool, PoolCourse, PoolField } from "../../api/pool";
 import { Button } from "../../components/ui/Button";
 import { Dialog } from "../../components/ui/Dialog";
-import { ROUTES } from "../../config/routes";
 import { cn } from "../../lib/cn";
 import { serverMessage } from "../../lib/errors";
-import { SOURCE_GROUP_HINTS, SOURCE_GROUP_LABELS, SOURCE_GROUP_ORDER, type SourceGroup } from "../../lib/source";
 import { formatCount } from "../tests/format";
-import { useUpdatePoolActs, useUpdatePoolCourses, useUpdateSourceFilter } from "./hooks";
+import { useUpdatePoolActs, useUpdatePoolCourses } from "./hooks";
 import { allActIds, allCourseIds, isStudentPool, questionsWord, selectedActIds, selectedCourseIds } from "./summary";
 
 interface PoolDialogProps {
   pool: Pool;
   onClose: () => void;
   returnFocusTo: React.RefObject<HTMLElement | null>;
-}
-
-type GroupChoice = Record<SourceGroup, boolean>;
-
-function groupChoice(pool: Pool): GroupChoice {
-  const byCode = new Map(pool.sourceGroups.map((group) => [group.code, group.selected]));
-  return {
-    OWN_SHEETS: byCode.get("OWN_SHEETS") ?? true,
-    OTHER_SHEETS: byCode.get("OTHER_SHEETS") ?? true,
-    AUTHORED: byCode.get("AUTHORED") ?? true,
-  };
 }
 
 function sameSet(a: ReadonlySet<number>, b: readonly number[]): boolean {
@@ -62,31 +48,25 @@ function TriCheckbox({
 }
 
 /**
- * Okno „Pula pytań". Montowane tylko, gdy jest otwarte, więc za każdym razem startuje od zapisanej puli.
- * Dwie niezależne rzeczy: z czego uczy się użytkownik (aplikacja: akty prawne ścieżki, Student: przedmioty; zawężenie
- * trwałe, nie dotyczy egzaminu próbnego) i które grupy źródeł dają pytania w Testach (moje arkusze, arkusze innych
- * ścieżek, pytania autorskie). Student nie widzi aktów: przedmiot to dla niego najmniejsza jednostka.
+ * Okno „Zakres nauki" (otwierane z karty w Koncie). Montowane tylko, gdy jest otwarte, więc za każdym razem startuje od
+ * zapisanego zakresu. Wybiera, z czego uczy się użytkownik: aplikacja z aktów prawnych ścieżki, Student z przedmiotów
+ * (zawężenie trwałe, nie dotyczy egzaminu próbnego). Źródło pytań i rozdziały wybiera się osobno przy każdym teście.
+ * Student nie widzi aktów: przedmiot to dla niego najmniejsza jednostka.
  */
 export function PoolDialog({ pool, onClose, returnFocusTo }: PoolDialogProps) {
   const isStudent = isStudentPool(pool);
   // Zakres to numery aktów (aplikacja) albo przedmiotów (Student): jeden zbiór, bo w oknie jest tylko jedno z nich.
   const base = isStudent ? allCourseIds(pool) : allActIds(pool);
   const saved = isStudent ? selectedCourseIds(pool) : selectedActIds(pool);
-  const savedGroups = groupChoice(pool);
   const [chosen, setChosen] = useState<ReadonlySet<number>>(() => new Set(saved));
-  const [groups, setGroups] = useState<GroupChoice>(savedGroups);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const updateActs = useUpdatePoolActs();
   const updateCourses = useUpdatePoolCourses();
-  const updateFilter = useUpdateSourceFilter();
   const hintId = useId();
 
   const noScope = chosen.size === 0;
-  const noGroup = !groups.OWN_SHEETS && !groups.OTHER_SHEETS && !groups.AUTHORED;
-  const scopeChanged = !sameSet(chosen, saved);
-  const groupsChanged = SOURCE_GROUP_ORDER.some((code) => groups[code] !== savedGroups[code]);
-  const unchanged = !scopeChanged && !groupsChanged;
+  const unchanged = sameSet(chosen, saved);
   const everything = chosen.size === base.length;
   const scopeNoun = isStudent ? "przedmiot" : "akt prawny";
 
@@ -102,45 +82,27 @@ export function PoolDialog({ pool, onClose, returnFocusTo }: PoolDialogProps) {
   }
 
   async function handleSave() {
-    if (noScope || noGroup || unchanged || saving) return;
+    if (noScope || unchanged || saving) return;
     setSaving(true);
     setError(null);
     try {
-      if (scopeChanged) {
-        const ids = everything ? [] : [...chosen];
-        if (isStudent) await updateCourses.mutateAsync(ids);
-        else await updateActs.mutateAsync(ids);
-      }
-      if (groupsChanged) {
-        const filter: SourceFilterUpdate = {
-          ownSheets: groups.OWN_SHEETS,
-          otherSheets: groups.OTHER_SHEETS,
-          authored: groups.AUTHORED,
-        };
-        await updateFilter.mutateAsync(filter);
-      }
+      const ids = everything ? [] : [...chosen];
+      if (isStudent) await updateCourses.mutateAsync(ids);
+      else await updateActs.mutateAsync(ids);
       onClose();
     } catch (err) {
-      setError(serverMessage(err, "Nie udało się zapisać puli. Spróbuj ponownie."));
+      setError(serverMessage(err, "Nie udało się zapisać zakresu. Spróbuj ponownie."));
       setSaving(false);
     }
   }
 
-  const groupCounts = new Map(pool.sourceGroups.map((group) => [group.code, group.questionCount]));
-  // Student nie ma własnych arkuszy (wszystkie arkusze są dla niego „z innych ścieżek"), więc tej grupy nie pokazujemy.
-  const shownGroups = SOURCE_GROUP_ORDER.filter((code) => !(isStudent && code === "OWN_SHEETS"));
-
   return (
-    <Dialog title="Pula pytań" onClose={onClose} returnFocusTo={returnFocusTo}>
+    <Dialog title="Zakres nauki" onClose={onClose} returnFocusTo={returnFocusTo}>
       {isStudent ? (
         <p className="text-sm text-fg-muted">
           Uczysz się z <span className="font-medium text-fg">przedmiotów</span>, które tu zaznaczysz: dostajesz wszystkie
           pytania z ich aktów prawnych. Zmiana dotyczy Testów, Fiszek i statystyk, ale nie egzaminu próbnego. Postępy
-          zostają, także dla przedmiotów, które odznaczysz.{" "}
-          <Link to={ROUTES.account} onClick={onClose} className="text-accent-ink underline">
-            Zmień ścieżkę w Koncie
-          </Link>
-          .
+          zostają, także dla przedmiotów, które odznaczysz.
         </p>
       ) : (
         <p className="text-sm text-fg-muted">
@@ -152,11 +114,8 @@ export function PoolDialog({ pool, onClose, returnFocusTo }: PoolDialogProps) {
             </>
           ) : null}
           . Uczysz się tylko z aktów, które tu zaznaczysz. Zawężenie dotyczy Testów, Fiszek i statystyk, ale nie egzaminu
-          próbnego.{" "}
-          <Link to={ROUTES.account} onClick={onClose} className="text-accent-ink underline">
-            Zmień ścieżkę w Koncie
-          </Link>
-          .
+          próbnego. Z których źródeł (Ministerstwo, autorskie) i z których rozdziałów mają być pytania, wybierasz osobno
+          przy każdym teście.
         </p>
       )}
 
@@ -189,49 +148,13 @@ export function PoolDialog({ pool, onClose, returnFocusTo }: PoolDialogProps) {
         )}
       </section>
 
-      <fieldset className="flex flex-col gap-1">
-        <legend className="mb-1 text-sm font-semibold">Źródła pytań w Testach</legend>
-        {shownGroups.map((code) => {
-          const count = groupCounts.get(code) ?? 0;
-          const empty = count === 0;
-          return (
-            <label
-              key={code}
-              className={cn(
-                "flex min-h-11 items-center gap-3 rounded-xl px-2",
-                empty ? "cursor-default" : "cursor-pointer hover:bg-surface-2"
-              )}
-            >
-              <input
-                type="checkbox"
-                checked={groups[code]}
-                disabled={empty}
-                onChange={() => setGroups((prev) => ({ ...prev, [code]: !prev[code] }))}
-                className="size-5 shrink-0 cursor-pointer accent-accent-ink disabled:cursor-default"
-              />
-              <span className="flex-1">
-                <span className={cn("block text-sm", empty && "text-fg-muted")}>{SOURCE_GROUP_LABELS[code]}</span>
-                <span className="block text-xs text-fg-muted">{SOURCE_GROUP_HINTS[code]}</span>
-              </span>
-              <span className="text-xs tabular-nums text-fg-muted">
-                {formatCount(count)} {questionsWord(count)}
-              </span>
-            </label>
-          );
-        })}
-      </fieldset>
-
       <div className="flex min-h-5 flex-col gap-1">
         <p
           id={hintId}
           aria-live="polite"
-          className={cn("text-xs", noScope || noGroup ? "text-danger" : "text-fg-muted")}
+          className={cn("text-xs", noScope ? "text-danger" : "text-fg-muted")}
         >
-          {noScope
-            ? `Zaznacz co najmniej jeden ${scopeNoun}.`
-            : noGroup
-              ? "Zaznacz co najmniej jedną grupę pytań."
-              : "Zmiana działa od razu w całej aplikacji."}
+          {noScope ? `Zaznacz co najmniej jeden ${scopeNoun}.` : "Zmiana działa od razu w całej aplikacji."}
         </p>
         {error && (
           <p role="alert" className="text-xs text-danger">
@@ -244,7 +167,7 @@ export function PoolDialog({ pool, onClose, returnFocusTo }: PoolDialogProps) {
         <Button type="button" variant="secondary" onClick={onClose}>
           Anuluj
         </Button>
-        <Button type="button" disabled={noScope || noGroup || unchanged || saving} onClick={() => void handleSave()}>
+        <Button type="button" disabled={noScope || unchanged || saving} onClick={() => void handleSave()}>
           {saving ? "Zapisuję…" : "Zapisz"}
         </Button>
       </div>

@@ -6,6 +6,7 @@ import { useTestStats } from "../statistics/hooks";
 import { useTestCatalog } from "../tests/hooks";
 import { usePool } from "../pool/hooks";
 import { isPoolRestricted } from "../pool/summary";
+import type { CustomTestPrefill } from "../customTest/prefill";
 import { InlineError } from "./InlineError";
 import { percentOf } from "./selectors";
 
@@ -14,7 +15,7 @@ const TEXT_LINK =
 
 /**
  * „Postęp": jeden pasek „Przerobione" (ile pytań z puli zobaczyłeś co najmniej raz) i pod nim dziedziny z postępem, każda
- * prowadzi do Testów tej dziedziny. „Przerobione" to nie „opanowane": pasek rośnie od pierwszego dnia, a opanowanie
+ * otwiera w Testach kreator „Nauka" z tą dziedziną. „Przerobione" to nie „opanowane": pasek rośnie od pierwszego dnia, a opanowanie
  * (które pojawia się dopiero po około dwóch tygodniach) jest opisane w Statystykach.
  */
 export function ProgressCard({ className }: { className?: string }) {
@@ -51,11 +52,15 @@ export function ProgressCard({ className }: { className?: string }) {
   // Aplikacje widzą postęp w dziedzinach, Student w przedmiotach (jego pytania to akty przypisane do przedmiotów).
   const courses = (Array.isArray(catalog.data?.courses) ? catalog.data.courses : []).filter((course) => course.questionCount > 0);
   const studentView = courses.length > 0;
+  // Kliknięcie wiersza otwiera w Testach kreator „Nauka" z tą dziedziną (przedmiotem) już wybraną, od razu na kroku „Pytania i start".
+  const launch = (scope: Pick<CustomTestPrefill, "fieldIds" | "courseIds">): { prefill: CustomTestPrefill } => ({
+    prefill: { actIds: [], sectionIds: [], source: "ALL", kind: "ALL", requestedCount: 20, ...scope },
+  });
   const rows = studentView
-    ? courses.map((course) => ({ ...course, to: ROUTES.testsCourse(course.id) }))
+    ? courses.map((course) => ({ ...course, state: launch({ fieldIds: [], courseIds: [course.id] }) }))
     : (Array.isArray(catalog.data?.fields) ? catalog.data.fields : [])
         .filter((field) => field.questionCount > 0)
-        .map((field) => ({ ...field, to: ROUTES.testsField(field.id) }));
+        .map((field) => ({ ...field, state: launch({ fieldIds: [field.id], courseIds: [] }) }));
 
   return (
     <section aria-labelledby="progress-title" className={frame}>
@@ -86,8 +91,8 @@ export function ProgressCard({ className }: { className?: string }) {
             {pool.data &&
               isPoolRestricted(pool.data) &&
               (studentView
-                ? " Liczymy tylko pytania z Twojej puli (wybrane przedmioty)."
-                : " Liczymy tylko pytania z Twojej puli (wybrane akty i źródła).")}
+                ? " Liczymy tylko pytania z Twojego zakresu nauki (wybrane przedmioty)."
+                : " Liczymy tylko pytania z Twojego zakresu nauki (wybrane akty).")}
           </p>
         </div>
       )}
@@ -97,7 +102,8 @@ export function ProgressCard({ className }: { className?: string }) {
           {rows.map((field) => (
             <li key={field.id}>
               <Link
-                to={field.to}
+                to={ROUTES.tests}
+                state={field.state}
                 className="-mx-2 flex min-h-11 flex-col justify-center gap-1.5 rounded-lg px-2 py-2.5 transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink"
               >
                 <span className="flex items-baseline justify-between gap-3">

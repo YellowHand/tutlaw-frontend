@@ -10,6 +10,7 @@ import { cn } from "../../lib/cn";
 import { formatDateTime, formatDuration } from "../exam/format";
 import { Breadcrumbs } from "../tests/Breadcrumbs";
 import { START_BUTTON } from "../tests/StartButtons";
+import { SOURCE_MODE_LABELS } from "../../lib/sourceMode";
 import { KIND_LABELS } from "./kindLabels";
 import { useCustomTestSessions } from "./sessionsHooks";
 
@@ -19,9 +20,7 @@ export function MyTestsPage() {
 
   return (
     <div>
-      <Breadcrumbs
-        items={[{ label: "Testy", to: ROUTES.tests }, { label: "Własny test", to: ROUTES.customTest }, { label: "Moje testy" }]}
-      />
+      <Breadcrumbs items={[{ label: "Testy", to: ROUTES.tests }, { label: "Moje testy" }]} />
       <PageHeader title="Moje testy" subtitle="Testy, które ułożyłeś. Zaczęty i niedokończony test też zostaje na liście." />
 
       <div className="flex flex-col gap-3 px-4 pb-8 sm:px-8">
@@ -34,7 +33,7 @@ export function MyTestsPage() {
             <p className="text-sm text-fg-muted">
               Nie ułożyłeś jeszcze żadnego testu. Każdy test, który zaczniesz, pojawi się tutaj.
             </p>
-            <Link to={ROUTES.customTest} className={START_BUTTON}>
+            <Link to={ROUTES.tests} className={START_BUTTON}>
               Ułóż test
             </Link>
           </Card>
@@ -69,6 +68,7 @@ function SessionRow({ session }: { session: CustomTestSessionSummary }) {
         <p className="mt-1 truncate text-sm">{session.scopeLabel}</p>
         <p className="mt-0.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-fg-muted">
           <span>{KIND_LABELS[session.kind]}</span>
+          <span>{SOURCE_MODE_LABELS[session.source]}</span>
           <span>{formatDateTime(session.startedAt)}</span>
           {session.answeredCount > 0 && <span>{formatDuration(session.timeSeconds)}</span>}
           {!session.finished && (

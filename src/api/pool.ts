@@ -1,6 +1,5 @@
 import { api } from "./axiosInstance";
 import type { Track } from "./tracks";
-import type { SourceGroup } from "../lib/source";
 
 /** Rodzaj aktu: ACT to ustawa lub rozporządzenie, TOPIC to zagadnienie bez aktu (np. paremie, prawoznawstwo). */
 export type ActKind = "ACT" | "TOPIC";
@@ -33,33 +32,19 @@ export interface PoolCourse {
   selected: boolean;
 }
 
-export interface PoolSourceGroup {
-  code: SourceGroup;
-  selected: boolean;
-  /** Pytania grupy w aktach puli przed filtrem; 0 = grupa nic nie da. */
-  questionCount: number;
-}
-
 /**
- * Pula pytań użytkownika: ścieżka, zawężenie i filtr źródeł. Aplikacja zawęża pulę do aktów (dziedziny z aktami
- * ścieżki), Student do przedmiotów (`courses`; `fields` jest u niego puste).
+ * Zakres nauki użytkownika: ścieżka i zawężenie. Aplikacja zawęża pulę do aktów (dziedziny z aktami ścieżki), Student do
+ * przedmiotów (`courses`; `fields` jest u niego puste). Źródło pytań (Ministerstwo, autorskie) wybiera się przy każdym teście.
  */
 export interface Pool {
   track: Track | null;
   /** Czy użytkownik zawęził pulę do wybranych aktów albo, jako Student, przedmiotów (bez tego obowiązuje wszystko). */
   narrowed: boolean;
-  /** Pytania w puli po zawężeniu i filtrze źródeł. */
+  /** Pytania w puli po zawężeniu (ze wszystkich źródeł). */
   questionCount: number;
   fields: PoolField[];
   /** Przedmioty do wyboru; tylko na ścieżce Student, na pozostałych pusta lista. */
   courses: PoolCourse[];
-  sourceGroups: PoolSourceGroup[];
-}
-
-export interface SourceFilterUpdate {
-  ownSheets: boolean;
-  otherSheets: boolean;
-  authored: boolean;
 }
 
 /** Odpowiedź starszego serwera nie ma `courses`: traktujemy to jak brak przedmiotów (ścieżka aplikacji). */
@@ -81,11 +66,5 @@ export async function updatePoolActs(actIds: number[]): Promise<Pool> {
 /** Student wybiera przedmioty; pusta lista (albo wszystkie przedmioty) zdejmuje wybór, czyli w puli są wszystkie. */
 export async function updatePoolCourses(courseIds: number[]): Promise<Pool> {
   const res = await api.put<Pool>("/api/me/pool/courses", { courseIds });
-  return withCourses(res.data);
-}
-
-/** Filtr źródeł w Testach; co najmniej jedna grupa musi zostać włączona. */
-export async function updateSourceFilter(filter: SourceFilterUpdate): Promise<Pool> {
-  const res = await api.put<Pool>("/api/me/pool/source-filter", filter);
   return withCourses(res.data);
 }

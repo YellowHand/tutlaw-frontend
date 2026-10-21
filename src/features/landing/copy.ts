@@ -3,7 +3,7 @@ import type { DemoAnswer, DemoOutcomeId } from "./demo";
 
 /**
  * Wszystkie teksty strony głównej w jednym miejscu. Fakty o produkcie (tryby, reguły "Nie jestem pewien",
- * FSRS-6, pula pytań i filtr źródeł, eksport danych) odpowiadają temu, co aplikacja naprawdę robi. Bez liczb o
+ * FSRS-6, zakres nauki i źródło pytań w teście, eksport danych) odpowiadają temu, co aplikacja naprawdę robi. Bez liczb o
  * użytkownikach, zdawalności i liczbie pytań: dopisujemy je dopiero, gdy będą prawdziwe.
  * Przy zmianie tekstów twarde spacje (nbsp) dodaje deepNbsp(), więc piszemy zwyczajnie.
  */
@@ -173,7 +173,7 @@ export const COPY = deepNbsp({
       },
       {
         q: "Czy mogę uczyć się tylko do jednej aplikacji?",
-        a: "Tak. Wybierasz ścieżkę, a Gradus układa pulę z jej arkuszy i aktów prawnych. W „Puli pytań” możesz ją zawęzić do wybranych aktów oraz włączyć lub wyłączyć arkusze innych aplikacji i pytania autorskie. Ustawienia zapamiętują się na koncie, więc działają też na innym urządzeniu.",
+        a: "Tak. Wybierasz ścieżkę, a Gradus układa pulę z jej arkuszy i aktów prawnych. W Koncie, w „Zakresie nauki”, możesz ją zawęzić do wybranych aktów, a przy każdym teście wybierasz źródło pytań (wszystkie, Ministerstwo Sprawiedliwości albo autorskie) i rozdziały aktów. Zakres nauki zapamiętuje się na koncie, więc działa też na innym urządzeniu.",
       },
       {
         q: "Czy działa na telefonie?",

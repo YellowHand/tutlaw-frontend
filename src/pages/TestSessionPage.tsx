@@ -11,7 +11,6 @@ import {
   type TestQueueItem,
   type TestAnswerResult,
 } from "../api/review";
-import { getLearningSettings } from "../api/settings";
 import { Skeleton } from "../components/ui/Skeleton";
 import { cn } from "../lib/cn";
 import { ROUTES } from "../config/routes";
@@ -39,7 +38,7 @@ import {
   OPTION_KEYS,
   displayKeyOf,
   originalKeyOf,
-  chooseOptionOrder,
+  pickOptionOrder,
   type OptionKey,
   type OptionOrder,
 } from "../features/tests/shuffle";
@@ -50,13 +49,13 @@ const MAX_EXTRA_BATCH = 10;
 type TestQuestion = TestQueueItem & { order: OptionOrder };
 
 /**
- * Nadaje pytaniom kolejność odpowiedzi. Przy każdym nowym ułożeniu kolejki losujemy od nowa,
- * chyba że użytkownik wyłączył mieszanie w ustawieniach nauki (wtedy zawsze kolejność z bazy).
+ * Nadaje pytaniom kolejność odpowiedzi. Odpowiedzi są zawsze mieszane (przy każdym nowym ułożeniu kolejki losujemy od nowa);
+ * wyjątkiem są pytania, które odwołują się do innych odpowiedzi („Tylko A i B"), bo te zachowują kolejność z bazy.
  */
-function prepareQuestions(items: TestQueueItem[], shuffle: boolean): TestQuestion[] {
+function prepareQuestions(items: TestQueueItem[]): TestQuestion[] {
   return items.map((item) => ({
     ...item,
-    order: chooseOptionOrder([item.optionA, item.optionB, item.optionC], shuffle),
+    order: pickOptionOrder([item.optionA, item.optionB, item.optionC]),
   }));
 }
 
@@ -398,8 +397,8 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
         : dueMode
           ? "Zaległe powtórki"
           : "Sesja testowa";
-  const backTo = customMode ? ROUTES.customTest : practiceMode ? ROUTES.exam : ROUTES.tests;
-  const backLabel = customMode ? "Wróć do własnego testu" : practiceMode ? "Wróć do egzaminu" : "Wróć do Testów";
+  const backTo = !customMode && practiceMode ? ROUTES.exam : ROUTES.tests;
+  const backLabel = !customMode && practiceMode ? "Wróć do egzaminu" : "Wróć do Testów";
   const [searchParams] = useSearchParams();
   const questionIdsParam = searchParams.get("questionIds");
   const customSessionId = customMode ? parseSessionId(searchParams.get("sessionId")) : undefined;
@@ -433,8 +432,6 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
   const fetchedKeyRef = useRef<string | null>(null);
   // Numer ostatniego zapytania o kolejkę: spóźniona odpowiedź na starsze zapytanie jest ignorowana.
   const requestRef = useRef(0);
-  // Czy mieszać kolejność odpowiedzi (ustawienie użytkownika, domyślnie tak); wczytywane razem z pierwszą kolejką.
-  const shuffleRef = useRef(true);
   // Pytania zawieszone w tej sesji: nie wracają w „Powtórz teraz".
   const [suspendedIds, setSuspendedIds] = useState<ReadonlySet<number>>(() => new Set());
   const handleSuspended = useCallback((questionId: number) => {
@@ -481,10 +478,6 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
     const requestId = ++requestRef.current;
     setLoading(true);
     setLoadError(null);
-    // Gdy nie uda się wczytać ustawień, mieszamy (zachowanie domyślne); to nie powód, żeby blokować test.
-    const shuffleSetting = getLearningSettings()
-      .then((settings) => settings.shuffleOptions)
-      .catch(() => true);
     let itemsRequest: Promise<TestQueueItem[]>;
     if (mistakesMode) {
       itemsRequest = getMistakesQueue();
@@ -495,11 +488,10 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
       // 0 nowych pytań = same zaległe powtórki (w dziennym limicie powtórek); undefined = zwykły test z nowymi.
       itemsRequest = getTestQueue(scope, dueMode ? 0 : undefined);
     }
-    Promise.all([itemsRequest, shuffleSetting])
-      .then(([items, shuffle]) => {
+    itemsRequest
+      .then((items) => {
         if (requestRef.current !== requestId) return;
-        shuffleRef.current = shuffle;
-        setQueue(prepareQuestions(items, shuffle));
+        setQueue(prepareQuestions(items));
         setCurrentIndex(0);
         setSelected(null);
         setResult(null);
@@ -659,7 +651,7 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
     try {
       const extraItems = await load();
 
-      setQueue(prepareQuestions(extraItems, shuffleRef.current));
+      setQueue(prepareQuestions(extraItems));
       setCurrentIndex(0);
       setSelected(null);
       setResult(null);
@@ -697,7 +689,7 @@ export function TestSessionPage({ mode = "scope" }: TestSessionPageProps) {
   function handleRepeatMistakes() {
     if (toReview.length === 0) return;
 
-    setQueue(prepareQuestions(toReview, shuffleRef.current));
+    setQueue(prepareQuestions(toReview));
     setIsExtraBatch(true);
     setCurrentIndex(0);
     setSelected(null);

@@ -1,5 +1,6 @@
 import { api } from "./axiosInstance";
-import type { SourceGroup, SourceKind } from "../lib/source";
+import type { SourceKind } from "../lib/source";
+import type { SourceMode } from "../lib/sourceMode";
 import type { LawChange } from "../lib/lawChange";
 
 /**
@@ -8,16 +9,23 @@ import type { LawChange } from "../lib/lawChange";
  */
 export type CustomTestKind = "ALL" | "NEW" | "MISTAKES" | "DUE" | "LAW_CHANGE";
 
+export const CUSTOM_TEST_KINDS: readonly CustomTestKind[] = ["ALL", "NEW", "MISTAKES", "DUE", "LAW_CHANGE"];
+
 /**
- * Zakres własnego testu: suma wskazanych dziedzin, aktów prawnych i (Student) przedmiotów z puli użytkownika.
- * Bez żadnego z nich backend bierze całą pulę. Przedmiot zastępuje wszystkie swoje akty.
+ * Zakres własnego testu: suma wskazanych dziedzin, aktów prawnych, rozdziałów aktów i (Student) przedmiotów z puli
+ * użytkownika. Bez żadnego z nich backend bierze całą pulę. Przedmiot zastępuje wszystkie swoje akty, a rozdział tylko
+ * swoje pytania (akt wybrany w całości obejmuje też pytania bez rozdziału).
  */
 export interface CustomTestScope {
   fieldIds: number[];
   actIds: number[];
   /** Przedmioty Studenta; u użytkownika aplikacji zawsze pusta lista. */
   courseIds: number[];
+  /** Wybrane rozdziały aktów (np. „XIX. Przestępstwa przeciwko życiu i zdrowiu" w Kodeksie karnym). */
+  sectionIds: number[];
 }
+
+export const EMPTY_SCOPE: CustomTestScope = { fieldIds: [], actIds: [], courseIds: [], sectionIds: [] };
 
 /** Liczby pytań do wyboru. Własnej liczby nie ma (serwer przyjmuje tylko te, a przy małym zakresie „wszystkie"). */
 export const COUNT_CHOICES: readonly number[] = [10, 20, 50, 100, 150];
@@ -42,14 +50,20 @@ export interface CustomTestSelection {
   sessionId: number;
 }
 
-/** Krok 1: podgląd „Dostępnych: N" przy układaniu testu. */
-export async function getCustomTestCounts(scope: CustomTestScope): Promise<CustomTestCounts> {
+/**
+ * Ile pytań każdego rodzaju jest w zakresie i źródle (kreator Testów, kafelki szybkich zestawów i „Losuj z całej puli";
+ * bez zakresu to cała pula).
+ */
+export async function getCustomTestCounts(scope: CustomTestScope, source: SourceMode = "ALL"): Promise<CustomTestCounts> {
+  const list = (ids: number[]) => (ids.length > 0 ? ids.join(",") : undefined);
   const res = await api.get<CustomTestCounts>("/api/review/custom-test/counts", {
     // Spring przyjmuje listę po przecinku; axios domyślnie zapisałby tablicę jako fieldIds[]=1&fieldIds[]=2.
     params: {
-      fieldIds: scope.fieldIds.length > 0 ? scope.fieldIds.join(",") : undefined,
-      actIds: scope.actIds.length > 0 ? scope.actIds.join(",") : undefined,
-      courseIds: scope.courseIds.length > 0 ? scope.courseIds.join(",") : undefined,
+      fieldIds: list(scope.fieldIds),
+      actIds: list(scope.actIds),
+      courseIds: list(scope.courseIds),
+      sectionIds: list(scope.sectionIds),
+      source: source === "ALL" ? undefined : source,
     },
   });
   return res.data;
@@ -61,10 +75,11 @@ export async function getCustomTestCounts(scope: CustomTestScope): Promise<Custo
  */
 export async function drawCustomTest(
   scope: CustomTestScope,
+  source: SourceMode,
   kind: CustomTestKind,
   questionCount: number
 ): Promise<CustomTestSelection> {
-  const res = await api.post<CustomTestSelection>("/api/review/custom-test", { ...scope, kind, questionCount });
+  const res = await api.post<CustomTestSelection>("/api/review/custom-test", { ...scope, source, kind, questionCount });
   return res.data;
 }
 
@@ -83,8 +98,10 @@ export interface CustomTestSessionSummary {
   actIds: number[];
   /** Wybrane przedmioty (Student); puste, gdy test układał użytkownik aplikacji albo wybrał akty. */
   courseIds: number[];
-  /** Grupy źródeł obowiązujące, gdy układano test; wszystkie trzy, gdy filtr był domyślny. */
-  sourceGroups: SourceGroup[];
+  /** Wybrane rozdziały aktów (puste, gdy test układano bez rozdziałów). */
+  sectionIds: number[];
+  /** Źródło pytań wybrane przy układaniu testu. */
+  source: SourceMode;
   requestedCount: number;
   questionCount: number;
   answeredCount: number;

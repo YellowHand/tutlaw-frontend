@@ -40,7 +40,6 @@ interface FormState {
   newTestQuestionsPerDay: string;
   maxReviewsPerDay: string;
   retention: string;
-  shuffleOptions: boolean;
 }
 
 function toForm(s: LearningSettings): FormState {
@@ -51,7 +50,6 @@ function toForm(s: LearningSettings): FormState {
     newTestQuestionsPerDay: String(s.newTestQuestionsPerDay),
     maxReviewsPerDay: String(s.maxReviewsPerDay),
     retention: String(s.desiredRetention),
-    shuffleOptions: s.shuffleOptions,
   };
 }
 
@@ -90,11 +88,10 @@ function buildUpdate(form: FormState, defaults: LearningSettings["defaults"]): L
     newTestQuestionsPerDay: tests,
     maxReviewsPerDay: reviews === defaults.maxReviewsPerDay ? null : reviews,
     desiredRetention: retention === defaults.desiredRetention ? null : retention,
-    shuffleOptions: form.shuffleOptions,
   };
 }
 
-/** Ustawienia nauki w Koncie: ścieżka (aplikacja albo Student), limity dzienne, docelowa retencja i mieszanie odpowiedzi. */
+/** Ustawienia nauki w Koncie: ścieżka (aplikacja albo Student), limity dzienne i docelowa retencja. */
 export function LearningSettingsCard() {
   const { data, isLoading, isError, refetch } = useLearningSettings();
 
@@ -160,7 +157,6 @@ function LearningSettingsForm({ settings }: { settings: LearningSettings }) {
       newTestQuestionsPerDay: String(settings.defaults.newTestQuestionsPerDay),
       maxReviewsPerDay: String(settings.defaults.maxReviewsPerDay),
       retention: String(settings.defaults.desiredRetention),
-      shuffleOptions: true,
     }));
     setSaved(false);
     setError(null);
@@ -270,22 +266,6 @@ function LearningSettingsForm({ settings }: { settings: LearningSettings }) {
           </div>
         )}
 
-        <label className="flex cursor-pointer items-start gap-3 text-sm">
-          <input
-            type="checkbox"
-            checked={form.shuffleOptions}
-            onChange={(e) => change("shuffleOptions", e.target.checked)}
-            className="mt-0.5 size-5 shrink-0 cursor-pointer accent-accent-ink"
-          />
-          <span>
-            <span className="font-medium text-fg">Mieszaj kolejność odpowiedzi w testach</span>
-            <span className="block text-xs text-fg-muted">
-              Dzięki temu nie uczysz się pozycji („zawsze B"), tylko treści. Pytania, w których odpowiedzi odwołują się do
-              siebie nawzajem (np. „A i B"), zostają w oryginalnej kolejności.
-            </span>
-          </span>
-        </label>
-
         {error && (
           <p role="alert" className="text-sm text-danger">
             {error}
@@ -313,7 +293,7 @@ function LearningSettingsForm({ settings }: { settings: LearningSettings }) {
 /**
  * „Moja ścieżka": aplikacja, do której użytkownik się przygotowuje, albo Student. Od ścieżki zależy pula pytań (własne
  * arkusze i akty prawne ścieżki), a w aplikacjach także termin egzaminu (ustawia go administrator), odliczanie i plan.
- * Zmiana jest osobną czynnością, bo przy okazji zdejmuje zawężenie puli do aktów i przywraca domyślny filtr źródeł;
+ * Zmiana jest osobną czynnością, bo przy okazji zdejmuje zawężenie puli do aktów;
  * dlatego ma własny przycisk i objaśnienie, a nie zapisuje się razem z limitami.
  */
 function TrackChoiceSettings({ settings }: { settings: LearningSettings }) {

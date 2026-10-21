@@ -71,7 +71,7 @@ Wszystkie napisy są w obiekcie `COPY` w `features/landing/copy.ts`, pogrupowane
 
 Zasady pisania tekstów (zapisane w komentarzu na początku `copy.ts`):
 
-- Fakty o produkcie (tryby, reguły „Nie jestem pewien”, FSRS-6, pula pytań i filtr źródeł, eksport danych) mają odpowiadać
+- Fakty o produkcie (tryby, reguły „Nie jestem pewien”, FSRS-6, pula pytań i zakres nauki, wybór źródła przy teście, eksport danych) mają odpowiadać
   temu, co aplikacja naprawdę robi.
 - **Bez liczb o użytkownikach, zdawalności i liczbie pytań.** Takie liczby dopisuje się dopiero, gdy będą prawdziwe.
   Przykładowe dane w sekcji funkcji są wyraźnie oznaczone („Przykładowe dane”).

@@ -27,11 +27,8 @@ export const ROUTES = {
   // Fiszki: ekran startowy (zaległe, nowe, zakres) i sesja. Fiszka to tryb pytania, a nie osobna karta.
   flashcards: "/app/flashcards",
 
-  // Testy: dziedzina → akt prawny. Akt jest liściem: z niego od razu zaczyna się sesja.
+  // Testy: strona główna z losowaniem, rodzajami testu i szybkimi zestawami; zakres wybiera się w kreatorze (okno).
   tests: "/app/tests",
-  testsField: (fieldId: string | number) => `/app/tests/${fieldId}`,
-  // Student: przedmiot → akty prawne, z których się składa. Liściem jest akt, jak u użytkowników aplikacji.
-  testsCourse: (courseId: string | number) => `/app/tests/subject/${courseId}`,
 
   // Sesje z całej puli użytkownika albo z zakresu podanego w adresie (?fieldId=, ?actId=, ?sourceId=).
   studyAll: "/app/study",
@@ -44,7 +41,7 @@ export const ROUTES = {
   testDue: "/app/test/due",
   // Sesja testowa z podanych pytań (np. błędy z egzaminu próbnego).
   testPractice: (questionIds: readonly number[]) => `/app/test/practice?questionIds=${questionIds.join(",")}`,
-  // Własny test: ekran układania (to NIE sesja, więc zostaje z menu) i sesja z wylosowanych pytań.
+  // Przedrostek „Moich testów" (dawny ekran układania testu przekierowuje do Testów) i sesja z wylosowanych pytań.
   customTest: "/app/custom-test",
   testCustomBase: "/app/test/custom",
   testCustom: (questionIds: readonly number[], sessionId?: number) =>

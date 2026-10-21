@@ -30,11 +30,11 @@ interface SaveInput {
 }
 
 /** Opis pod nazwą ścieżki, gdy nie ma terminu egzaminu (Student) albo go nie pobrano. */
-const STUDENT_HINT = "Bez odliczania i planu dnia. Uczysz się z wybranych przedmiotów (potem zmienisz je w „Puli pytań”)";
+const STUDENT_HINT = "Bez odliczania i planu dnia. Uczysz się z wybranych przedmiotów (potem zmienisz je w „Zakresie nauki” w Koncie)";
 
 /**
  * Obowiązkowy wybór ścieżki (aplikacja albo Student) i wyglądu strony. Z aplikacji biorą się termin, odliczanie i plan dnia,
- * a pula pytań to własne arkusze aplikacji i akty prawne, które ona obejmuje (potem zawęzisz ją w „Puli pytań"). Student
+ * a pula pytań to własne arkusze aplikacji i akty prawne, które ona obejmuje (potem zawęzisz ją w „Zakresie nauki" w Koncie). Student
  * nie ma terminu ani planu, a pulę składa z przedmiotów. Wygląd (domyślnie ciemny) widać od razu jako podgląd, a zapisuje
  * się razem ze ścieżką. Okna nie da się zamknąć bez wyboru; jedyne inne wyjście to wylogowanie.
  */

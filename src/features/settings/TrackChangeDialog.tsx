@@ -19,11 +19,11 @@ interface TrackChangeDialogProps {
   onDone: () => void;
 }
 
-/** Czego dotyczy pula pytań po zmianie: aplikacje mają akty i źródła, Student przedmioty. */
+/** Czego dotyczy pula pytań po zmianie: aplikacje mają akty prawne, Student przedmioty. */
 function poolSentence(to: Track): string {
   return to.kind === "STUDENT"
-    ? "Zmienia się pula pytań: będziesz się uczyć z przedmiotów (wszystkich albo tych, które wybierzesz w „Puli pytań”)."
-    : "Zmienia się pula pytań: zdejmiemy wybór aktów prawnych i przywrócimy domyślny filtr źródeł (potem zmienisz je w „Puli pytań”).";
+    ? "Zmienia się pula pytań: będziesz się uczyć z przedmiotów (wszystkich albo tych, które wybierzesz w „Zakresie nauki”, poniżej w Koncie)."
+    : "Zmienia się pula pytań: zdejmiemy wybór aktów prawnych (potem zawęzisz go w „Zakresie nauki” w Koncie).";
 }
 
 /**

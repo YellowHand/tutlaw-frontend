@@ -15,6 +15,7 @@ import { LawChangeBadge } from "../review/LawChangeBadge";
 import { SourceLabel } from "../review/SourceLabel";
 import { Breadcrumbs } from "../tests/Breadcrumbs";
 import { START_BUTTON } from "../tests/StartButtons";
+import { SOURCE_MODE_LABELS } from "../../lib/sourceMode";
 import { KIND_LABELS } from "./kindLabels";
 import { StatusBadge } from "./MyTestsPage";
 import type { CustomTestPrefill } from "./prefill";
@@ -30,7 +31,6 @@ export function MyTestDetailPage() {
 
   const crumbs = [
     { label: "Testy", to: ROUTES.tests },
-    { label: "Własny test", to: ROUTES.customTest },
     { label: "Moje testy", to: ROUTES.myTests },
     { label: "Szczegóły" },
   ];
@@ -67,7 +67,7 @@ export function MyTestDetailPage() {
   return (
     <div>
       <Breadcrumbs items={crumbs} />
-      <PageHeader title="Własny test" subtitle={data.summary.scopeLabel} />
+      <PageHeader title="Test" subtitle={data.summary.scopeLabel} />
       <Detail detail={data} />
     </div>
   );
@@ -85,11 +85,12 @@ function Detail({ detail }: { detail: CustomTestSessionDetail }) {
       fieldIds: summary.fieldIds,
       actIds: summary.actIds,
       courseIds: summary.courseIds,
-      sourceGroups: summary.sourceGroups,
+      sectionIds: summary.sectionIds,
+      source: summary.source,
       kind: summary.kind,
       requestedCount: summary.requestedCount,
     };
-    navigate(ROUTES.customTest, { state: { prefill } });
+    navigate(ROUTES.tests, { state: { prefill } });
   }
 
   return (
@@ -105,6 +106,7 @@ function Detail({ detail }: { detail: CustomTestSessionDetail }) {
 
         <dl className="grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
           <Fact label="Pytania">{KIND_LABELS[summary.kind]}</Fact>
+          <Fact label="Źródło">{SOURCE_MODE_LABELS[summary.source]}</Fact>
           <Fact label="Rozpoczęty">{formatDateTime(summary.startedAt)}</Fact>
           <Fact label="Odpowiedzi">
             <span className="tabular-nums">

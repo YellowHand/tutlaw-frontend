@@ -8,6 +8,7 @@ import { ChangePasswordCard } from "./ChangePasswordCard";
 import { ExportCard } from "./ExportCard";
 import { DeleteAccountCard } from "./DeleteAccountCard";
 import { DifficultQuestionsCard } from "../difficult/DifficultQuestionsCard";
+import { LearningScopeCard } from "../pool/LearningScopeCard";
 import { ResetProgressCard } from "../progress/ResetProgressCard";
 import { AppearanceCard } from "../settings/AppearanceCard";
 import { ExamTermsCard } from "../settings/ExamTermsCard";
@@ -18,7 +19,7 @@ export function AccountPage() {
 
   return (
     <div>
-      <PageHeader title="Konto" subtitle="Wygląd, ustawienia nauki, zawieszone pytania, zmiana hasła, kopia danych, zerowanie postępów i usunięcie konta" />
+      <PageHeader title="Konto" subtitle="Wygląd, ustawienia i zakres nauki, zawieszone pytania, zmiana hasła, kopia danych, zerowanie postępów i usunięcie konta" />
       <div className="flex max-w-3xl flex-col gap-6 px-4 pb-8 sm:px-8">
         <Card>
           <h2 className="text-lg font-semibold">Zalogowano jako</h2>
@@ -32,6 +33,8 @@ export function AccountPage() {
         <AppearanceCard />
 
         <LearningSettingsCard />
+
+        <LearningScopeCard />
 
         <ExamTermsCard />
 

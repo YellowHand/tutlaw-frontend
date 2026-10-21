@@ -52,7 +52,7 @@ prośba o reset hasła i ustawienie nowego hasła) jest wpisanych bezpośrednio 
 
 ## Wszystkie wywołania serwera
 
-Frontend używa **62 z 63** endpointów backendu (łącznie 63 wywołań w kodzie, bo `POST /api/me/study-time` jest wołane z
+Frontend używa **61 z 62** endpointów backendu (łącznie 62 wywołań w kodzie, bo `POST /api/me/study-time` jest wołane z
 dwóch miejsc). Jeden endpoint backendu pozostaje nieużywany (`GET /api/courses`); sekcja o nim jest [niżej](#endpointy-których-frontend-nie-używa).
 Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć wyszukiwarką.
 
@@ -85,11 +85,10 @@ Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć w
 | Wywołanie | Funkcja / plik | Gdzie używane |
 |-----------|----------------|---------------|
 | `GET /api/tracks` | `getTracks` (`api/tracks.ts`) | Lista ścieżek (pięć aplikacji i Student): okno startowe i wybór ścieżki w Koncie |
-| `GET /api/me/pool` | `getPool` (`api/pool.ts`) | Znacznik i okno „Pula pytań”; notka o zawężeniu na Pulpicie |
-| `PUT /api/me/pool/acts` | `updatePoolActs` | Okno „Pula pytań” (aplikacje): zawężenie do wybranych aktów (pusta lista zdejmuje zawężenie) |
-| `PUT /api/me/pool/courses` | `updatePoolCourses` | Okno „Pula pytań” (Student): wybór przedmiotów (pusta lista = wszystkie). Przedmioty przychodzą w `Pool.courses` |
-| `PUT /api/me/pool/source-filter` | `updateSourceFilter` | Okno „Pula pytań”: włączenie i wyłączenie grup źródeł (moje arkusze, arkusze innych ścieżek, autorskie) |
-| `GET /api/tests/catalog` | `getTestCatalog` (`api/tests.ts`) | Testy: dziedziny z aktami (Student: przedmioty z `actIds`) i sekcja „Według źródła”; Pulpit: wiersze postępu według dziedzin albo przedmiotów; Fiszki, Statystyki i Własny test: drzewo aktów (Student: przedmiotów) |
+| `GET /api/me/pool` | `getPool` (`api/pool.ts`) | Karta i okno „Zakres nauki” w Koncie; notka o zawężeniu na ekranie Testy, „Postęp” na Pulpicie i ustawienia egzaminu |
+| `PUT /api/me/pool/acts` | `updatePoolActs` | Okno „Zakres nauki” (aplikacje): zawężenie do wybranych aktów (pusta lista zdejmuje zawężenie) |
+| `PUT /api/me/pool/courses` | `updatePoolCourses` | Okno „Zakres nauki” (Student): wybór przedmiotów (pusta lista = wszystkie). Przedmioty przychodzą w `Pool.courses` |
+| `GET /api/tests/catalog` | `getTestCatalog` (`api/tests.ts`) | Kreator testu: drzewo dziedzin (Student: przedmiotów), aktów i rozdziałów dla wybranego źródła (parametr `source`: `MINISTRY` albo `AUTHORED`, bez niego wszystkie); Pulpit: wiersze postępu według dziedzin albo przedmiotów; Fiszki i Statystyki: lista aktów (Student: przedmiotów) |
 
 ### Nauka: kolejki, odpowiedzi, liczniki
 
@@ -97,12 +96,12 @@ Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć w
 |-----------|----------------|---------------|
 | `GET /api/review/flashcard-queue` | `getFlashcardQueue` | Sesja Fiszek (`StudySessionPage`); zakres w parametrach `fieldId`, `actId`, `sourceId` |
 | `GET /api/review/test-queue` | `getTestQueue` | Sesja Testów w trybach zakres i powtórki (`TestSessionPage`); zakres w `fieldId`, `actId`, `sourceId` |
-| `GET /api/review/practice-queue` | `getPracticeQueue` | Sesja „Przećwicz błędy z egzaminu” i sesja Własnego testu (`questionIds=`) |
+| `GET /api/review/practice-queue` | `getPracticeQueue` | Sesja „Przećwicz błędy z egzaminu” i sesja testu z kreatora, z losowania i z szybkiego zestawu (`questionIds=`) |
 | `GET /api/review/mistakes-queue` | `getMistakesQueue` | Sesja „Powtórz moje błędy” |
-| `GET /api/review/mistakes-count` | `getMistakesCount` | Przycisk „Moje błędy” (z liczbą) w „Szybkim starcie” na ekranie Testy, link „Popraw moje błędy” na Pulpicie i w Statystykach |
-| `GET /api/review/custom-test/counts` | `getCustomTestCounts` (`api/customTest.ts`) | Własny test: „Dostępnych: N” przy każdym rodzaju pytań w wybranym zakresie |
-| `POST /api/review/custom-test` | `drawCustomTest` (`api/customTest.ts`) | Własny test: losowanie numerów pytań po „Rozpocznij test” (ciało: `fieldIds`, `actIds`, `courseIds`, `kind`, `questionCount`; `kind` to `ALL`, `NEW`, `MISTAKES`, `DUE` albo `LAW_CHANGE`); odpowiedź ma `questionIds` i `sessionId` zapisanego testu. Liczba pytań to 10, 20, 50, 100 albo 150 |
-| `GET /api/custom-tests/sessions` | `listCustomTestSessions` (`api/customTest.ts`) | „Moje testy”: lista zapisanych własnych testów (`/app/custom-test/history`) |
+| `GET /api/review/mistakes-count` | `getMistakesCount` | Link „Popraw moje błędy” (z liczbą) na Pulpicie i w Statystykach |
+| `GET /api/review/custom-test/counts` | `getCustomTestCounts` (`api/customTest.ts`) | Liczby pytań w zakresie i źródle (parametry `fieldIds`, `actIds`, `courseIds`, `sectionIds`, `source`; odpowiedź `all`, `newQuestions`, `mistakes`, `due`, `lawChanges`): kreator testu (liczby przy rodzajach i liczba pytań), „Losuj z całej puli” i kafelki szybkich zestawów (bez zakresu) |
+| `POST /api/review/custom-test` | `drawCustomTest` (`api/customTest.ts`) | Losowanie numerów pytań po „Zacznij test” w kreatorze, „Start” w „Losuj z całej puli” i kliknięciu szybkiego zestawu (ciało: `fieldIds`, `actIds`, `courseIds`, `sectionIds`, `source`, `kind`, `questionCount`; `kind` to `ALL`, `NEW`, `MISTAKES`, `DUE` albo `LAW_CHANGE`); odpowiedź ma `questionIds` i `sessionId` zapisanego testu. Liczba pytań to 10, 20, 50, 100 albo 150 |
+| `GET /api/custom-tests/sessions` | `listCustomTestSessions` (`api/customTest.ts`) | „Moje testy”: lista zapisanych testów (`/app/custom-test/history`) |
 | `GET /api/custom-tests/sessions/{id}` | `getCustomTestSession` (`api/customTest.ts`) | „Moje testy”: szczegóły testu z odpowiedziami (`/app/custom-test/history/:id`) i przycisk „Ułóż ponownie z tymi ustawieniami” |
 | `GET /api/review/due-tomorrow` | `getDueByTomorrow` (`api/review.ts`) | Podsumowanie na ekranie „Brawo!”: „Jutro wróci N powtórek” |
 | `GET /api/review/queue/new-available` | `getAvailableNewQuestionsCount` | Przycisk „Dołóż nowe” na końcu sesji i liczba „Nowe” na ekranie Fiszki (z `mode`) |
@@ -148,9 +147,9 @@ Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć w
 
 | Wywołanie | Funkcja / plik | Gdzie używane |
 |-----------|----------------|---------------|
-| `GET /api/me/settings` | `getLearningSettings` | Karta „Ustawienia nauki” w Koncie, Pulpit (wybrana aplikacja, odliczanie, cel na dziś), okno startowe i wygląd strony (`ThemeSync`, `OnboardingGate` w `AppShell`), Statystyki (domyślny zakres), a także jednorazowo przy starcie sesji Testów (czy tasować odpowiedzi) |
-| `PUT /api/me/settings` | `updateLearningSettings` | Zapis ustawień nauki (limity, retencja, tasowanie; bez daty egzaminu i bez wyglądu). `newTestQuestionsPerDay: null` oznacza limit automatyczny |
-| `PUT /api/me/track` | `chooseTrack` (`api/settings.ts`) | Wybór ścieżki (aplikacja albo Student): obowiązkowe okno startowe i „Moja ścieżka” w Koncie. Backend układa pulę, a przy zmianie zdejmuje zawężenie do aktów i przywraca domyślny filtr źródeł |
+| `GET /api/me/settings` | `getLearningSettings` | Karta „Ustawienia nauki” w Koncie, Pulpit (wybrana aplikacja, odliczanie, cel na dziś), okno startowe i wygląd strony (`ThemeSync`, `OnboardingGate` w `AppShell`), Statystyki (domyślny zakres) |
+| `PUT /api/me/settings` | `updateLearningSettings` | Zapis ustawień nauki (limity, retencja; bez daty egzaminu i bez wyglądu). `newTestQuestionsPerDay: null` oznacza limit automatyczny |
+| `PUT /api/me/track` | `chooseTrack` (`api/settings.ts`) | Wybór ścieżki (aplikacja albo Student): obowiązkowe okno startowe i „Moja ścieżka” w Koncie. Backend układa pulę, a przy zmianie zdejmuje zawężenie do aktów |
 | `GET /api/me/interface` | `getInterfaceSettings` (`api/interfaceSettings.ts`) | Ukrycie podpowiedzi skrótów (testy, fiszki), ukrycie licznika czasu i liczba dotychczasowych odpowiedzi (do 10). Gdy się nie uda, podpowiedź i licznik zostają widoczne |
 | `PUT /api/me/interface` | `updateInterfaceSettings` (`api/interfaceSettings.ts`) | Zapis „×” przy podpowiedzi i kliknięcia w licznik czasu |
 | `POST /api/me/study-time` | `sendToServer` (`features/studytime/useStudyTimeTracker.ts`), przy zamykaniu karty `postKeepalive` | Porcje **czasu nauki** (1–300 s) co ok. 30 s na ekranach nauki |
@@ -177,7 +176,7 @@ fiszkę” (`PUT /api/questions/{questionId}/hidden` i `/flashcard-hidden`) oraz
 
 | Co | Jak to działa |
 |----|---------------|
-| Zakres nauki (`fieldId`, `actId`, `sourceId`) | Kolejki, licznik nowych pytań i zaległości przyjmują je od najwęższego: źródło (arkusz), akt prawny, dziedzina. Bez żadnego serwer bierze całą pulę użytkownika. Zakres liczy się razem z pulą (ścieżka, zawężenie do aktów, filtr źródeł) |
+| Zakres nauki (`fieldId`, `actId`, `sourceId`) | Kolejki, licznik nowych pytań i zaległości przyjmują je od najwęższego: źródło (arkusz), akt prawny, dziedzina. Bez żadnego serwer bierze całą pulę użytkownika. Zakres liczy się razem z pulą (ścieżka, zawężenie do aktów) |
 | `mode` (`FLASHCARD` albo `TEST`) | Fiszki i Testy liczą się osobno. Bez `mode` backend liczy **fiszki**, więc każde wywołanie dla Testów musi podać `TEST` (kod robi to w `getAvailableNewQuestionsCount`, `getDueCount`, `getBacklog`) |
 | `extraNewCards`, `extraDueReviews` | Dokładanie nowych pytań („Dołóż nowe”, porcja 10) i zaległych powtórek („Powtórz jeszcze”, porcja 20) ponad dzienny limit; `extraNewCards=0` to sesja bez nowych |
 | `questionIds` w kolejce ćwiczeń | Lista identyfikatorów zapisana po przecinku (`questionIds=1,2,3`), bo Spring tak ją czyta; axios domyślnie zapisałby `questionIds[]=1&questionIds[]=2` |
@@ -200,11 +199,11 @@ dane po powrocie do karty przeglądarki. Pamięć żyje tylko w otwartej karcie;
 | Klucz | Co przechowuje | Ważne | Gdzie zdefiniowane |
 |-------|----------------|-------|--------------------|
 | `["tracks"]` | Lista ścieżek (aplikacje i Student) | 10 min | `features/settings/hooks.ts` |
-| `["pool"]` | Pula pytań użytkownika (ścieżka, zawężenie, filtr źródeł) | 30 s | `features/pool/hooks.ts` |
-| `["tests","catalog"]` | Dziedziny, akty i źródła z licznikami | **0** | `features/tests/hooks.ts` |
+| `["pool"]` | Pula pytań użytkownika (ścieżka, zawężenie do aktów) | 30 s | `features/pool/hooks.ts` |
+| `["tests","catalog"]` | Dziedziny, akty i rozdziały z licznikami (klucz ma na końcu źródło: `["tests","catalog",source]`) | **0** | `features/tests/hooks.ts` |
 | `["review","due-count",mode]` | Liczba powtórek do zrobienia | 30 s | `features/review/hooks.ts` |
 | `["review","mistakes-count"]` | Liczba błędów do powtórzenia | 30 s | j.w. |
-| `["review","custom-test-counts",zakres]` | Liczby pytań w zakresie Własnego testu (poprzednia odpowiedź zostaje na ekranie, dopóki nie przyjdzie nowa) | **0** | `features/customTest/hooks.ts` |
+| `["review","custom-test-counts",zakres]` | Liczby pytań w zakresie kreatora testu (klucz ma na końcu źródło i zakres; poprzednia odpowiedź zostaje na ekranie, dopóki nie przyjdzie nowa) | **0** | `features/customTest/hooks.ts` |
 | `["review","backlog",mode,fieldId,actId,sourceId]` | Zaległości w zakresie sesji | **0**, brak przechowywania po zamknięciu ekranu (`gcTime: 0`), bez ponawiania i bez odświeżania po powrocie do karty przeglądarki | `features/review/useBacklog.ts` |
 | `["review","new-available","FLASHCARD",fieldId,actId]` | Liczba nowych fiszek w zakresie (ekran Fiszki) | **0**, bez ponawiania | `features/flashcards/FlashcardsPage.tsx` |
 | `["review","due-tomorrow",mode]` | „Jutro wróci N powtórek” na końcu sesji | **0** | `features/review/SessionSummary.tsx` |
@@ -239,13 +238,12 @@ przy następnym użyciu (aktywne od razu).
 
 | Czynność | Co jest unieważniane lub podmieniane |
 |----------|--------------------------------------|
-| Wyjście z sesji Fiszek lub Testów (`useRefreshReviewDataOnExit`) | Liczniki powtórek (`["review","due-count"]`), licznik błędów, liczniki Własnego testu, wszystkie `["statistics",…]`. Dopiero przy wyjściu, nie po każdej odpowiedzi, żeby nie wysyłać zapytania co pytanie |
+| Wyjście z sesji Fiszek lub Testów (`useRefreshReviewDataOnExit`) | Liczniki powtórek (`["review","due-count"]`), licznik błędów, liczniki kreatora testu, wszystkie `["statistics",…]`. Dopiero przy wyjściu, nie po każdej odpowiedzi, żeby nie wysyłać zapytania co pytanie |
 | „Dodaj do fiszek” / „Usuń z fiszek” | Jak wyżej (`invalidateReviewData`), od razu |
 | Zapis ustawień nauki | Podmiana `["settings","learning"]` odpowiedzią serwera + `invalidateReviewData` |
 | Zmiana wyglądu (`useChooseTheme`, okno startowe) | Podmiana `["settings","learning"]` odpowiedzią serwera; strona przełącza się od razu, a przy błędzie wraca do poprzedniego wyglądu |
-| Wybór ścieżki (`useChooseTrack`, okno startowe) | Podmiana `["settings","learning"]` odpowiedzią serwera + unieważnienie puli (`["pool"]`) i wszystkiego, co liczy pytania: katalog Testów, liczniki powtórek, licznik błędów, liczniki Własnego testu, statystyki (backend zmienia pulę, zawężenie i filtr źródeł) |
-| Zapis zawężenia do aktów (okno „Pula pytań”) | Podmiana `["pool"]` odpowiedzią serwera + unieważnienie: katalog Testów, liczniki powtórek, licznik błędów, liczniki Własnego testu, ustawienia nauki (plan do egzaminu) i **statystyki** |
-| Zapis filtra źródeł (okno „Pula pytań”) | Podmiana `["pool"]` + to samo unieważnienie, w tym **statystyki** (statystyki testów liczą się z filtrem źródeł; statystyki według źródła go nie uwzględniają, ale odświeżają się razem z resztą) |
+| Wybór ścieżki (`useChooseTrack`, okno startowe) | Podmiana `["settings","learning"]` odpowiedzią serwera + unieważnienie puli (`["pool"]`) i wszystkiego, co liczy pytania: katalog Testów, liczniki powtórek, licznik błędów, liczniki kreatora testu, statystyki (backend zdejmuje przy tym zawężenie do aktów) |
+| Zapis zakresu nauki (okno „Zakres nauki” w Koncie) | Podmiana `["pool"]` odpowiedzią serwera + unieważnienie: katalog Testów, liczniki powtórek, licznik błędów, liczniki kreatora testu, ustawienia nauki (plan do egzaminu) i **statystyki** |
 | Zapis terminu egzaminu (administrator) | Podmiana wiersza w `["settings","exam-terms"]` odpowiedzią serwera + unieważnienie `["settings","learning"]` (zmienia się odliczanie i plan) |
 | Zawieszenie pytania (w sesji nauki) albo zawieszenie i przywrócenie na liście w Koncie | `["difficult-questions"]` (z listy w Koncie także `invalidateReviewData`) |
 | „Ukryj pytanie” / „Ukryj fiszkę” (administrator) | `invalidateReviewData` + katalog Testów (`["tests","catalog"]`) + pula (`["pool"]`) |
@@ -254,7 +252,7 @@ przy następnym użyciu (aktywne od razu).
 | Zmiana hasła | Bez przeładowania: podmieniany jest tylko token (`login(nowyToken)`) |
 
 Pomocnicza funkcja `invalidateReviewData(queryClient)` (`features/review/hooks.ts`) unieważnia cztery rzeczy naraz:
-liczniki powtórek, licznik błędów, liczniki Własnego testu i statystyki. Po zmianie samej puli używa się
+liczniki powtórek, licznik błędów, liczniki kreatora testu i statystyki. Po zmianie samej puli używa się
 `invalidateAfterPoolChange` (`features/pool/hooks.ts`), która dokłada katalog Testów i ustawienia nauki. Używaj jej po każdej zmianie, która wpływa na to, ile jest do
 powtórzenia albo jak wyglądają wykresy.
 
@@ -267,7 +265,6 @@ pokazania:
   odpowiedź (`submitTestAnswer`), liczba nowych pytań do dołożenia w sesji (`getAvailableNewQuestionsCount`): sesja trzyma je w
   swoim stanie i pobiera raz na start (klucz odświeżenia pilnuje, żeby w trybie deweloperskim `StrictMode` nie wysłał
   zapytania dwa razy),
-- odczyt ustawienia tasowania odpowiedzi na początku sesji Testów (`getLearningSettings`),
 - wszystkie zapisy (`POST`, `PUT`, `DELETE`): idą przez `useMutation` albo bezpośrednio z funkcji obsługi zdarzenia.
 
 ## Obsługa błędów po stronie ekranu
@@ -305,7 +302,7 @@ serwer przestał je wysyłać. Najważniejsze typy:
 | `Track` | `api/tracks.ts` | Ścieżka: `id`, `slug`, `name`, `shortName`, `kind` (`EXAM` albo `STUDENT`) |
 | `Pool` | `api/pool.ts` | Pula użytkownika: `track`, `narrowed`, `questionCount`, `fields` (dziedziny z aktami i polem `selected`), `sourceGroups` (grupa, `selected`, `questionCount`) |
 | `TestCatalog` | `api/tests.ts` | `narrowed`, `fields` (dziedziny z aktami i licznikami `questionCount`, `solvedCount`), `sources` (arkusze i pytania autorskie z grupą i rokiem egzaminu) |
-| `LearningSettings` | `api/settings.ts` | Limity (w tym `newFlashcardsPerDay`, `newTestQuestionsPerDay` obowiązujący teraz i `newTestQuestionsAuto`), retencja, wybrana ścieżka (`track`, `null` = jeszcze nie wybrano), termin (`examDate`, tylko do odczytu), wygląd (`theme`: `DARK`/`LIGHT`), tasowanie, plan do egzaminu (z `newTestQuestionsToday`, `requiredTestQuestionsPerDay` bez sufitu, `maxTestQuestionsPerDay` = 100 i `suggestedTestQuestionsPerDay` = mniejsze z nich) |
+| `LearningSettings` | `api/settings.ts` | Limity (w tym `newFlashcardsPerDay`, `newTestQuestionsPerDay` obowiązujący teraz i `newTestQuestionsAuto`), retencja, wybrana ścieżka (`track`, `null` = jeszcze nie wybrano), termin (`examDate`, tylko do odczytu), wygląd (`theme`: `DARK`/`LIGHT`), plan do egzaminu (z `newTestQuestionsToday`, `requiredTestQuestionsPerDay` bez sufitu, `maxTestQuestionsPerDay` = 100 i `suggestedTestQuestionsPerDay` = mniejsze z nich) |
 | `ExamTerm` | `api/examTerms.ts` | `track`, `examDate`, `daysToExam` |
 | `SourceKind`, `SourceGroup` | `lib/source.ts` | Rodzaj źródła (`EXAM_SHEET`, `AUTHORED`) i grupa filtra (`OWN_SHEETS`, `OTHER_SHEETS`, `AUTHORED`) z polskimi etykietami |
 
