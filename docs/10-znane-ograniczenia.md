@@ -59,7 +59,7 @@ Drobne rzeczy znalezione podczas czytania kodu. Żadna nie psuje zwykłego dzia�
 
 | Obszar | Ograniczenie |
 |--------|--------------|
-| Zarządzanie treścią | W aplikacji **nie ma panelu administratora ani importu pytań**, a backend nie ma endpointów do dodawania treści: akty prawne i pytania wczytuje się skryptami SQL (opis w dokumentacji backendu). Frontend używa wszystkich endpointów backendu ([05](05-warstwa-api-i-dane.md)). Administrator ma w interfejsie przyciski „Ukryj pytanie” i „Ukryj fiszkę” oraz kartę „Terminy egzaminów” w Koncie |
+| Zarządzanie treścią | Panel administratora (`/admin`) obejmuje **aplikacje, przedmioty Studenta, akty prawne z rozdziałami i przypisaniami, arkusze egzaminów i terminy**. **Pytań** (dodawanie, edycja, import CSV/JSON, lista z wyszukiwarką), kolejki oznaczeń i zgłoszeń błędów w panelu jeszcze nie ma: pytania wczytuje się skryptami SQL (opis w dokumentacji backendu), a pięć endpointów oznaczeń czeka na ekran ([05](05-warstwa-api-i-dane.md)). Dziedzin nie da się dodawać ani zmieniać w panelu (jest ich pięć, ustala je baza). Akt, arkusz i rozdział z pytaniami można tylko ukryć, nie usunąć. Poza panelem administrator ma przyciski „Ukryj pytanie” i „Ukryj fiszkę” oraz kartę „Terminy egzaminów” w Koncie |
 | Testy automatyczne | Repozytorium frontendu **nie zawiera testów** (jednostkowych, komponentów ani end-to-end). Kontrolę zapewniają kompilator TypeScript i ESLint |
 | Język | Tylko po polsku; teksty są wpisane w komponentach, nie ma systemu tłumaczeń |
 | Praca offline | Brak. Aplikacja nie ma service workera ani trybu offline; bez połączenia z serwerem nie pobierze ani nie zapisze niczego (przy trwającym egzaminie odpowiedzi zostają w przeglądarce, więc po powrocie połączenia można wysłać egzamin ponownie) |

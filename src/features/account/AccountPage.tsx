@@ -11,6 +11,7 @@ import { DifficultQuestionsCard } from "../difficult/DifficultQuestionsCard";
 import { LearningScopeCard } from "../pool/LearningScopeCard";
 import { ResetProgressCard } from "../progress/ResetProgressCard";
 import { AppearanceCard } from "../settings/AppearanceCard";
+import { AdminPanelCard } from "../admin/AdminPanelCard";
 import { ExamTermsCard } from "../settings/ExamTermsCard";
 import { LearningSettingsCard } from "../settings/LearningSettingsCard";
 
@@ -35,6 +36,8 @@ export function AccountPage() {
         <LearningSettingsCard />
 
         <LearningScopeCard />
+
+        <AdminPanelCard />
 
         <ExamTermsCard />
 

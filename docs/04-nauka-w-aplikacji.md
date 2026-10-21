@@ -328,7 +328,7 @@ przycisku przywracania nie ma.
 Użytkownik uczy się z **puli**: pytań z aktów prawnych swojej ścieżki (pięć aplikacji egzaminacyjnych albo Student), po
 opcjonalnym zawężeniu do wybranych aktów, czyli **zakresie nauki**. Pulę liczy serwer (`GET /api/me/pool`, `api/pool.ts`), a
 frontend ją tylko pokazuje i zapisuje wybór. Użytkownik aplikacji widzi dziedziny, ale w każdej tylko akty swojej ścieżki
-(dziedzinę bez aktów w puli backend w ogóle nie zwraca). **Student uczy się z przedmiotów**: administrator (skryptem SQL)
+(dziedzinę bez aktów w puli backend w ogóle nie zwraca). **Student uczy się z przedmiotów**: administrator (w panelu `/admin/przedmioty`)
 przypisuje przedmiotom akty prawne, a Student wybiera przedmioty i dostaje wszystkie pytania ich aktów. Nie wybrał żadnego =
 uczy się ze wszystkich. Przedmiot bez pytań jest ukryty. Pytania nadal należą do aktów (ten sam akt w dwóch przedmiotach to te
 same pytania). Wybór przedmiotów zostaje na koncie przy zmianie ścieżki.
@@ -438,6 +438,8 @@ Przedmioty nakładają się (ten sam akt w dwóch), więc ich liczniki nie sumuj
 
 ### Terminy egzaminów (administrator)
 
+Ta sama karta jest też w panelu administratora (`/admin/terminy`, [02](02-routing-i-strony.md#panel-administratora-admin)).
+
 `features/settings/ExamTermsCard.tsx` ↔ `GET /api/exam-terms`, `PUT /api/exam-terms/{trackId}` (`api/examTerms.ts`,
 hook `useExamTerms`). Karta w Koncie jest widoczna tylko dla administratora: rolę czyta `useIsAdmin()` z tokenu, ale to
 tylko wygoda interfejsu, bo naprawdę chroni `403` z serwera. Dla każdej z pięciu aplikacji (Studenta na liście nie ma, bo nie ma terminu) jest pole daty i przyciski
@@ -506,7 +508,7 @@ Kreator to **jedna strona** z sekcjami „Źródło pytań”, „Przepisy”, �
 - **Co idzie na serwer** (`toScope`): dziedzina zaznaczona w całości jako `fieldIds` (Student: przedmiot jako `courseIds`),
   pozostałe akty zaznaczone w całości jako `actIds`, rozdziały jako `sectionIds`. Serwer bierze **sumę** tych zbiorów. Gdy
   zaznaczono wszystko („Cała pula”), wszystkie listy są puste i serwer bierze całą pulę (także akty dodane w międzyczasie i
-  pytania bez rozdziału). Rozdziały zakłada administrator skryptem SQL; akt bez rozdziałów po prostu nie ma listy.
+  pytania bez rozdziału). Rozdziały zakłada administrator w panelu (strona aktu) albo skryptem SQL; akt bez rozdziałów po prostu nie ma listy.
 - **Rodzaje pytań:** w Nauce „Wszystkie”, „Nowe”, „Moje błędy”, „Zmiany w prawie”, „Terminy” i „Pułapki”, każdy z liczbą
   dostępnych pytań w zakresie i źródle (`custom-test/counts`: `all`, `newQuestions`, `mistakes`, `due`, `lawChanges`,
   `timeLimits`, `traps`; sześć rodzajów układa się w dwóch rzędach po trzy). „Terminy” i „Pułapki” to pytania z **zatwierdzonym

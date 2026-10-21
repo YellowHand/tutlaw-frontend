@@ -1,0 +1,45 @@
+import { useState, type FormEvent } from "react";
+import { Dialog } from "../../components/ui/Dialog";
+import { Field } from "../../components/ui/Field";
+import { FormActions, FormError } from "./adminUi";
+
+interface CourseFormDialogProps {
+  title: string;
+  initial: { name: string; sortOrder: string };
+  pending: boolean;
+  error: string | null;
+  onSubmit: (value: { name: string; sortOrder?: number }) => void;
+  onClose: () => void;
+}
+
+/** Dodawanie i edycja przedmiotu Studenta: nazwa i miejsce na liście. */
+export function CourseFormDialog({ title, initial, pending, error, onSubmit, onClose }: CourseFormDialogProps) {
+  const [name, setName] = useState(initial.name);
+  const [sortOrder, setSortOrder] = useState(initial.sortOrder);
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  function submit(e: FormEvent) {
+    e.preventDefault();
+    if (!name.trim()) return setLocalError("Podaj nazwę przedmiotu.");
+    setLocalError(null);
+    onSubmit({ name: name.trim(), sortOrder: sortOrder.trim() === "" ? undefined : Number(sortOrder) });
+  }
+
+  return (
+    <Dialog title={title} onClose={onClose} closeOnBackdrop={false}>
+      <form onSubmit={submit} className="flex flex-col gap-4" data-testid="course-form">
+        <Field label="Nazwa przedmiotu" value={name} onChange={(e) => setName(e.target.value)} maxLength={120} autoFocus />
+        <Field
+          label="Miejsce na liście"
+          hint="Liczba: mniejsza oznacza wyżej. Puste pole dopisuje przedmiot na koniec."
+          type="number"
+          inputMode="numeric"
+          value={sortOrder}
+          onChange={(e) => setSortOrder(e.target.value)}
+        />
+        <FormError message={localError ?? error} />
+        <FormActions pending={pending} submitLabel="Zapisz" onCancel={onClose} />
+      </form>
+    </Dialog>
+  );
+}

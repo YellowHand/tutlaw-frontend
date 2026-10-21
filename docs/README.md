@@ -22,7 +22,7 @@ dokleja do każdego żądania token JWT.
 | Plik | O czym jest | Kiedy czytać |
 |------|-------------|--------------|
 | [01. Architektura](01-architektura.md) | Technologie, układ katalogów, droga danych od serwera do ekranu, start aplikacji | Na początek, żeby wiedzieć, gdzie co leży |
-| [02. Routing i strony](02-routing-i-strony.md) | Wszystkie adresy, które ekran pokazują, kto ma do nich dostęp, jakie dane pobierają | Gdy szukasz, który plik odpowiada za dany ekran |
+| [02. Routing i strony](02-routing-i-strony.md) | Wszystkie adresy (także panel administratora `/admin`), które ekran pokazują, kto ma do nich dostęp, jakie dane pobierają | Gdy szukasz, który plik odpowiada za dany ekran |
 | [03. Logowanie i sesja](03-logowanie-i-sesja.md) | Token, wylogowanie po błędzie 401, rejestracja, reset hasła, rola administratora, co leży w przeglądarce | Gdy ruszasz cokolwiek związanego z kontem |
 | [04. Nauka w aplikacji](04-nauka-w-aplikacji.md) | Sesja testowa i fiszek, tasowanie odpowiedzi, skróty klawiszowe, pula pytań i zakres nauki, kreator testu i szybkie zestawy, egzamin próbny, ustawienia nauki i wybór ścieżki | Gdy chcesz zrozumieć, co się dzieje po kliknięciu odpowiedzi |
 | [05. Warstwa API i dane](05-warstwa-api-i-dane.md) | Klient HTTP, wszystkie wywołania serwera, klucze pamięci podręcznej, odświeżanie danych | Gdy łączysz frontend z backendem |

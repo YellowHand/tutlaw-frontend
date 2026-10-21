@@ -61,4 +61,15 @@ export const ROUTES = {
 
   statistics: "/app/statistics",
   account: "/app/account",
+
+  // Panel administratora (tylko rola ADMIN, poza szkieletem aplikacji): aplikacje, przedmioty Studenta, akty prawne
+  // z rozdziałami, arkusze egzaminów i terminy egzaminów.
+  admin: "/admin",
+  adminOverview: "/admin/przeglad",
+  adminTracks: "/admin/aplikacje",
+  adminCourses: "/admin/przedmioty",
+  adminActs: "/admin/akty",
+  adminAct: (id: string | number) => `/admin/akty/${id}`,
+  adminSheets: "/admin/arkusze",
+  adminTerms: "/admin/terminy",
 } as const;

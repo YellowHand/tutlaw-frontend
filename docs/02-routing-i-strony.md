@@ -14,11 +14,16 @@ flowchart TD
     URL["Adres w przeglądarce"] --> PUB{"Adres publiczny?<br/>/, /login, /register, /verify, ..."}
     PUB -- tak --> P["Ekran publiczny"]
     PUB -- nie --> APP{"Zaczyna się od /app ?"}
-    APP -- nie --> NF1["PublicNotFoundPage<br/>(404 bez menu)"]
+    APP -- nie --> ADM{"Zaczyna się od /admin ?"}
+    ADM -- nie --> NF1["PublicNotFoundPage<br/>(404 bez menu)"]
+    ADM -- tak --> PR
     APP -- tak --> PR["ProtectedRoute"]
     PR --> AUTH{"Jest token w AuthContext?"}
     AUTH -- nie --> LOGIN["Przekierowanie na /login<br/>(zapamiętuje, skąd przyszedłeś)"]
     AUTH -- tak --> SHELL["AppShell: menu + miejsce na ekran"]
+    PR --> ROLE{"Rola ADMIN?<br/>(tylko /admin)"}
+    ROLE -- nie --> DASH["Przekierowanie na Pulpit"]
+    ROLE -- tak --> ASHELL["AdminShell: menu panelu + ekran"]
     SHELL --> SCR["Ekran z tabeli poniżej"]
     SHELL --> NF2["NotFoundPage<br/>(404 w aplikacji, z menu)"]
 ```
@@ -33,6 +38,8 @@ flowchart TD
 - Zalogowany użytkownik, który wejdzie na `/login` albo `/register`, **nie jest** przekierowywany: widzi formularz. Na
   stronie głównej dostaje przyciski „Przejdź do aplikacji” zamiast „Załóż konto”.
 - Adres `/app` przekierowuje na `/app/dashboard` (Pulpit).
+- Adres `/admin` przekierowuje na `/admin/przeglad` (przegląd panelu administratora).
+- Adresy `/admin/...` (panel administratora) są dostępne tylko dla roli `ADMIN`: opis w [Panel administratora](#panel-administratora-admin).
 - Nieznany adres pod `/app/...` pokazuje 404 w ramce aplikacji (z menu), a nieznany adres poza nią 404 bez menu.
 - Jedyny parametr trasy to `:id` w szczegółach „Moich testów”; zły albo nieistniejący numer daje ekran błędu z linkiem do
   listy, a nie wyjątek. Zakres sesji nauki jest w **adresie po znaku `?`**: `?fieldId=`,
@@ -81,7 +88,7 @@ aplikacji](#menu-aplikacji)).
 | `/app/custom-test/history/:id` | `MyTestDetailPage` (`features/customTest/MyTestDetailPage.tsx`) | Szczegóły zapisanego testu: ustawienia (w tym źródło), wynik i wszystkie pytania z odpowiedziami (filtr „Błędne i bez odpowiedzi”). Przycisk „Ułóż ponownie z tymi ustawieniami” otwiera w Testach kreator z wypełnionym wyborem |
 | `/app/custom-test/history/exams/:id` | `MyExamPage` (`features/customTest/MyExamPage.tsx`) | Raport zapisanego podejścia do egzaminu (ten sam `ExamResultView` co po egzaminie, w trybie `saved`: bez „Nowy egzamin”, z powrotem do „Moich testów” → Egzaminy i uwagą, że pytania są w dzisiejszej wersji). Podejście bez zapisanych odpowiedzi (starsze) kończy się komunikatem o błędzie |
 | `/app/statistics` | `StatisticsPage` (`features/statistics/StatisticsPage.tsx`) | Statystyki: opanowanie pytań według źródła, opanowanie aktów prawnych, „Podsumowanie nauki”, ostatnie 30 dni, aktywność, fiszki |
-| `/app/account` | `AccountPage` (`features/account/AccountPage.tsx`) | Konto: wygląd, ustawienia nauki (w tym wybór ścieżki), terminy egzaminów (administrator), trudne i zawieszone pytania, zmiana hasła, pobranie danych, wyzerowanie postępów, usunięcie konta |
+| `/app/account` | `AccountPage` (`features/account/AccountPage.tsx`) | Konto: wygląd, ustawienia nauki (w tym wybór ścieżki), wejście do panelu i terminy egzaminów (administrator), trudne i zawieszone pytania, zmiana hasła, pobranie danych, wyzerowanie postępów, usunięcie konta |
 | `/app/*` | `NotFoundPage` (`features/misc/NotFoundPage.tsx`) | Strona 404 w ramce aplikacji |
 
 Ekrany aplikacji (oprócz stron wejściowych: główna, logowanie, rejestracja i reszta kont) są ładowane **leniwie** (`React.lazy` i `Suspense`): ich kod pobiera się dopiero przy pierwszym wejściu, a w tym czasie widać krótki ekran ładowania (`components/RouteFallback.tsx`). Całość otacza granica błędów `ErrorBoundary` (`components/ErrorBoundary.tsx`): gdy ekran się wywróci, użytkownik widzi „Coś poszło nie tak” i przycisk „Odśwież stronę” zamiast pustej strony, a menu aplikacji zostaje. Przejście na inny adres naprawia widok.
@@ -123,6 +130,39 @@ Dwie sprawy wynikają z tego układu:
   przedmioty), który liczą Testy, Fiszki, Pulpit i Statystyki. Przy każdym teście dochodzi wybór chwilowy w kreatorze:
   **źródło pytań** (Wszystkie, Ministerstwo Sprawiedliwości, Autorskie) i rozdziały aktów. Nie ma już znacznika „Pula
   pytań” ani trwałego filtra źródeł.
+
+## Panel administratora (`/admin`)
+
+Panel ma **własny szkielet** (`AdminShell`, `features/admin/AdminShell.tsx`) i leży poza `/app`, ale za tym samym
+`ProtectedRoute`. Dodatkowo stoi przed nim `AdminRoute` (`features/admin/AdminRoute.tsx`): wpuszcza tylko rolę `ADMIN`
+(`useIsAdmin()`, rola z tokenu), a każdego innego odsyła na Pulpit. To tylko wygoda: serwer i tak odrzuca `/api/admin/**` od zwykłego
+użytkownika kodem `403` (patrz [03](03-logowanie-i-sesja.md#rola-administratora)). Wejście do panelu widzi tylko administrator: pozycja
+„Panel administratora” w pasku bocznym (od `md`) oraz karta „Panel administratora” w Koncie (`AdminPanelCard`; na telefonie to jedyne
+miejsce, bo dolna belka go nie ma). Strony panelu ładują się leniwie, więc zwykły użytkownik ich nie pobiera.
+
+| Adres | Ekran (plik) | Co robi |
+|-------|--------------|---------|
+| `/admin/przeglad` | `AdminOverviewPage` (`features/admin/AdminOverviewPage.tsx`) | Przegląd: ile jest aplikacji, przedmiotów, aktów (w tym ukrytych), rozdziałów, arkuszy i pytań, liczba nowych zgłoszeń błędów |
+| `/admin/aplikacje` | `AdminTracksPage` (`features/admin/AdminTracksPage.tsx`) | Aplikacje i Student: dodawanie, edycja (nazwa, krótka nazwa, miejsce na liście), wybór aktów prawnych aplikacji (`ActPickerDialog`), usuwanie aplikacji bez arkuszy i bez wybierających ją użytkowników. Student: bez usuwania i bez aktów (te idą przez przedmioty) |
+| `/admin/przedmioty` | `AdminCoursesPage` (`features/admin/AdminCoursesPage.tsx`) | Przedmioty Studenta: dodawanie, edycja, akty prawne przedmiotu, usuwanie |
+| `/admin/akty` | `AdminActsPage` (`features/admin/AdminActsPage.tsx`) | Akty prawne: lista po 20 na stronie z filtrami w adresie (`q`, `field`, `kind`, `assign`, `vis`, `page`), dodawanie, ukrywanie (z potwierdzeniem) i przywracanie, usuwanie aktów bez pytań |
+| `/admin/akty/:id` | `AdminActPage` (`features/admin/AdminActPage.tsx`) | Jeden akt: dane, edycja, ukrycie, usunięcie, przypisanie do aplikacji i przedmiotów (jedno „Zapisz”) oraz rozdziały (`ActSectionsCard`: dodawanie pojedyncze i wklejony spis, zmiana nazwy, kolejność strzałkami, usuwanie rozdziałów bez pytań). Zły numer w adresie daje komunikat, a nie wyjątek |
+| `/admin/arkusze` | `AdminSheetsPage` (`features/admin/AdminSheetsPage.tsx`) | Arkusze egzaminów (aplikacja i rok): filtr aplikacji, dodawanie, zmiana roku i nazwy, ukrywanie i przywracanie, usuwanie arkuszy bez pytań |
+| `/admin/terminy` | `AdminTermsPage` (`features/admin/AdminTermsPage.tsx`) | Terminy egzaminów: ta sama karta `ExamTermsCard` co w Koncie (`PUT /api/exam-terms/{trackId}`) |
+| `/admin/*` | przekierowanie na `/admin` (czyli na przegląd) | Nieznany adres w panelu wraca na przegląd |
+
+Zasady wspólne dla ekranów panelu:
+
+- **Akt, arkusz albo rozdział z pytaniami nie ma przycisku „Usuń”**: można go tylko ukryć. Ukrycie działa od razu u wszystkich użytkowników
+  (z testów, fiszek, liczników i statystyk); pytania i historia odpowiedzi zostają, a po przywróceniu wszystko wraca. Ukrycie pyta o
+  potwierdzenie, przywrócenie nie. Serwer i tak pilnuje zasady (`409` z komunikatem), więc interfejs tylko nie pokazuje przycisku.
+- Zapisy i usunięcia idą przez `useAdminMutation` (`features/admin/adminQueries.ts`): po sukcesie **unieważnia wszystkie zapytania**
+  (zmiana aktu zmienia liczniki i pule w wielu miejscach), a odświeżają się tylko te, które są teraz na ekranie. Wynik czynności pokazuje
+  pasek `FlashMessage` (potwierdzenie albo komunikat błędu z serwera), a w oknach błąd stoi pod formularzem.
+- Okna (`Dialog`) z formularzami nie zamykają się kliknięciem w tło; Esc i „Anuluj” działają. Nazwy są unikalne w swoim zakresie, a duplikat
+  daje komunikat serwera (`409`).
+- Adresy (slugi) powstają raz z nazwy i nie są edytowalne; z interfejsu wynika to z braku pola.
+- Na telefonie menu panelu to przewijany pasek zakładek pod nagłówkiem, a na komputerze lewa kolumna z „Wróć do aplikacji” na dole.
 
 ## Menu aplikacji
 
@@ -365,7 +405,8 @@ kształcie (np. obiekt zamiast listy) jest traktowana jak błąd.
 Karty w tej kolejności: adres konta („Zalogowano jako”), **wygląd** (`AppearanceCard`), **ustawienia nauki**
 (`LearningSettingsCard`: „Moja ścieżka”, limity dzienne, retencja), **zakres nauki** (`LearningScopeCard`: z których aktów
 albo przedmiotów się uczysz, przycisk „Zmień zakres nauki”), **terminy egzaminów** (tylko dla
-administratora, `ExamTermsCard`: data dla każdej z pięciu aplikacji, „Zapisz” i „Usuń termin”; Student terminu nie ma),
+administratora, `ExamTermsCard`: data dla każdej z pięciu aplikacji, „Zapisz” i „Usuń termin”; Student terminu nie ma), przed nią
+karta „Panel administratora” (`AdminPanelCard`, wejście do panelu `/admin`, też tylko dla administratora),
 trudne i zawieszone pytania (osobno w testach i w fiszkach), zmiana hasła, pobranie danych, **„Wyzeruj postępy”**
 (`ResetProgressCard`), usunięcie konta. Zmiana ścieżki otwiera okno potwierdzenia z tekstem „Twoje postępy zostają” i
 niezaznaczonym „Zacznij od zera”. Szczegóły w

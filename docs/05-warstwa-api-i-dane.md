@@ -52,7 +52,7 @@ prośba o reset hasła i ustawienie nowego hasła) jest wpisanych bezpośrednio 
 
 ## Wszystkie wywołania serwera
 
-Frontend używa **64 z 70** endpointów backendu (łącznie 65 wywołań w kodzie, bo `POST /api/me/study-time` jest wołane z
+Frontend używa **95 z 101** endpointów backendu (łącznie 96 wywołań w kodzie, bo `POST /api/me/study-time` jest wołane z
 dwóch miejsc). Sześć endpointów backendu pozostaje nieużywanych (`GET /api/courses` oraz pięć endpointów oznaczeń pytań, na które nie ma jeszcze ekranu); sekcja o nich jest [niżej](#endpointy-których-frontend-nie-używa).
 Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć wyszukiwarką.
 
@@ -160,6 +160,46 @@ Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć w
 | `GET /api/exam-terms` | `getExamTerms` (`api/examTerms.ts`) | Terminy egzaminów pięciu aplikacji (każdy z obiektem `track`): okno startowe (wiersz terminu przy aplikacji), informacja o terminie w Koncie i karta „Terminy egzaminów” |
 | `PUT /api/exam-terms/{trackId}` | `updateExamTerm` (`api/examTerms.ts`) | Zapis albo usunięcie terminu (karta administratora w Koncie; serwer sprawdza rolę) |
 
+### Panel administratora (`api/admin.ts`)
+
+Wszystkie wywołania poniżej wymagają roli `ADMIN` (inaczej `403`). Opis każdego (ciała, odpowiedzi, błędy) jest w dokumentacji backendu
+(`docs/api/10-panel-administratora.md`); ekrany: [02](02-routing-i-strony.md#panel-administratora-admin). Terminy egzaminów panel bierze z
+istniejących `GET /api/exam-terms` i `PUT /api/exam-terms/{trackId}` (tabela wyżej), bez własnego endpointu.
+
+| Wywołanie | Funkcja | Gdzie używane |
+|-----------|---------|---------------|
+| `GET /api/admin/overview` | `getAdminOverview` | Przegląd panelu: liczniki i nowe zgłoszenia |
+| `GET /api/admin/tracks` | `getAdminTracks` | Lista aplikacji i Studenta; filtry i etykiety na listach aktów i arkuszy, przypisanie aktu |
+| `POST /api/admin/tracks` | `createAdminTrack` | „Dodaj aplikację” |
+| `PUT /api/admin/tracks/{id}` | `updateAdminTrack` | „Edytuj” aplikację (nazwa, krótka nazwa, miejsce na liście) |
+| `DELETE /api/admin/tracks/{id}` | `deleteAdminTrack` | „Usuń” aplikację (`409`, gdy ma arkusze albo wybrali ją użytkownicy; `400` dla Studenta) |
+| `PUT /api/admin/tracks/{id}/acts` | `setAdminTrackActs` | „Akty prawne” aplikacji: zastępuje całą listę |
+| `GET /api/admin/courses` | `getAdminCourses` | Lista przedmiotów Studenta; filtr i przypisanie aktu |
+| `POST /api/admin/courses` | `createAdminCourse` | „Dodaj przedmiot” |
+| `PUT /api/admin/courses/{id}` | `updateAdminCourse` | „Edytuj” przedmiot |
+| `DELETE /api/admin/courses/{id}` | `deleteAdminCourse` | „Usuń” przedmiot |
+| `PUT /api/admin/courses/{id}/acts` | `setAdminCourseActs` | „Akty prawne” przedmiotu: zastępuje całą listę |
+| `GET /api/admin/fields` | `getAdminFields` | Dziedziny: filtr listy aktów i wybór dziedziny w formularzu aktu |
+| `GET /api/admin/acts` | `getAdminActs` | Lista aktów (strona po 20, parametry `query`, `fieldId`, `kind`, `hidden`, `trackId`, `courseId`, `unassigned`, `page`, `size`; odpowiedź `PageResponse`) |
+| `GET /api/admin/acts/options` | `getAdminActOptions` | Skrócona lista wszystkich aktów w oknie wyboru aktów aplikacji i przedmiotu |
+| `GET /api/admin/acts/{id}` | `getAdminAct` | Strona jednego aktu |
+| `POST /api/admin/acts` | `createAdminAct` | „Dodaj akt” |
+| `PUT /api/admin/acts/{id}` | `updateAdminAct` | „Edytuj” akt |
+| `PUT /api/admin/acts/{id}/hidden` | `setAdminActHidden` | „Ukryj” i „Przywróć” akt |
+| `PUT /api/admin/acts/{id}/assignments` | `setAdminActAssignments` | „Zapisz przypisanie”: aplikacje (`trackIds`) i przedmioty (`courseIds`) aktu |
+| `DELETE /api/admin/acts/{id}` | `deleteAdminAct` | „Usuń akt” (`409`, gdy akt ma pytania) |
+| `GET /api/admin/acts/{actId}/sections` | `getAdminSections` | Rozdziały aktu na jego stronie |
+| `POST /api/admin/acts/{actId}/sections` | `createAdminSection` | „Dodaj rozdział”; odpowiedź to pełna lista rozdziałów |
+| `POST /api/admin/acts/{actId}/sections/bulk` | `createAdminSectionsBulk` | „Wklej spis rozdziałów” (jeden wiersz = jeden rozdział, powtórzone nazwy pomijane) |
+| `PUT /api/admin/acts/{actId}/sections/order` | `reorderAdminSections` | Strzałki „w górę” i „w dół”: wysyła pełną kolejność (`ids`) |
+| `PUT /api/admin/sections/{id}` | `renameAdminSection` | „Zmień nazwę” rozdziału |
+| `DELETE /api/admin/sections/{id}` | `deleteAdminSection` | „Usuń rozdział” (`409`, gdy ma pytania); odpowiedź to pełna lista |
+| `GET /api/admin/sheets` | `getAdminSheets` | Lista arkuszy egzaminów (opcjonalnie `trackId`) |
+| `POST /api/admin/sheets` | `createAdminSheet` | „Dodaj arkusz” (aplikacja i rok) |
+| `PUT /api/admin/sheets/{id}` | `updateAdminSheet` | „Edytuj” arkusz (rok i nazwa; nazwa wyprowadzona z roku idzie za rokiem) |
+| `PUT /api/admin/sheets/{id}/hidden` | `setAdminSheetHidden` | „Ukryj” i „Przywróć” arkusz |
+| `DELETE /api/admin/sheets/{id}` | `deleteAdminSheet` | „Usuń” arkusz (`409`, gdy ma pytania) |
+
 ### Endpointy, których frontend nie używa
 
 Endpointów, których frontend nie używa, jest 6:
@@ -173,12 +213,11 @@ Endpointów, których frontend nie używa, jest 6:
 | `PUT /api/admin/question-marks/questions/{questionId}/{mark}` | Oznaczenia pytań (terminy, pułapki): tylko dla administratora, na razie przez Swagger albo `curl`; ekran (kolejka propozycji do zatwierdzenia) dojdzie w osobnym etapie. Użytkownik oznaczeń nigdy nie widzi (decyzja o jednym oznaczeniu) |
 | `GET /api/courses` | Lista przedmiotów. Student dostaje przedmioty w puli (`Pool.courses`) i w katalogu Testów (`TestCatalog.courses`), z liczbami pytań i zaznaczeniem, więc osobne pobieranie niczego nie daje |
 
-Treść (akty prawne, przedmioty, pytania, zmiany w prawie) administrator wprowadza **skryptami SQL**, a nie przez API, więc
-nie ma endpointów do jej dodawania.
-
-W aplikacji nie ma panelu administratora. Funkcje administratora w interfejsie to przyciski „Ukryj pytanie” i „Ukryj
-fiszkę” (`PUT /api/questions/{questionId}/hidden` i `/flashcard-hidden`) oraz karta „Terminy egzaminów” w Koncie
-(`PUT /api/exam-terms/{trackId}`).
+**Pytania** i zmiany w prawie administrator nadal wprowadza **skryptami SQL**: nie ma endpointów do ich dodawania ani edycji (dojdą w
+osobnym etapie razem z ekranem pytań). Aplikacjami, przedmiotami Studenta, aktami prawnymi z rozdziałami i arkuszami egzaminów
+administrator zarządza w panelu (`/admin`, tabela [wyżej](#panel-administratora-apiadmints)). Pozostałe funkcje administratora w
+interfejsie to przyciski „Ukryj pytanie” i „Ukryj fiszkę” (`PUT /api/questions/{questionId}/hidden` i `/flashcard-hidden`) oraz karta
+„Terminy egzaminów” w Koncie i w panelu (`PUT /api/exam-terms/{trackId}`).
 
 ## Parametry zapytań, które łatwo pomylić
 
@@ -256,6 +295,7 @@ przy następnym użyciu (aktywne od razu).
 | Zmiana wyglądu (`useChooseTheme`, okno startowe) | Podmiana `["settings","learning"]` odpowiedzią serwera; strona przełącza się od razu, a przy błędzie wraca do poprzedniego wyglądu |
 | Wybór ścieżki (`useChooseTrack`, okno startowe) | Podmiana `["settings","learning"]` odpowiedzią serwera + unieważnienie puli (`["pool"]`) i wszystkiego, co liczy pytania: katalog Testów, liczniki powtórek, licznik błędów, liczniki kreatora testu, statystyki (backend zdejmuje przy tym zawężenie do aktów) |
 | Zapis zakresu nauki (okno „Zakres nauki” w Koncie) | Podmiana `["pool"]` odpowiedzią serwera + unieważnienie: katalog Testów, liczniki powtórek, licznik błędów, liczniki kreatora testu, ustawienia nauki (plan do egzaminu) i **statystyki** |
+| Zapis, ukrycie albo usunięcie w panelu administratora (`useAdminMutation`) | Unieważnienie **wszystkich** zapytań (`queryClient.invalidateQueries()`): zmiana aktu, aplikacji, arkusza czy przypisania zmienia pulę, liczniki i katalogi w wielu miejscach; odświeżają się tylko zapytania aktualnie na ekranie. Operacje na rozdziałach i przypisaniu aktu dodatkowo wpisują odpowiedź serwera od razu do pamięci (`["admin","sections",actId]`, `["admin","act",id]`) |
 | Zapis terminu egzaminu (administrator) | Podmiana wiersza w `["settings","exam-terms"]` odpowiedzią serwera + unieważnienie `["settings","learning"]` (zmienia się odliczanie i plan) |
 | Zawieszenie pytania (w sesji nauki) albo zawieszenie i przywrócenie na liście w Koncie | `["difficult-questions"]` (z listy w Koncie także `invalidateReviewData`) |
 | „Ukryj pytanie” / „Ukryj fiszkę” (administrator) | `invalidateReviewData` + katalog Testów (`["tests","catalog"]`) + pula (`["pool"]`) |

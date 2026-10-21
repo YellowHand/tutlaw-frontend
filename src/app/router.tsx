@@ -4,6 +4,8 @@ import { ErrorBoundary } from "../components/ErrorBoundary";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 import { RouteFallback } from "../components/RouteFallback";
 import { AppShell } from "../components/layout/AppShell";
+import { AdminRoute } from "../features/admin/AdminRoute";
+import { AdminShell } from "../features/admin/AdminShell";
 import { LandingPage } from "../pages/LandingPage";
 import { LoginPage } from "../pages/LoginPage";
 import { RegisterPage } from "../pages/RegisterPage";
@@ -35,6 +37,14 @@ const TestBuilderPage = lazy(() =>
 );
 const StatisticsPage = lazy(() => import("../features/statistics/StatisticsPage").then((m) => ({ default: m.StatisticsPage })));
 const AccountPage = lazy(() => import("../features/account/AccountPage").then((m) => ({ default: m.AccountPage })));
+// Panel administratora ładuje się dopiero administratorowi, który do niego wejdzie.
+const AdminOverviewPage = lazy(() => import("../features/admin/AdminOverviewPage").then((m) => ({ default: m.AdminOverviewPage })));
+const AdminTracksPage = lazy(() => import("../features/admin/AdminTracksPage").then((m) => ({ default: m.AdminTracksPage })));
+const AdminCoursesPage = lazy(() => import("../features/admin/AdminCoursesPage").then((m) => ({ default: m.AdminCoursesPage })));
+const AdminActsPage = lazy(() => import("../features/admin/AdminActsPage").then((m) => ({ default: m.AdminActsPage })));
+const AdminActPage = lazy(() => import("../features/admin/AdminActPage").then((m) => ({ default: m.AdminActPage })));
+const AdminSheetsPage = lazy(() => import("../features/admin/AdminSheetsPage").then((m) => ({ default: m.AdminSheetsPage })));
+const AdminTermsPage = lazy(() => import("../features/admin/AdminTermsPage").then((m) => ({ default: m.AdminTermsPage })));
 
 export function Router() {
   return (
@@ -84,6 +94,21 @@ export function Router() {
                 <Route path="account" element={<AccountPage />} />
 
                 <Route path="*" element={<NotFoundPage />} />
+              </Route>
+
+              {/* Panel administratora: tylko rola ADMIN (inni wracają na Pulpit), własny szkielet z menu panelu */}
+              <Route element={<AdminRoute />}>
+                <Route path="/admin" element={<AdminShell />}>
+                  <Route index element={<Navigate to="przeglad" replace />} />
+                  <Route path="przeglad" element={<AdminOverviewPage />} />
+                  <Route path="aplikacje" element={<AdminTracksPage />} />
+                  <Route path="przedmioty" element={<AdminCoursesPage />} />
+                  <Route path="akty" element={<AdminActsPage />} />
+                  <Route path="akty/:id" element={<AdminActPage />} />
+                  <Route path="arkusze" element={<AdminSheetsPage />} />
+                  <Route path="terminy" element={<AdminTermsPage />} />
+                  <Route path="*" element={<Navigate to="/admin" replace />} />
+                </Route>
               </Route>
             </Route>
 

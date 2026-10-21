@@ -126,8 +126,11 @@ szkicu egzaminu ani zapamiętanych ustawień (patrz tamże).
 
 Token zawiera pole `role` (`STUDENT` albo `ADMIN`). Funkcja `roleFromToken()` dekoduje środkową część tokenu (zwykłe
 base64, bez sprawdzania podpisu) i zwraca rolę, a hook `useIsAdmin()` mówi, czy to `ADMIN`. Służy to **wyłącznie do
-pokazania lub ukrycia elementów** dla administratora: przycisków „Ukryj pytanie” i „Ukryj fiszkę” (`features/admin/HideQuestionButton.tsx`) oraz karty „Terminy egzaminów” w Koncie (`features/settings/ExamTermsCard.tsx`).
+pokazania lub ukrycia elementów** dla administratora: przycisków „Ukryj pytanie” i „Ukryj fiszkę” (`features/admin/HideQuestionButton.tsx`) karty „Terminy egzaminów” w Koncie (`features/settings/ExamTermsCard.tsx`), wejść do panelu administratora (pozycja w pasku bocznym i karta
+w Koncie) oraz samego panelu `/admin`: `AdminRoute` (`features/admin/AdminRoute.tsx`) odsyła kogoś bez roli `ADMIN` na Pulpit.
 Prawdziwa kontrola jest w serwerze przy każdym żądaniu, więc podrobienie roli w przeglądarce niczego nie daje.
+
+Backend chroni całą ścieżkę `/api/admin/**` na dwóch poziomach (konfiguracja zabezpieczeń i `@PreAuthorize` w każdym kontrolerze).
 
 Zmiana roli w bazie działa dopiero po następnym odświeżeniu sesji (do 30 minut) albo ponownym zalogowaniu, bo rola siedzi w tokenie dostępu.
 

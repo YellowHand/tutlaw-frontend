@@ -61,7 +61,7 @@ port-fe/
 | Katalog | Pliki | Za co odpowiada |
 |---------|-------|-----------------|
 | `account` | 8 | Ekran Konto: zmiana hasła, pobranie danych, usunięcie konta, wywołania serwera, dane zalogowanego konta (`useMe`) |
-| `admin` | 1 | Przyciski „Ukryj pytanie” i „Ukryj fiszkę” (tylko dla administratora) |
+| `admin` | 25 | Panel administratora (`/admin`): strażnik roli, szkielet z menu, przegląd, aplikacje, przedmioty Studenta, akty prawne z rozdziałami i przypisaniami, arkusze egzaminów, terminy, wspólne okna i zapytania; oraz przyciski „Ukryj pytanie” i „Ukryj fiszkę” (tylko dla administratora) |
 | `auth` | 6 | Pola formularzy logowania, „wyślij link ponownie”, odczyt roli z tokenu, czyszczenie sesji |
 | `customTest` | 13 | Kreator testu (jedna strona `TestBuilderPage`: źródło, przepisy z rozdziałami, rodzaj i liczba pytań, z przyklejonym podsumowaniem), model wyboru (akty, rozdziały, przedmioty), pamięć ostatniego wyboru; „Moje testy” (lista z przełącznikiem Testy / Egzaminy i stronicowaniem, szczegóły testu, raport zapisanego egzaminu, ułożenie ponownie z tymi samymi ustawieniami) |
 | `dashboard` | 6 | Pulpit: karta „Na dziś” z jednym głównym przyciskiem, „Postęp”, wynik egzaminu próbnego |
@@ -82,7 +82,7 @@ port-fe/
 | `studytime` | 3 | Czas nauki: licznik na ekranach nauki (tylko przy widocznej karcie, pauza po 3 minutach bez ruchu) i wysyłanie porcji co ok. 30 s |
 | `tests` | 11 | Ekran Testów (pasek zaległych, „Losuj z całej puli”, rodzaje testu, szybkie zestawy), grupowanie aktów pod dziedzinami i przedmiotami, tasowanie odpowiedzi |
 
-W repozytorium jest łącznie 209 plików w `src/`.
+W repozytorium jest łącznie 234 plików w `src/`.
 
 ### Dlaczego strony są w dwóch miejscach
 

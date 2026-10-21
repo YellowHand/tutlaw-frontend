@@ -1,9 +1,10 @@
 import { Link, useLocation } from "react-router-dom";
-import { ChevronsLeft, ChevronsRight, UserRound } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, ShieldCheck, UserRound } from "lucide-react";
 import { cn } from "../../lib/cn";
 import { ROUTES } from "../../config/routes";
 import { SIDE_NAV_ITEMS, isNavItemActive } from "../../config/navigation";
 import { useMe } from "../../features/account/hooks";
+import { useIsAdmin } from "../../features/auth/role";
 import { Logo } from "./Logo";
 import { LogoutButton } from "./LogoutButton";
 import { NavBadge } from "./NavBadge";
@@ -40,6 +41,7 @@ function ActiveMark({ edge }: { edge: "-left-3" | "-left-2" }) {
 export function SideNav({ variant, onToggle, className }: SideNavProps) {
   const { pathname } = useLocation();
   const { data: me } = useMe();
+  const isAdmin = useIsAdmin();
   const email = me?.email;
   const accountActive = pathname === ROUTES.account || pathname.startsWith(`${ROUTES.account}/`);
 
@@ -78,6 +80,17 @@ export function SideNav({ variant, onToggle, className }: SideNavProps) {
         </nav>
 
         <div className="flex flex-col items-center gap-1">
+          {isAdmin && (
+            <Link
+              to={ROUTES.admin}
+              title="Panel administratora"
+              aria-label="Panel administratora"
+              data-testid="nav-admin"
+              className="flex size-11 items-center justify-center rounded-xl text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg"
+            >
+              <ShieldCheck size={18} aria-hidden="true" />
+            </Link>
+          )}
           {onToggle && (
             <button
               type="button"
@@ -145,6 +158,17 @@ export function SideNav({ variant, onToggle, className }: SideNavProps) {
           );
         })}
       </nav>
+
+      {isAdmin && (
+        <Link
+          to={ROUTES.admin}
+          data-testid="nav-admin"
+          className="mt-2 flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium text-fg-muted transition-colors hover:bg-surface-2/60 hover:text-fg"
+        >
+          <ShieldCheck size={19} aria-hidden="true" />
+          Panel administratora
+        </Link>
+      )}
 
       <div className="mt-4 flex items-center gap-1 border-t border-line pt-3">
         <Link
