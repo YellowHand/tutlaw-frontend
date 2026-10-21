@@ -36,7 +36,7 @@ import {
   type Selection,
 } from "./selection";
 
-/** „Nauka": pytania do wyboru (nowe, błędy, zmiany w prawie); „Powtórki": tylko pytania po terminie powtórki. */
+/** „Nauka": pytania do wyboru (nowe, błędy, zmiany w prawie, terminy, pułapki); „Powtórki": tylko pytania po terminie powtórki. */
 export type BuilderFlavor = "STUDY" | "REVIEW";
 
 interface KindOption {
@@ -51,6 +51,8 @@ const STUDY_KINDS: KindOption[] = [
   { kind: "NEW", label: "Nowe", hint: "Jeszcze nierozwiązywane", count: (c) => c.newQuestions },
   { kind: "MISTAKES", label: "Moje błędy", hint: "Ostatnia odpowiedź błędna", count: (c) => c.mistakes },
   { kind: "LAW_CHANGE", label: "Zmiany w prawie", hint: "Zmienione w ostatnim roku", count: (c) => c.lawChanges },
+  { kind: "TIME_LIMIT", label: "Terminy", hint: "Pytania o terminy i okresy", count: (c) => c.timeLimits },
+  { kind: "TRAPS", label: "Pułapki", hint: "Podchwytliwe sformułowania", count: (c) => c.traps },
 ];
 
 const DUE_KIND: KindOption = { kind: "DUE", label: "Zaległe powtórki", hint: "Po terminie powtórki", count: (c) => c.due };
@@ -62,7 +64,7 @@ const questionsWord = (n: number) => pluralizePl(n, { one: "pytanie", few: "pyta
 /**
  * Kreator testu „Nauka" i „Powtórki": jedna podstrona (Testy → Nauka). Po lewej wybór w czterech częściach: źródło pytań
  * (wszystkie, Ministerstwo Sprawiedliwości, autorskie), przepisy (cała pula albo wybrane dziedziny, akty i rozdziały), które
- * pytania (nowe, błędy, zmiany w prawie) i ile ich ma być. Po prawej, przyklejone przy przewijaniu, podsumowanie „Twój test"
+ * pytania (nowe, błędy, zmiany w prawie, terminy, pułapki) i ile ich ma być. Po prawej, przyklejone przy przewijaniu, podsumowanie „Twój test"
  * z przyciskiem startu; na telefonie przycisk jest w dolnym pasku. To nauka, nie egzamin: bez wyniku „zdał / nie zdał".
  * Każdy test zapisuje się w „Moich testach", a stamtąd można go ułożyć ponownie z tymi samymi ustawieniami (`prefill`
  * w stanie nawigacji; skróty z Pulpitu działają tak samo). Bez `prefill` strona startuje od zapamiętanego wyboru.
@@ -273,7 +275,7 @@ export function TestBuilderPage({ flavor }: { flavor: BuilderFlavor }) {
 
           {!review && (
             <SectionCard title="Które pytania?" data-testid="builder-kind">
-              <div role="radiogroup" aria-label="Które pytania" className="grid grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-4">
+              <div role="radiogroup" aria-label="Które pytania" className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {STUDY_KINDS.map((option) => {
                   const total = counts.data ? option.count(counts.data) : null;
                   return (

@@ -507,8 +507,11 @@ Kreator to **jedna strona** z sekcjami „Źródło pytań”, „Przepisy”, �
   pozostałe akty zaznaczone w całości jako `actIds`, rozdziały jako `sectionIds`. Serwer bierze **sumę** tych zbiorów. Gdy
   zaznaczono wszystko („Cała pula”), wszystkie listy są puste i serwer bierze całą pulę (także akty dodane w międzyczasie i
   pytania bez rozdziału). Rozdziały zakłada administrator skryptem SQL; akt bez rozdziałów po prostu nie ma listy.
-- **Rodzaje pytań:** w Nauce „Wszystkie”, „Nowe”, „Moje błędy” i „Zmiany w prawie”, każdy z liczbą dostępnych pytań w
-  zakresie i źródle (`custom-test/counts`: `all`, `newQuestions`, `mistakes`, `due`, `lawChanges`). Powtórki to stały rodzaj
+- **Rodzaje pytań:** w Nauce „Wszystkie”, „Nowe”, „Moje błędy”, „Zmiany w prawie”, „Terminy” i „Pułapki”, każdy z liczbą
+  dostępnych pytań w zakresie i źródle (`custom-test/counts`: `all`, `newQuestions`, `mistakes`, `due`, `lawChanges`,
+  `timeLimits`, `traps`; sześć rodzajów układa się w dwóch rzędach po trzy). „Terminy” i „Pułapki” to pytania z **zatwierdzonym
+  oznaczeniem administratora** (`TIME_LIMIT`, albo któryś z podtypów pułapki); oznaczeń nie widać przy pytaniach, użytkownik
+  tylko wybiera taki rodzaj testu. Powtórki to stały rodzaj
   `DUE` (zaległe pytania, bez nowych). Rodzaj „Zmiany w prawie” to pytania, w których zmiana prawa (data
   `lawChange.changedAt`) przypada na ostatnie 365 dni; liczy je serwer.
 - **Liczba pytań to tylko 10, 20, 50, 100 albo 150** (stała `COUNT_CHOICES`; serwer odrzuca inne liczby komunikatem
@@ -522,7 +525,7 @@ Kreator to **jedna strona** z sekcjami „Źródło pytań”, „Przepisy”, �
   dostępna nieprzekraczająca zapamiętanej** (kto prosił o 100, a ma 35 pytań, dostaje „Wszystkie (35)”). Bez zapamiętanego
   wyboru proponujemy 20.
 - **Szybkie zestawy** (`QuickSets`, stała `QUICK_SET_SIZE` = 20) losują **do 20 pytań** danego rodzaju (`MISTAKES`,
-  `LAW_CHANGE`, `NEW`) z całej puli i wszystkich źródeł. Liczba na kafelku to wszystkie dostępne pytania tego rodzaju, a start
+  `LAW_CHANGE`, `NEW`, `TIME_LIMIT`, `TRAPS`) z całej puli i wszystkich źródeł. Liczba na kafelku to wszystkie dostępne pytania tego rodzaju, a start
   daje ich mniej, gdy jest ich mniej niż 20. Zestaw bez pytań jest wyszarzony. Własny zakres i liczbę ustawia się w „Nauce”.
   Pasek zaległych na górze Testów to nie jest zestaw losowany: prowadzi do `/app/test/due` (zwykła sesja z samych zaległych).
 - **Powtórki w kreatorze** są odmianą `REVIEW`: ta sama strona (pod `/app/tests/powtorki`), ale bez sekcji „Które pytania?”,
@@ -548,9 +551,21 @@ Kreator to **jedna strona** z sekcjami „Źródło pytań”, „Przepisy”, �
 Każdy własny test jest **zapisywany w chwili startu**, nie dopiero po ukończeniu (`MyTestsPage`, `MyTestDetailPage`; adresy
 `/app/custom-test/history` i `/app/custom-test/history/:id`, link „Moje testy” w nagłówku Testów; menu dalej świeci „Testy”).
 
-- **Lista** (`GET /api/custom-tests/sessions`) pokazuje od najnowszego: oznaczenie „Ukończony” albo **„Nieukończony”**, wynik
+- **Przełącznik Testy / Egzaminy** na górze strony. Zakładka i numer strony są w adresie (`?tab=exams&page=2`; strona liczona od
+  1, błędny numer to strona 1, a numer poza listą przenosi na ostatnią stronę), więc „Wstecz” przeglądarki i odświeżenie wracają
+  w to samo miejsce. Obie listy są **stronicowane po 20** (`LIST_PAGE_SIZE`; serwer zwraca `PageResponse`: `items`, `page`, `size`,
+  `totalElements`, `totalPages`). Pod listą są przyciski „Wstecz” i „Dalej” oraz podpis „21–40 z 87 testów (strona 2 z 5)”;
+  przy jednej stronie tylko „Razem: 3 testy”. Po zmianie strony lista przewija się na początek, a poprzednia strona zostaje
+  przyciemniona, dopóki nie wczyta się następna.
+- **Lista testów** (`GET /api/custom-tests/sessions?page=&size=`) pokazuje od najnowszego: oznaczenie „Ukończony” albo **„Nieukończony”**, wynik
   („poprawne / pytania”), nazwę zakresu, źródło, rodzaj pytań, datę i czas; przy nieukończonym też „odpowiedzi: N z M”. Test zaczęty
   i porzucony zostaje na liście. Gdy testów nie ma, jest zaproszenie „Ułóż test”.
+- **Lista egzaminów** (`GET /api/exams/history?page=&size=`, `ExamAttemptRow`): werdykt, wynik z procentem, zakres (np. „Egzamin MS:
+  Notarialna 2024”), data, próg, czas i liczba pominiętych. Podejście z zapisanymi odpowiedziami (`detailsAvailable: true`) jest
+  linkiem do raportu `/app/custom-test/history/exams/:id` (`MyExamPage`); starsze, sprzed zapisywania odpowiedzi, mają tylko wynik
+  i podpis „tylko wynik, bez odpowiedzi”. Raport pochodzi z `GET /api/exams/attempts/{id}`: wynik, czas i próg są z chwili
+  egzaminu, a treść pytań, wyjaśnienia i poprawne odpowiedzi są **dzisiejsze** (ekran mówi o tym wprost). Gdy nie ma egzaminów,
+  jest zaproszenie „Zrób egzamin próbny”.
 - **Szczegóły** (`GET /api/custom-tests/sessions/{id}`): wynik, źródło, rodzaj pytań, data startu, liczba odpowiedzi (i ile z „Nie jestem
   pewien”), czas odpowiadania oraz lista pytań z odpowiedziami, wyjaśnieniami i oznaczeniem, jak poszły; przełącznik „Wszystkie /
   Błędne i bez odpowiedzi”. Do nieukończonego testu nie da się wrócić, ekran mówi o tym wprost. Gdy test nie istnieje albo nie
@@ -622,9 +637,8 @@ telefonie panel jest pod formularzem. Treść jest rozciągnięta na całą szer
   Zapamiętany egzamin, którego już nie ma, jest zastępowany najnowszym egzaminem tej samej aplikacji.
 - **Mniej niż 150 pytań w źródle albo egzaminie:** egzamin ma tyle pytań, ile jest, a próg jest proporcjonalnie niższy
   (100 z 150, w górę do pełnego punktu, np. 12 pytań to 8 punktów). Ekran uprzedza o tym przed startem.
-- Obok przycisku „Rozpocznij egzamin” jest link „Chcesz poćwiczyć jeden dział? Ułóż test w Testach” do `/app/tests`.
-- Pod formularzem jest **historia** ostatnich podejść (do 50; `GET /api/exams/history`): wynik, zakres (np. „Egzamin MS:
-  Notarialna 2024”), data, próg, czas.
+- Na ekranie egzaminu **nie ma** historii podejść ani linku do Testów: wyniki i raporty poprzednich podejść są w „Moich testach”
+  → Egzaminy (karta „Egzamin próbny” na Pulpicie ma link „Wszystkie wyniki”).
   Frontend nadal rozumie podejście bez progu w punktach (`passPoints: null`, próg w procentach, własny zakres); w bazie
   założonej od nowa takich podejść nie ma (zob. „Raport”).
 
@@ -668,6 +682,8 @@ pytań z poprawnymi odpowiedziami, wyjaśnieniami, podstawą prawną i plakietk�
 Plakietki nie ma w trakcie egzaminu (`ExamRunner`), tylko w raporcie.
 Przycisk **„Przerób błędne i pominięte”** otwiera zwykłą sesję testową z tych pytań (`/app/test/practice?questionIds=...`);
 dopiero ta sesja zapisuje odpowiedzi w powtórkach.
+Ten sam raport otwiera się później z „Moich testów” → Egzaminy w trybie `saved` (bez „Nowy egzamin”, z linkiem „Wróć do Moich testów”
+i uwagą o dzisiejszej treści pytań).
 
 ## Zmiany w prawie
 
@@ -682,7 +698,8 @@ testu, raport egzaminu) albo `null`.
 - **Powrót do powtórki.** Serwer w dniu zmiany ustawia pytanie jako zaległe u każdego, kto odpowiadał na nie wcześniej (osobno
   w testach i w fiszkach), więc zaległości po prostu rosną; frontend nie ma na to osobnego kodu.
 - **„Zmiany w prawie”** to rodzaj pytań w kreatorze i szybki zestaw z ostatniego roku (`CustomTestKind` `LAW_CHANGE`,
-  etykieta w `features/customTest/kindLabels.ts`).
+  etykieta w `features/customTest/kindLabels.ts`). Podobnie **„Terminy”** (`TIME_LIMIT`) i **„Pułapki”** (`TRAPS`): pytania z
+  zatwierdzonym oznaczeniem administratora; frontend dostaje tylko liczby i listę pytań testu, nie same oznaczenia.
 
 ## Zerowanie postępów
 

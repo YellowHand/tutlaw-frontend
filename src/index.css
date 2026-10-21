@@ -110,6 +110,19 @@
   --color-danger: #b3261e;
 }
 
+/*
+ * Szkielet aplikacji (AppShell) ma wysokość okna, a przewija się tylko jego treść. Na macOS przeciągnięcie za koniec
+ * listy „odbijało" całą stronę razem z paskiem bocznym i pasek przestawał sięgać dołu okna. Wyłączamy to odbicie
+ * (overscroll) tylko tam, gdzie jest szkielet; strona główna i logowanie zachowują zwykłe przewijanie.
+ * Przyczyną było też to, że niewidoczne podpisy (sr-only, position: absolute) bez przodka z position: relative
+ * wystawały poza okno i robiły z całego dokumentu kilkadziesiąt pikseli przewijalnej strony: szkielet jest więc `relative`.
+ */
+html:has([data-app-shell]),
+body:has([data-app-shell]) {
+  overscroll-behavior: none;
+  overflow: hidden;
+}
+
 body {
   background-color: var(--color-canvas);
   color: var(--color-fg);

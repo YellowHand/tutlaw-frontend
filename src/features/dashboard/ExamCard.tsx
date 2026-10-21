@@ -10,6 +10,9 @@ import { QUIET_BUTTON } from "../tests/StartButtons";
 import { InlineError } from "./InlineError";
 import { recentFixedFormatAttempts } from "./selectors";
 
+/** Ile ostatnich podejść pobieramy do karty (wykres pokazuje 5 w stałym formacie, reszta to zapas na starsze formaty). */
+const HISTORY_FOR_CHART = 10;
+
 /** Dzień z daty i godziny zwróconej przez serwer: „12 października 2026". */
 function attemptDay(finishedAt: string): string {
   return formatDatePl(finishedAt.slice(0, 10));
@@ -17,16 +20,18 @@ function attemptDay(finishedAt: string): string {
 
 /**
  * Egzamin próbny na pulpicie: ostatni wynik i kilka ostatnich podejść na tle progu 100 punktów. Same fakty, bez prognoz.
- * Liczą się tylko podejścia w stałym formacie; starsze (z własnym zakresem i progiem) są w historii na ekranie egzaminu.
+ * Liczą się tylko podejścia w stałym formacie; starsze (z własnym zakresem i progiem) są tylko na liście w „Moich testach"
+ * (zakładka Egzaminy), gdzie są też wszystkie podejścia z raportami.
  */
 export function ExamCard({ className }: { className?: string }) {
-  const { data, isLoading, isError, refetch } = useExamHistory();
+  // Wystarczy pierwsza strona: wykres pokazuje 5 ostatnich podejść, a lista pełnej historii jest w „Moich testach".
+  const { data, isLoading, isError, refetch } = useExamHistory(0, HISTORY_FOR_CHART);
   const frame = cn("flex flex-col gap-4 rounded-2xl border border-line bg-surface p-5", className);
 
   if (isLoading) return <Skeleton className={cn("h-48 w-full", className)} />;
 
-  // Odpowiedź, która nie jest listą, traktujemy jak błąd: jedna zepsuta karta nie może przewrócić całego Pulpitu.
-  if (isError || !Array.isArray(data)) {
+  // Odpowiedź bez listy podejść traktujemy jak błąd: jedna zepsuta karta nie może przewrócić całego Pulpitu.
+  if (isError || !data || !Array.isArray(data.items)) {
     return (
       <section aria-labelledby="exam-card-title" className={frame}>
         <h2 id="exam-card-title" className="text-sm font-medium text-fg-muted">
@@ -37,7 +42,7 @@ export function ExamCard({ className }: { className?: string }) {
     );
   }
 
-  const attempts = recentFixedFormatAttempts(data);
+  const attempts = recentFixedFormatAttempts(data.items);
   const last = attempts[attempts.length - 1];
 
   if (!last) {
@@ -107,9 +112,17 @@ export function ExamCard({ className }: { className?: string }) {
         <p className="-mt-2 text-xs text-fg-muted">Linia przerywana to próg zaliczenia ({EXAM_PASS_POINTS} z {EXAM_QUESTION_COUNT} pkt).</p>
       )}
 
-      <Link to={ROUTES.exam} className={cn(QUIET_BUTTON, "w-fit")}>
-        Nowy egzamin
-      </Link>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <Link to={ROUTES.exam} className={cn(QUIET_BUTTON, "w-fit")}>
+          Nowy egzamin
+        </Link>
+        <Link
+          to={ROUTES.myExams}
+          className="inline-flex min-h-11 items-center rounded-lg px-1 text-sm text-fg-muted underline hover:text-fg"
+        >
+          Wszystkie wyniki
+        </Link>
+      </div>
     </section>
   );
 }

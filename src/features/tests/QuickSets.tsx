@@ -18,10 +18,12 @@ const SETS: QuickSet[] = [
   { kind: "MISTAKES", label: "Moje błędy", hint: "Pytania, w których ostatnia odpowiedź była błędna.", count: (c) => c.mistakes },
   { kind: "LAW_CHANGE", label: "Zmiany w prawie", hint: "Pytania zmienione w ostatnim roku.", count: (c) => c.lawChanges },
   { kind: "NEW", label: "Nowe pytania", hint: "Pytania, których jeszcze nie rozwiązywałeś.", count: (c) => c.newQuestions },
+  { kind: "TIME_LIMIT", label: "Pytania z terminów", hint: "Pytania o terminy i okresy.", count: (c) => c.timeLimits },
+  { kind: "TRAPS", label: "Pułapki", hint: "Pytania z podchwytliwym sformułowaniem.", count: (c) => c.traps },
 ];
 
 /**
- * „Szybkie zestawy": trzy kafelki, które od razu zaczynają test z całej puli (do 20 pytań danego rodzaju), bez kreatora.
+ * „Szybkie zestawy": pięć kafelków, które od razu zaczynają test z całej puli (do 20 pytań danego rodzaju), bez kreatora.
  * Liczba na kafelku to wszystkie dostępne pytania tego rodzaju; zestaw bez pytań jest wyszarzony. Rozmiar zestawu jest
  * tylko w podpowiedzi kafelka (title), nie ma osobnego napisu na ekranie.
  */
@@ -35,7 +37,7 @@ export function QuickSets() {
         Szybkie zestawy
       </h2>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-6 sm:gap-3">
         {SETS.map((set, index) => {
           const total = counts.data ? set.count(counts.data) : null;
           const empty = total === 0;
@@ -50,8 +52,10 @@ export function QuickSets() {
               data-testid={`quick-${set.kind.toLowerCase()}`}
               className={cn(
                 "flex min-h-13 cursor-pointer items-center justify-between gap-1.5 rounded-2xl border border-line bg-surface px-3 text-left text-sm font-semibold transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-surface sm:min-h-16 sm:gap-3 sm:px-4",
-                // Na telefonie trzy kafelki w dwóch kolumnach: trzeci zajmuje cały wiersz.
-                index === 2 && "col-span-2 sm:col-span-1"
+                // Telefon: dwie kolumny, piąty kafelek zajmuje cały wiersz. Szerzej: trzy kafelki w pierwszym rzędzie i dwa
+                // (szersze) w drugim, bez dziury w rzędzie.
+                index === SETS.length - 1 && "col-span-2",
+                index < 3 ? "sm:col-span-2" : "sm:col-span-3"
               )}
             >
               <span className="min-w-0">{set.label}</span>

@@ -2,14 +2,24 @@ import { api } from "./axiosInstance";
 import type { SourceKind } from "../lib/source";
 import type { SourceMode } from "../lib/sourceMode";
 import type { LawChange } from "../lib/lawChange";
+import { LIST_PAGE_SIZE, type PageResponse } from "./pagination";
 
 /**
  * Które pytania z wybranego zakresu mają wejść do własnego testu. LAW_CHANGE to pytania ze zmianą w prawie z ostatniego
- * roku (próg ustawia backend).
+ * roku (próg ustawia backend). TIME_LIMIT (pytania o terminy) i TRAPS (pułapki) to pytania z zatwierdzonym oznaczeniem
+ * administratora; użytkownik nie widzi samych oznaczeń, tylko wybiera taki rodzaj testu.
  */
-export type CustomTestKind = "ALL" | "NEW" | "MISTAKES" | "DUE" | "LAW_CHANGE";
+export type CustomTestKind = "ALL" | "NEW" | "MISTAKES" | "DUE" | "LAW_CHANGE" | "TIME_LIMIT" | "TRAPS";
 
-export const CUSTOM_TEST_KINDS: readonly CustomTestKind[] = ["ALL", "NEW", "MISTAKES", "DUE", "LAW_CHANGE"];
+export const CUSTOM_TEST_KINDS: readonly CustomTestKind[] = [
+  "ALL",
+  "NEW",
+  "MISTAKES",
+  "DUE",
+  "LAW_CHANGE",
+  "TIME_LIMIT",
+  "TRAPS",
+];
 
 /**
  * Zakres własnego testu: suma wskazanych dziedzin, aktów prawnych, rozdziałów aktów i (Student) przedmiotów z puli
@@ -38,6 +48,10 @@ export interface CustomTestCounts {
   due: number;
   /** Pytania ze zmianą w prawie z ostatniego roku. */
   lawChanges: number;
+  /** Pytania o terminy (zatwierdzone oznaczenie). */
+  timeLimits: number;
+  /** Pułapki: pytania z zatwierdzonym oznaczeniem któregokolwiek podtypu (negacja, „zawsze/nigdy", liczby, spójniki, stan prawny). */
+  traps: number;
 }
 
 export interface CustomTestSelection {
@@ -140,9 +154,14 @@ export interface CustomTestSessionDetail {
   questions: CustomTestSessionQuestion[];
 }
 
-/** Ostatnie 50 własnych testów, od najnowszego. */
-export async function listCustomTestSessions(): Promise<CustomTestSessionSummary[]> {
-  const res = await api.get<CustomTestSessionSummary[]>("/api/custom-tests/sessions");
+/** Jedna strona własnych testów, od najnowszego (`page` od 0). */
+export async function listCustomTestSessions(
+  page = 0,
+  size = LIST_PAGE_SIZE
+): Promise<PageResponse<CustomTestSessionSummary>> {
+  const res = await api.get<PageResponse<CustomTestSessionSummary>>("/api/custom-tests/sessions", {
+    params: { page, size },
+  });
   return res.data;
 }
 

@@ -24,7 +24,7 @@ export function AppShell() {
   const exitTo = sessionExitRoute(pathname);
 
   return (
-    <div className="flex h-dvh bg-canvas text-fg">
+    <div data-app-shell className="relative flex h-dvh overflow-hidden bg-canvas text-fg">
       {!exitTo && (
         <>
           <SideNav variant={collapsed ? "rail" : "full"} onToggle={toggleCollapsed} className="hidden xl:flex" />
@@ -44,7 +44,7 @@ export function AppShell() {
             </Link>
           </header>
         )}
-        <main className={cn("flex-1 overflow-y-auto", !exitTo && "pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-0")}>
+        <main className={cn("flex-1 overflow-y-auto overscroll-none", !exitTo && "pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-0")}>
           {/* Błąd w jednym ekranie nie zabiera menu, a przejście na inny adres próbuje wyrenderować go od nowa. */}
           <ErrorBoundary resetKey={pathname}>
             <Suspense fallback={<RouteFallback />}>

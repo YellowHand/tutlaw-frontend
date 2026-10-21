@@ -77,8 +77,9 @@ aplikacji](#menu-aplikacji)).
 | `/app/tests/powtorki` | `TestBuilderPage` (odmiana `REVIEW`) | Ten sam kreator dla „Powtórek”: rodzaj jest stały (zaległe pytania) |
 | `/app/tests/*` | przekierowanie na `/app/tests` | Dawne strony dziedziny (`/app/tests/:fieldId`) i przedmiotu (`/app/tests/subject/:courseId`): dziedziny, akty i rozdziały wybiera się teraz w kreatorze |
 | `/app/custom-test` | przekierowanie na `/app/tests` | Dawny ekran „Własny test”: stare zakładki i linki trafiają do Testów |
-| `/app/custom-test/history` | `MyTestsPage` (`features/customTest/MyTestsPage.tsx`) | „Moje testy”: lista zapisanych testów (z kreatora i z losowania), od najnowszego, z oznaczeniem „Nieukończony” i wynikiem |
+| `/app/custom-test/history` | `MyTestsPage` (`features/customTest/MyTestsPage.tsx`) | „Moje testy”: przełącznik **Testy / Egzaminy** (`?tab=exams`), obie listy od najnowszego i stronicowane po 20 (`?page=N`, Wstecz / Dalej, podpis „1–20 z 47 testów”). Testy: zapisane testy z oznaczeniem „Nieukończony” i wynikiem. Egzaminy: podejścia do egzaminu próbnego z wynikiem |
 | `/app/custom-test/history/:id` | `MyTestDetailPage` (`features/customTest/MyTestDetailPage.tsx`) | Szczegóły zapisanego testu: ustawienia (w tym źródło), wynik i wszystkie pytania z odpowiedziami (filtr „Błędne i bez odpowiedzi”). Przycisk „Ułóż ponownie z tymi ustawieniami” otwiera w Testach kreator z wypełnionym wyborem |
+| `/app/custom-test/history/exams/:id` | `MyExamPage` (`features/customTest/MyExamPage.tsx`) | Raport zapisanego podejścia do egzaminu (ten sam `ExamResultView` co po egzaminie, w trybie `saved`: bez „Nowy egzamin”, z powrotem do „Moich testów” → Egzaminy i uwagą, że pytania są w dzisiejszej wersji). Podejście bez zapisanych odpowiedzi (starsze) kończy się komunikatem o błędzie |
 | `/app/statistics` | `StatisticsPage` (`features/statistics/StatisticsPage.tsx`) | Statystyki: opanowanie pytań według źródła, opanowanie aktów prawnych, „Podsumowanie nauki”, ostatnie 30 dni, aktywność, fiszki |
 | `/app/account` | `AccountPage` (`features/account/AccountPage.tsx`) | Konto: wygląd, ustawienia nauki (w tym wybór ścieżki), terminy egzaminów (administrator), trudne i zawieszone pytania, zmiana hasła, pobranie danych, wyzerowanie postępów, usunięcie konta |
 | `/app/*` | `NotFoundPage` (`features/misc/NotFoundPage.tsx`) | Strona 404 w ramce aplikacji |
@@ -142,6 +143,12 @@ Menu rysuje `AppShell` (`components/layout/AppShell.tsx`) w trzech postaciach, z
 | od 1280 px (`xl`) | Panel po lewej (248 px): logo, przycisk zwijania, cztery pozycje (bez Konta) z odznakami, a na dole blok konta (litera, adres e-mail, „Konto i ustawienia”) i ikona wylogowania. Panel można zwinąć do wąskiego paska; wybór jest zapamiętany w przeglądarce | `components/layout/SideNav.tsx` (odmiana `full`) |
 | od 768 px (`md`) do 1279 px | Wąski pasek po lewej (84 px): ikona z krótkim podpisem pod spodem, na dole kółko konta i wylogowanie | `components/layout/SideNav.tsx` (odmiana `rail`) |
 | poniżej 768 px | Dolna belka z pięcioma pozycjami (łącznie z Kontem) | `components/layout/BottomNav.tsx` |
+
+**Menu zawsze sięga dołu okna.** `AppShell` ma wysokość okna (`h-dvh`), jest `relative` i `overflow-hidden`, a przewija się tylko
+treść (`main`, z `overscroll-none`). W `index.css` html i body ze szkieletem (`[data-app-shell]`) mają `overscroll-behavior: none`
+i `overflow: hidden`, więc przeciągnięcie za koniec listy (macOS, gładzik) nie „odbija” strony razem z paskiem. Przyczyną dawnego
+„uciekania” paska były niewidoczne podpisy (`sr-only`, `position: absolute`) bez przodka `relative`: wystawały poza okno i robiły z
+całego dokumentu kilkadziesiąt pikseli przewijalnej strony. Strona główna i logowanie nie mają szkieletu i przewijają się jak zwykle.
 
 Odznaka (`NavBadge`) pokazuje liczbę do powtórki z `GET /api/review/due-count`; gdy nic nie zalega, nie pojawia się. Powyżej
 99 pokazuje „99+”. Wylogowanie jest w panelu bocznym (ikona), a na telefonie, gdzie panelu nie ma, na ekranie Konto.
@@ -269,7 +276,8 @@ Jeden ekran (`TestsPage`, `/app/tests`): dziedziny, akty prawne i rozdziały wyb
 4. **„Ułóż test”** (`TestKindCards`): trzy karty, każda to zwykły link. **Nauka** prowadzi na `/app/tests/nauka` (kreator:
    źródło, przepisy, rozdziały, rodzaj i liczba pytań). **Powtórki** prowadzą na `/app/tests/powtorki` (ten sam kreator z
    rodzajem „Zaległe powtórki”; karta jest nieaktywna, gdy nic nie zalega). **Egzamin próbny** prowadzi do `/app/exam`. Na telefonie karty są wąskimi wierszami jedna pod drugą.
-5. **„Szybkie zestawy”** (`QuickSets`): „Moje błędy”, „Zmiany w prawie” i „Nowe pytania”. Kliknięcie **zaczyna test od
+5. **„Szybkie zestawy”** (`QuickSets`): „Moje błędy”, „Zmiany w prawie”, „Nowe pytania”, „Pytania z terminów” i „Pułapki” (pięć
+   kafelków: na szerokim ekranie trzy w pierwszym rzędzie i dwa szersze w drugim, na telefonie dwie kolumny). Kliknięcie **zaczyna test od
    razu**: do 20 pytań (`QUICK_SET_SIZE`) danego rodzaju z całej puli, bez kreatora. Liczba na kafelku to wszystkie dostępne
    pytania tego rodzaju; zestaw bez pytań jest wyszarzony.
 
@@ -317,8 +325,9 @@ Bez `prefill` strona startuje od zapamiętanego wyboru. Zasady szczegółowe:
 
 ### Moje testy (`features/customTest`)
 
-Zapisane testy: lista na `/app/custom-test/history` (`MyTestsPage`) i szczegóły na `/app/custom-test/history/:id`
-(`MyTestDetailPage`). Test zapisuje się w chwili startu (z kreatora, z „Losuj z całej puli” i z szybkiego zestawu), więc
+Zapisane testy i egzaminy: lista na `/app/custom-test/history` (`MyTestsPage`, przełącznik Testy / Egzaminy, obie zakładki
+stronicowane), szczegóły testu na `/app/custom-test/history/:id` (`MyTestDetailPage`) i raport egzaminu na
+`/app/custom-test/history/exams/:id` (`MyExamPage`). Test zapisuje się w chwili startu (z kreatora, z „Losuj z całej puli” i z szybkiego zestawu), więc
 porzucony zostaje na liście z oznaczeniem „Nieukończony”. Szczegóły pokazują źródło, wynik, liczbę odpowiedzi, czas i pytania
 z odpowiedziami; przycisk „Ułóż ponownie z tymi ustawieniami” otwiera kreator (Nauka albo Powtórki) wypełniony tym samym źródłem,
 zakresem, rodzajem pytań i liczbą (pozycje, których nie ma już w zakresie nauki albo w tym źródle, odpadają, a kreator mówi, ile

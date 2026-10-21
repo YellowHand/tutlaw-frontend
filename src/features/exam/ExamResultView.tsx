@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { CheckCircle2, Clock, MinusCircle, Play, XCircle } from "lucide-react";
+import { CheckCircle2, ChevronLeft, Clock, MinusCircle, Play, XCircle } from "lucide-react";
 import type { ExamQuestionResult, ExamResult, OptionKey } from "../../api/exam";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
@@ -20,11 +20,17 @@ const questionsWord = (n: number) => pluralizePl(n, { one: "pytanie", few: "pyta
 
 interface ExamResultViewProps {
   result: ExamResult;
-  onNewExam: () => void;
+  /** Raport zaraz po egzaminie: przycisk „Nowy egzamin". Bez niego (raport zapisanego podejścia) go nie ma. */
+  onNewExam?: () => void;
+  /**
+   * Raport otwarty później z „Moich testów" → Egzaminy: zamiast „Nowy egzamin" jest powrót do listy, a pod wynikiem
+   * informacja, że pytania i klucz odpowiedzi są bieżące.
+   */
+  saved?: boolean;
 }
 
 /** Raport po egzaminie: werdykt, wynik, czas, wyniki wg źródeł i przegląd pytań z poprawnymi odpowiedziami. */
-export function ExamResultView({ result, onNewExam }: ExamResultViewProps) {
+export function ExamResultView({ result, onNewExam, saved = false }: ExamResultViewProps) {
   const { attempt, questions, bySource, excludedCount } = result;
   const mistakes = questions.filter((q) => !q.correct);
   const [onlyMistakes, setOnlyMistakes] = useState(true);
@@ -36,6 +42,15 @@ export function ExamResultView({ result, onNewExam }: ExamResultViewProps) {
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-4 sm:p-6">
+      {saved && (
+        <Link
+          to={ROUTES.myExams}
+          className="-mb-3 inline-flex min-h-11 w-fit items-center gap-1 rounded-lg pr-2 text-sm text-fg-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ink"
+        >
+          <ChevronLeft size={16} aria-hidden="true" />
+          Moje testy: Egzaminy
+        </Link>
+      )}
       <h1 className="text-2xl font-bold">Wynik egzaminu</h1>
 
       <Card className="flex flex-col gap-5 p-5 sm:p-6">
@@ -100,6 +115,12 @@ export function ExamResultView({ result, onNewExam }: ExamResultViewProps) {
             Czas minął, więc egzamin został zakończony automatycznie. Pytania bez odpowiedzi liczą się jako błędne.
           </p>
         )}
+        {saved && (
+          <p className="rounded-xl border border-line bg-surface-2 px-4 py-3 text-sm text-fg-muted" data-testid="exam-saved-note">
+            Wynik, czas i próg są z chwili egzaminu. Pytania, wyjaśnienia i poprawne odpowiedzi pokazujemy w dzisiejszej
+            wersji, więc jeśli pytanie zostało poprawione, ocena przy nim może się różnić od tej z egzaminu.
+          </p>
+        )}
         {excludedCount > 0 && (
           <p className="rounded-xl border border-line bg-surface-2 px-4 py-3 text-sm text-fg-muted">
             {excludedCount} {questionsWord(excludedCount)} nie udało się ocenić (zostały usunięte albo nie są już
@@ -114,14 +135,16 @@ export function ExamResultView({ result, onNewExam }: ExamResultViewProps) {
               Przerób błędne i pominięte ({mistakes.length})
             </Link>
           )}
-          <Button type="button" variant="secondary" onClick={onNewExam}>
-            Nowy egzamin
-          </Button>
+          {onNewExam && (
+            <Button type="button" variant="secondary" onClick={onNewExam}>
+              Nowy egzamin
+            </Button>
+          )}
           <Link
-            to={ROUTES.tests}
+            to={saved ? ROUTES.myExams : ROUTES.tests}
             className="inline-flex min-h-11 items-center rounded-lg px-1 text-sm text-fg-muted underline hover:text-fg"
           >
-            Wróć do Testów
+            {saved ? "Wróć do Moich testów" : "Wróć do Testów"}
           </Link>
         </div>
         {mistakes.length > 0 && (

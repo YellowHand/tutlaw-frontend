@@ -3,6 +3,7 @@ import type { TestQueueItem } from "./review";
 import type { SourceKind } from "../lib/source";
 import type { LawChange } from "../lib/lawChange";
 import type { SourceMode } from "../lib/sourceMode";
+import { LIST_PAGE_SIZE, type PageResponse } from "./pagination";
 
 export type OptionKey = "A" | "B" | "C";
 
@@ -93,6 +94,11 @@ export interface ExamAttempt {
   timeLimitMinutes: number | null;
   durationSeconds: number;
   timedOut: boolean;
+  /**
+   * Czy da się otworzyć raport tego podejścia (`getExamAttempt`). Odpowiedzi zapisują się od poprawki 2 etapu 34;
+   * starsze podejścia mają tylko wynik.
+   */
+  detailsAvailable: boolean;
 }
 
 export interface ExamSourceBreakdown {
@@ -156,7 +162,17 @@ export async function submitExam(payload: ExamSubmitPayload): Promise<ExamResult
   return res.data;
 }
 
-export async function getExamHistory(): Promise<ExamAttempt[]> {
-  const res = await api.get<ExamAttempt[]>("/api/exams/history");
+/** Jedna strona historii egzaminów, od najnowszego (`page` od 0). */
+export async function getExamHistory(page = 0, size = LIST_PAGE_SIZE): Promise<PageResponse<ExamAttempt>> {
+  const res = await api.get<PageResponse<ExamAttempt>>("/api/exams/history", { params: { page, size } });
+  return res.data;
+}
+
+/**
+ * Raport zapisanego podejścia („Moje testy" → Egzaminy). Treść pytań i klucz odpowiedzi są bieżące (z bazy), a nagłówek
+ * (wynik, czas) pochodzi z chwili egzaminu. 404, gdy podejście nie ma zapisanych odpowiedzi albo jest cudze.
+ */
+export async function getExamAttempt(id: number): Promise<ExamResult> {
+  const res = await api.get<ExamResult>(`/api/exams/attempts/${id}`);
   return res.data;
 }

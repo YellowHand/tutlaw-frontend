@@ -28,6 +28,7 @@ const MyTestsPage = lazy(() => import("../features/customTest/MyTestsPage").then
 const MyTestDetailPage = lazy(() =>
   import("../features/customTest/MyTestDetailPage").then((m) => ({ default: m.MyTestDetailPage }))
 );
+const MyExamPage = lazy(() => import("../features/customTest/MyExamPage").then((m) => ({ default: m.MyExamPage })));
 const TestsPage = lazy(() => import("../features/tests/TestsPage").then((m) => ({ default: m.TestsPage })));
 const TestBuilderPage = lazy(() =>
   import("../features/customTest/TestBuilderPage").then((m) => ({ default: m.TestBuilderPage }))
@@ -68,6 +69,8 @@ export function Router() {
                 <Route path="custom-test" element={<Navigate to="/app/tests" replace />} />
                 <Route path="custom-test/history" element={<MyTestsPage />} />
                 <Route path="custom-test/history/:id" element={<MyTestDetailPage />} />
+                {/* Raport zapisanego podejścia do egzaminu próbnego (z listy „Moje testy" → Egzaminy) */}
+                <Route path="custom-test/history/exams/:id" element={<MyExamPage />} />
                 <Route path="exam" element={<ExamPage />} />
 
                 <Route path="tests" element={<TestsPage />} />

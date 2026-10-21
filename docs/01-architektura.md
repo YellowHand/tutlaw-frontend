@@ -63,7 +63,7 @@ port-fe/
 | `account` | 8 | Ekran Konto: zmiana hasła, pobranie danych, usunięcie konta, wywołania serwera, dane zalogowanego konta (`useMe`) |
 | `admin` | 1 | Przyciski „Ukryj pytanie” i „Ukryj fiszkę” (tylko dla administratora) |
 | `auth` | 6 | Pola formularzy logowania, „wyślij link ponownie”, odczyt roli z tokenu, czyszczenie sesji |
-| `customTest` | 11 | Kreator testu (jedna strona `TestBuilderPage`: źródło, przepisy z rozdziałami, rodzaj i liczba pytań, z przyklejonym podsumowaniem), model wyboru (akty, rozdziały, przedmioty), pamięć ostatniego wyboru; „Moje testy” (lista, szczegóły, ułożenie ponownie z tymi samymi ustawieniami) |
+| `customTest` | 13 | Kreator testu (jedna strona `TestBuilderPage`: źródło, przepisy z rozdziałami, rodzaj i liczba pytań, z przyklejonym podsumowaniem), model wyboru (akty, rozdziały, przedmioty), pamięć ostatniego wyboru; „Moje testy” (lista z przełącznikiem Testy / Egzaminy i stronicowaniem, szczegóły testu, raport zapisanego egzaminu, ułożenie ponownie z tymi samymi ustawieniami) |
 | `dashboard` | 6 | Pulpit: karta „Na dziś” z jednym głównym przyciskiem, „Postęp”, wynik egzaminu próbnego |
 | `difficult` | 4 | Trudne i zawieszone pytania: podpowiedź, zawieszanie, lista w Koncie |
 | `exam` | 10 | Egzamin próbny: ustawienia (źródło pytań, wybór egzaminu MS: aplikacja i rok), przebieg z zegarem, raport, historia, zapis w przeglądarce |
@@ -82,7 +82,7 @@ port-fe/
 | `studytime` | 3 | Czas nauki: licznik na ekranach nauki (tylko przy widocznej karcie, pauza po 3 minutach bez ruchu) i wysyłanie porcji co ok. 30 s |
 | `tests` | 11 | Ekran Testów (pasek zaległych, „Losuj z całej puli”, rodzaje testu, szybkie zestawy), grupowanie aktów pod dziedzinami i przedmiotami, tasowanie odpowiedzi |
 
-W repozytorium jest łącznie 206 plików w `src/`.
+W repozytorium jest łącznie 209 plików w `src/`.
 
 ### Dlaczego strony są w dwóch miejscach
 

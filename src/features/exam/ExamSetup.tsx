@@ -1,5 +1,4 @@
 import { useId, useMemo, useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
 import { Landmark, Layers, PenLine, Play, RotateCcw, ScrollText, Trash2 } from "lucide-react";
 import { startExam, type ExamAvailability, type ExamStart } from "../../api/exam";
 import { Button } from "../../components/ui/Button";
@@ -7,7 +6,6 @@ import { Card } from "../../components/ui/Card";
 import { Field } from "../../components/ui/Field";
 import { SectionCard, SummaryRow } from "../../components/ui/SectionCard";
 import { Skeleton } from "../../components/ui/Skeleton";
-import { ROUTES } from "../../config/routes";
 import { cn } from "../../lib/cn";
 import { serverMessage } from "../../lib/errors";
 import { pluralizePl } from "../../lib/plural";
@@ -17,7 +15,6 @@ import { usePool } from "../pool/hooks";
 import { START_BUTTON } from "../tests/StartButtons";
 import { EXAM_PASS_POINTS, EXAM_QUESTION_COUNT, formatClock } from "./format";
 import { loadRememberedSettings, saveRememberedSettings, type ExamDraft, type ExamSourceChoice } from "./examStorage";
-import { ExamHistory } from "./ExamHistory";
 import { ExamSheetPicker } from "./ExamSheetPicker";
 import { useExamAvailability, useExamSheets } from "./hooks";
 
@@ -362,18 +359,10 @@ export function ExamSetup({ draft, onResume, onDiscard, onStarted }: ExamSetupPr
                 <Play size={16} aria-hidden="true" />
                 {starting ? "Losuję pytania…" : "Rozpocznij egzamin"}
               </button>
-              <Link
-                to={ROUTES.tests}
-                className="inline-flex min-h-11 items-center justify-center rounded-lg px-1 text-center text-sm text-fg-muted underline hover:text-fg"
-              >
-                Chcesz poćwiczyć jeden dział? Ułóż test w Testach
-              </Link>
             </div>
           </Card>
         </aside>
       </form>
-
-      <ExamHistory />
     </div>
   );
 }

@@ -49,10 +49,14 @@ export const ROUTES = {
   testCustomBase: "/app/test/custom",
   testCustom: (questionIds: readonly number[], sessionId?: number) =>
     `/app/test/custom?questionIds=${questionIds.join(",")}${sessionId !== undefined ? `&sessionId=${sessionId}` : ""}`,
-  // „Moje testy": zapisane własne testy (lista i szczegóły). Pod /app/custom-test, więc menu dalej świeci „Testy".
+  // „Moje testy": zapisane własne testy i egzaminy próbne (lista z przełącznikiem Testy / Egzaminy i szczegóły). Pod
+  // /app/custom-test, więc menu dalej świeci „Testy".
   myTests: "/app/custom-test/history",
   myTest: (id: string | number) => `/app/custom-test/history/${id}`,
-  // Egzamin próbny: ustawienia, egzamin, raport i historia.
+  // Ta sama lista, zakładka Egzaminy (wyniki podejść do egzaminu próbnego), i raport jednego podejścia.
+  myExams: `/app/custom-test/history?tab=exams`,
+  myExam: (id: string | number) => `/app/custom-test/history/exams/${id}`,
+  // Egzamin próbny: ustawienia, egzamin i raport zaraz po zakończeniu (historia jest w „Moich testach").
   exam: "/app/exam",
 
   statistics: "/app/statistics",

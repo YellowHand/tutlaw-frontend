@@ -52,8 +52,8 @@ prośba o reset hasła i ustawienie nowego hasła) jest wpisanych bezpośrednio 
 
 ## Wszystkie wywołania serwera
 
-Frontend używa **63 z 64** endpointów backendu (łącznie 64 wywołań w kodzie, bo `POST /api/me/study-time` jest wołane z
-dwóch miejsc). Jeden endpoint backendu pozostaje nieużywany (`GET /api/courses`); sekcja o nim jest [niżej](#endpointy-których-frontend-nie-używa).
+Frontend używa **64 z 70** endpointów backendu (łącznie 65 wywołań w kodzie, bo `POST /api/me/study-time` jest wołane z
+dwóch miejsc). Sześć endpointów backendu pozostaje nieużywanych (`GET /api/courses` oraz pięć endpointów oznaczeń pytań, na które nie ma jeszcze ekranu); sekcja o nich jest [niżej](#endpointy-których-frontend-nie-używa).
 Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć wyszukiwarką.
 
 ### Konto i logowanie (bez tokenu)
@@ -99,9 +99,9 @@ Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć w
 | `GET /api/review/practice-queue` | `getPracticeQueue` | Sesja „Przećwicz błędy z egzaminu” i sesja testu z kreatora, z losowania i z szybkiego zestawu (`questionIds=`) |
 | `GET /api/review/mistakes-queue` | `getMistakesQueue` | Sesja „Powtórz moje błędy” |
 | `GET /api/review/mistakes-count` | `getMistakesCount` | Link „Popraw moje błędy” (z liczbą) na Pulpicie i w Statystykach |
-| `GET /api/review/custom-test/counts` | `getCustomTestCounts` (`api/customTest.ts`) | Liczby pytań w zakresie i źródle (parametry `fieldIds`, `actIds`, `courseIds`, `sectionIds`, `source`; odpowiedź `all`, `newQuestions`, `mistakes`, `due`, `lawChanges`): kreator testu (liczby przy rodzajach i liczba pytań), „Losuj z całej puli” i kafelki szybkich zestawów (bez zakresu) |
-| `POST /api/review/custom-test` | `drawCustomTest` (`api/customTest.ts`) | Losowanie numerów pytań po „Zacznij test” w kreatorze, „Start” w „Losuj z całej puli” i kliknięciu szybkiego zestawu (ciało: `fieldIds`, `actIds`, `courseIds`, `sectionIds`, `source`, `kind`, `questionCount`; `kind` to `ALL`, `NEW`, `MISTAKES`, `DUE` albo `LAW_CHANGE`); odpowiedź ma `questionIds` i `sessionId` zapisanego testu. Liczba pytań to 10, 20, 50, 100 albo 150 |
-| `GET /api/custom-tests/sessions` | `listCustomTestSessions` (`api/customTest.ts`) | „Moje testy”: lista zapisanych testów (`/app/custom-test/history`) |
+| `GET /api/review/custom-test/counts` | `getCustomTestCounts` (`api/customTest.ts`) | Liczby pytań w zakresie i źródle (parametry `fieldIds`, `actIds`, `courseIds`, `sectionIds`, `source`; odpowiedź `all`, `newQuestions`, `mistakes`, `due`, `lawChanges`, `timeLimits`, `traps`): kreator testu (liczby przy rodzajach i liczba pytań), „Losuj z całej puli” i kafelki szybkich zestawów (bez zakresu) |
+| `POST /api/review/custom-test` | `drawCustomTest` (`api/customTest.ts`) | Losowanie numerów pytań po „Zacznij test” w kreatorze, „Start” w „Losuj z całej puli” i kliknięciu szybkiego zestawu (ciało: `fieldIds`, `actIds`, `courseIds`, `sectionIds`, `source`, `kind`, `questionCount`; `kind` to `ALL`, `NEW`, `MISTAKES`, `DUE`, `LAW_CHANGE`, `TIME_LIMIT` albo `TRAPS`); odpowiedź ma `questionIds` i `sessionId` zapisanego testu. Liczba pytań to 10, 20, 50, 100 albo 150 |
+| `GET /api/custom-tests/sessions` | `listCustomTestSessions` (`api/customTest.ts`) | „Moje testy”, zakładka Testy: jedna strona listy (parametry `page` od 0 i `size`, domyślnie 20; odpowiedź `PageResponse` z `api/pagination.ts`) |
 | `GET /api/custom-tests/sessions/{id}` | `getCustomTestSession` (`api/customTest.ts`) | „Moje testy”: szczegóły testu z odpowiedziami (`/app/custom-test/history/:id`) i przycisk „Ułóż ponownie z tymi ustawieniami” |
 | `GET /api/review/due-tomorrow` | `getDueByTomorrow` (`api/review.ts`) | Podsumowanie na ekranie „Brawo!”: „Jutro wróci N powtórek” |
 | `GET /api/review/queue/new-available` | `getAvailableNewQuestionsCount` | Przycisk „Dołóż nowe” na końcu sesji i liczba „Nowe” na ekranie Fiszki (z `mode`) |
@@ -131,7 +131,8 @@ Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć w
 | `GET /api/exams/availability` | `getExamAvailability` | Ustawienia egzaminu: liczby pytań przy kartach źródeł (`all`, `ministry`, `authored`) |
 | `GET /api/exams/sheets` | `getExamSheets` | Ustawienia egzaminu, karta „Egzaminy MS”: aplikacje i lata egzaminów z liczbą pytań (`ExamSheets`) |
 | `POST /api/exams/submit` | `submitExam` | Wysłanie odpowiedzi po zakończeniu (ręcznym albo przez zegar). Ciało: `timeLimitMinutes`, `durationSeconds`, `timedOut`, `answers` oraz `source` albo `sheetId` (tylko do podpisu w historii); **bez zakresu i progu**, bo ocenia serwer |
-| `GET /api/exams/history` | `getExamHistory` | Historia egzaminów (do 50) oraz karta „Egzamin próbny” na Pulpicie. Wpis ma `passPoints`; `null` oznacza podejście sprzed stałego formatu |
+| `GET /api/exams/history` | `getExamHistory` | Jedna strona historii egzaminów (`page`, `size`, odpowiedź `PageResponse`): „Moje testy” → Egzaminy (20 na stronę) oraz karta „Egzamin próbny” na Pulpicie (pierwsze 10). Wpis ma `passPoints` (`null` = podejście sprzed stałego formatu) i `detailsAvailable` (czy jest raport) |
+| `GET /api/exams/attempts/{id}` | `getExamAttempt` | Raport zapisanego podejścia (`ExamResult`) w „Moich testach” → Egzaminy; 404, gdy podejście nie ma zapisanych odpowiedzi albo jest cudze |
 
 ### Statystyki
 
@@ -161,10 +162,15 @@ Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć w
 
 ### Endpointy, których frontend nie używa
 
-Endpointów, których frontend nie używa, jest 1:
+Endpointów, których frontend nie używa, jest 6:
 
 | Wywołanie | Dlaczego nie |
 |-----------|--------------|
+| `GET /api/admin/question-marks` | Oznaczenia pytań (terminy, pułapki): tylko dla administratora, na razie przez Swagger albo `curl`; ekran (kolejka propozycji do zatwierdzenia) dojdzie w osobnym etapie. Użytkownik oznaczeń nigdy nie widzi (lista oznaczeń w danym stanie) |
+| `GET /api/admin/question-marks/summary` | Oznaczenia pytań (terminy, pułapki): tylko dla administratora, na razie przez Swagger albo `curl`; ekran (kolejka propozycji do zatwierdzenia) dojdzie w osobnym etapie. Użytkownik oznaczeń nigdy nie widzi (liczby oznaczeń) |
+| `POST /api/admin/question-marks/analyze` | Oznaczenia pytań (terminy, pułapki): tylko dla administratora, na razie przez Swagger albo `curl`; ekran (kolejka propozycji do zatwierdzenia) dojdzie w osobnym etapie. Użytkownik oznaczeń nigdy nie widzi (uruchomienie automatu) |
+| `POST /api/admin/question-marks/bulk` | Oznaczenia pytań (terminy, pułapki): tylko dla administratora, na razie przez Swagger albo `curl`; ekran (kolejka propozycji do zatwierdzenia) dojdzie w osobnym etapie. Użytkownik oznaczeń nigdy nie widzi (zmiana stanu hurtem) |
+| `PUT /api/admin/question-marks/questions/{questionId}/{mark}` | Oznaczenia pytań (terminy, pułapki): tylko dla administratora, na razie przez Swagger albo `curl`; ekran (kolejka propozycji do zatwierdzenia) dojdzie w osobnym etapie. Użytkownik oznaczeń nigdy nie widzi (decyzja o jednym oznaczeniu) |
 | `GET /api/courses` | Lista przedmiotów. Student dostaje przedmioty w puli (`Pool.courses`) i w katalogu Testów (`TestCatalog.courses`), z liczbami pytań i zaznaczeniem, więc osobne pobieranie niczego nie daje |
 
 Treść (akty prawne, przedmioty, pytania, zmiany w prawie) administrator wprowadza **skryptami SQL**, a nie przez API, więc
@@ -222,7 +228,9 @@ dane po powrocie do karty przeglądarki. Pamięć żyje tylko w otwartej karcie;
 | `["settings","learning"]` | Ustawienia nauki (ze ścieżką, terminem i planem) | 60 s | `features/settings/hooks.ts` |
 | `["settings","exam-terms"]` | Terminy egzaminów aplikacji | 60 s | j.w. |
 | `["settings","interface"]` | Ustawienia interfejsu (podpowiedzi skrótów, licznik czasu) | **0** | `features/interface/hooks.ts` |
-| `["exam","history"]` | Historia egzaminów | **0** | `features/exam/hooks.ts` |
+| `["exam","history",page,size]` | Strona historii egzaminów (poprzednia strona zostaje do czasu wczytania następnej) | **0** | `features/exam/hooks.ts` |
+| `["exam","attempt",id]` | Raport zapisanego podejścia | **0** | j.w. |
+| `["custom-test","sessions","page",page,size]` | Strona listy „Moich testów” (szczegóły testu: `[…,"sessions",id]`) | **0** | `features/customTest/sessionsHooks.ts` |
 | `["exam","availability"]` | Liczby pytań w źródłach egzaminu | **0** | j.w. |
 | `["exam","sheets"]` | Egzaminy MS (aplikacje i lata) | **0** | j.w. |
 | `["me"]` | Adres e-mail zalogowanego | 5 min | `features/account/hooks.ts`, `ExamPage.tsx` |
