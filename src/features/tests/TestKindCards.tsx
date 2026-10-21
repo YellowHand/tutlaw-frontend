@@ -51,7 +51,7 @@ export function TestKindCards({ dueCount }: TestKindCardsProps) {
       </h2>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
         <Link to={ROUTES.testsStudy} data-testid="kind-study" className={cn(CARD, CARD_ACTIVE)}>
-          <Head icon={BookOpen} title="Nauka" text="Wybierz przepisy, rozdziały i źródło pytań. Po każdej odpowiedzi od razu wyjaśnienie." />
+          <Head icon={BookOpen} title="Nauka" text="Wybierz akty prawne, rozdziały i źródło pytań. Po każdej odpowiedzi od razu wyjaśnienie." />
           <Foot>Wybierz zakres</Foot>
           <ChevronRight size={18} aria-hidden="true" className="shrink-0 text-fg-muted sm:hidden" />
         </Link>

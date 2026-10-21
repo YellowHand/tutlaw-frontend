@@ -189,7 +189,7 @@ export function TestBuilderPage({ flavor }: { flavor: BuilderFlavor }) {
         subtitle={
           review
             ? "Pytania, którym minął termin powtórki. Wybierz źródło i zakres."
-            : "Wybierz źródło pytań, przepisy i rodzaj pytań. Po każdej odpowiedzi zobaczysz wyjaśnienie."
+            : "Wybierz źródło pytań, akty prawne i rodzaj pytań. Po każdej odpowiedzi zobaczysz wyjaśnienie."
         }
       />
 
@@ -244,13 +244,13 @@ export function TestBuilderPage({ flavor }: { flavor: BuilderFlavor }) {
             </div>
           </SectionCard>
 
-          <SectionCard title="Przepisy" data-testid="builder-scope">
-            <div role="radiogroup" aria-label="Przepisy" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <SectionCard title="Akty prawne" data-testid="builder-scope">
+            <div role="radiogroup" aria-label="Akty prawne" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <ChoiceCard name={`${groupName}-scope`} checked={scopeMode === "all"} onChange={() => setScopeMode("all")} className="min-h-13 rounded-[14px] py-0">
                 <span className="flex-1 text-sm font-semibold">Cała pula</span>
               </ChoiceCard>
               <ChoiceCard name={`${groupName}-scope`} checked={scopeMode === "selected"} onChange={() => setScopeMode("selected")} className="min-h-13 rounded-[14px] py-0">
-                <span className="flex-1 text-sm font-semibold">Wybrane przepisy</span>
+                <span className="flex-1 text-sm font-semibold">Wybrane akty prawne</span>
               </ChoiceCard>
             </div>
 
@@ -310,7 +310,7 @@ export function TestBuilderPage({ flavor }: { flavor: BuilderFlavor }) {
             ) : (
               <p className="text-sm text-fg-muted">
                 {noScope
-                  ? "Najpierw wybierz przepisy."
+                  ? "Najpierw wybierz akty prawne."
                   : countsReady
                     ? "W tym zakresie nie ma takich pytań. Wybierz inny rodzaj pytań albo zakres."
                     : "Liczę pytania…"}
