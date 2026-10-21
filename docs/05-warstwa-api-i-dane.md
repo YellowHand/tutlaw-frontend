@@ -13,7 +13,7 @@ Wszystkie wywołania idą przez jeden wspólny obiekt `api` (biblioteka axios):
 
 | Ustawienie | Wartość |
 |------------|---------|
-| Adres serwera (`baseURL`) | Zmienna `VITE_API_BASE_URL` z pliku `.env` (patrz [08](08-konfiguracja-i-uruchomienie.md)) |
+| Adres serwera (`baseURL`) | Zmienna `VITE_API_BASE_URL` z plików `.env.development` / `.env.production` (patrz [08](08-konfiguracja-i-uruchomienie.md)) |
 | Nagłówek `Authorization` | Dokładany do **każdego** żądania, jeśli w `localStorage` jest token dostępu: `Bearer <token>` |
 | Czas oczekiwania, ponawianie | Brak własnych ustawień. Ponawianie robi tylko React Query (raz) |
 | Obsługa odpowiedzi `401` | Najpierw **odświeżenie sesji** tokenem odświeżającym i ponowienie żądania; dopiero gdy się nie uda, wylogowanie i przejście na `/login`. Szczegóły i wyjątki: [03](03-logowanie-i-sesja.md) |

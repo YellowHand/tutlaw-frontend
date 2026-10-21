@@ -450,7 +450,7 @@ check("zmienna środowiskowa VITE_API_BASE_URL", () => {
   }
   const t08 = doc("08-konfiguracja-i-uruchomienie.md");
   for (const v of used) if (!t08.includes(`\`${v}\``)) errors.push(`08 nie opisuje zmiennej ${v}, którą czyta kod.`);
-  for (const f of [".env", ".env.example", ".env.production"]) {
+  for (const f of [".env.development", ".env.example", ".env.production"]) {
     const file = path.join(ROOT, f);
     if (!fs.existsSync(file)) {
       errors.push(`Brak pliku ${f}, opisanego w 08.`);

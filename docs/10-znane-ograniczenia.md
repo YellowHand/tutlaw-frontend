@@ -22,13 +22,13 @@ dokumentacji, `docs/07-znane-ograniczenia.md`), ale wpływa na działanie fronte
 
 | # | Co | Stan dziś | Co trzeba zrobić |
 |---|----|-----------|------------------|
-| 1 | **Pliki `.env` w repozytorium** | We frontendzie `.env` i `.env.production` są śledzone przez git. Zawierają tylko adresy backendu, bez sekretów. W backendzie `.env` też jest w repozytorium (opis w jego dokumentacji) | Frontend: nic krytycznego. Backend: usunąć z repozytorium i zmienić hasła, które w nim były |
-| 2 | **Adres backendu w buildzie produkcyjnym** | `.env.production` ma wartość zastępczą `https://WPISZ-ADRES-BACKENDU.example` | Wpisać prawdziwy adres i zbudować od nowa ([08](08-konfiguracja-i-uruchomienie.md)) |
-| 3 | **Dane administratora w regulaminie i polityce prywatności** | `config/legal.ts` ma pola `[uzupełnij: …]`; teksty to wersja robocza | Uzupełnić dane, a teksty dać do przejrzenia prawnikowi |
-| 4 | **CORS w backendzie** | Na stałe `http://localhost:5173` | Dopuścić adres produkcyjnego frontendu |
-| 5 | **Link aktywacyjny w mailu** | Backend wpisał na stałe `http://localhost:5173/verify?token=...` | Użyć adresu frontendu z konfiguracji |
-| 6 | **Sekret JWT, `show-sql`, szczegóły Actuatora, otwarty Swagger** | Opisane w dokumentacji backendu | Załatwić po stronie backendu |
-| 7 | **Nazwa i znak: rejestry i adres** | Nazwa „Gradus iuris” i znak nie były sprawdzane w rejestrach (UPRP, EUIPO/TMview, klasy 9, 41 i 42) ani pod kątem domen (NASK). `index.html` nie ma meta `og:image`, bo wymaga ona pełnego adresu strony, którego jeszcze nie ma (plik `public/og-image.png` jest gotowy). `site.webmanifest` ma `display: browser`, czyli samą ikonę na ekranie głównym bez trybu aplikacji | Przed wdrożeniem: sprawdzić rejestry i domeny, dodać `og:image` z adresem produkcyjnym (przykład w [`brand/README.md`](brand/README.md)) |
+| 1 | **Pliki `.env*` w repozytorium** | Od Etapu 37 śledzone są tylko `.env.development`, `.env.production` i `.env.example` (adresy, bez sekretów); zwykły plik o nazwie .env został usunięty z repozytorium | Nic. Backend ma własną zasadę: jego plik .env nie jest już w repozytorium (opis w dokumentacji backendu) |
+| 2 | **Adres backendu w buildzie produkcyjnym** | `.env.production` ma `https://api.gradusiuris.pl` | Nic, o ile backend naprawdę stoi pod tym adresem (instrukcje wdrożenia) |
+| 3 | **Dane administratora w regulaminie i polityce prywatności** | `config/legal.ts`: dostawcy hostingu i poczty są wpisani (Amazon Web Services i Amazon SES, region Frankfurt); pola `operatorName`, `operatorAddress`, `contactEmail`, `backupRetention` i `logsRetention` nadal mają `[uzupełnij: …]`; teksty to wersja robocza | Uzupełnić dane, a teksty dać do przejrzenia prawnikowi |
+| 4 | **CORS i link aktywacyjny w backendzie** | Załatwione w Etapie 37: backend czyta adres strony z `FRONTEND_URL` | Ustawić `FRONTEND_URL=https://gradusiuris.pl` na serwerze i sprawdzić na żywo (instrukcje wdrożenia) |
+| 5 | **Sekret JWT, `show-sql`, szczegóły Actuatora, otwarty Swagger** | Załatwione w Etapie 37 po stronie backendu (profil produkcyjny jest „ostry”) | Nic |
+| 6 | **Wdrożenie nie było sprawdzone na prawdziwym AWS** | Skrypty i instrukcje wdrożenia powstały bez dostępu do konta AWS | Przy pierwszym wdrożeniu sprawdzać każdy krok według listy kontrolnej w instrukcjach |
+| 7 | **Nazwa i znak: rejestry i adres** | Nazwa „Gradus iuris” i znak nie były sprawdzane w rejestrach (UPRP, EUIPO/TMview, klasy 9, 41 i 42) ani pod kątem domen (NASK). `index.html` ma od Etapu 37 meta `og:image` i `og:url` z adresem `https://gradusiuris.pl` (plik `public/og-image.png` ma 1200×630); podgląd w serwisach społecznościowych zadziała dopiero po wdrożeniu. `site.webmanifest` ma `display: browser`, czyli samą ikonę na ekranie głównym bez trybu aplikacji | Przed wdrożeniem: sprawdzić rejestry i domeny, sprawdzić podgląd linku po wdrożeniu |
 | 8 | **Tokeny w `localStorage`** | Token dostępu (30 minut) i token odświeżający (30 dni) leżą w `localStorage` przeglądarki, więc skrypt wstrzyknięty do strony (atak XSS) mógłby je odczytać; token odświeżający jest groźniejszy, bo żyje dłużej. To świadoma decyzja na ten etap, w kodzie nie ma miejsc wstawiających surowy HTML (`dangerouslySetInnerHTML`), co ogranicza ryzyko takiego ataku. Rotacja tokenów i wykrywanie kradzieży po stronie serwera skracają skutki wycieku | Przed szerokim startem przenieść token odświeżający do ciasteczka `HttpOnly; Secure; SameSite` (wymaga zmian w backendzie, CORS i wspólnej domeny frontendu i backendu) |
 
 ---
@@ -39,10 +39,10 @@ Drobne rzeczy znalezione podczas czytania kodu. Żadna nie psuje zwykłego dzia�
 
 | # | Gdzie | Co | Skutek |
 |---|-------|----|--------|
-| 1 | `api/axiosInstance.ts` | Brak limitu czasu (`timeout`) żądań | Serwer, który przyjął połączenie i nie odpowiada, zostawia ekran w ładowaniu bez końca |
+| 1 | `api/axiosInstance.ts` | Limit czasu żądań (30 s) jest jeden dla wszystkich zwykłych wywołań; dłuższe operacje muszą go jawnie podnosić (dziś tylko import pytań, 120 s) | Wolne, ale poprawne odpowiedzi mogą zostać uznane za błąd |
 | 2 | `features/flashcards/FlashcardsPage.tsx`, `features/tests/groups.ts` | Student w Fiszkach wybiera akt (pod nazwą przedmiotu), bo sesja fiszek przyjmuje zakres tylko jako dziedzinę, akt albo źródło | Nie da się zacząć fiszek z całego przedmiotu jednym kliknięciem (w kreatorze testu przedmiot jest zakresem) |
 | 3 | `app/router.tsx`, `ProtectedRoute.tsx`, `VerifyPage.tsx`, `AuthLayout.tsx` | Adresy (`/login`, `/`) wpisane na sztywno obok obiektu `ROUTES` | Zmiana adresu wymaga poprawek w kilku miejscach, kompilator ich nie wskaże |
-| 4 | `package.json` | Nazwa projektu `temp-frontend`, wersja `0.0.0`; w `devDependencies` jest `@tailwindcss/postcss`, którego nic nie używa (nie ma konfiguracji PostCSS, Tailwind działa przez wtyczkę Vite) | Kosmetyka i zbędna zależność |
+| 4 | `package.json` | Wersja `0.0.0` (nazwa projektu to od Etapu 37 `gradusiuris-frontend`); w `devDependencies` jest `@tailwindcss/postcss`, którego nic nie używa (nie ma konfiguracji PostCSS, Tailwind działa przez wtyczkę Vite) | Kosmetyka i zbędna zależność |
 | 5 | `public/icons.svg` | Plik nie jest nigdzie przywoływany, a trafia do `dist/` | Zbędny plik w paczce |
 | 6 | `pages/TestSessionPage.tsx` (1026 linii), `pages/StudySessionPage.tsx` (672 linie) | Bardzo duże pliki: kolejka, odpowiedzi, podgląd, skróty, ekran końca w jednym komponencie | Trudniejsze czytanie i zmiany; zaletą jest to, że cała logika sesji jest w jednym miejscu |
 | 7 | `pages/LoginPage.tsx` | Po zalogowaniu wraca się na zapamiętaną **ścieżkę bez parametrów po `?`** | Adres w rodzaju `/app/test/practice?questionIds=1,2,3`, który przerwało wylogowanie, wraca bez `questionIds` |

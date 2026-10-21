@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Zwykły plik .env nie jest używany (Etap 37: .env.development i .env.production); nie wrzucaj go do repozytorium
+.env

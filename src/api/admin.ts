@@ -604,6 +604,7 @@ export interface ImportReport {
 }
 
 export async function importQuestions(request: ImportRequest): Promise<ImportReport> {
-  const res = await api.post<ImportReport>("/api/admin/import/questions", request);
+  // Import dużego pliku trwa dłużej niż zwykłe żądanie, więc ma większy limit czasu.
+  const res = await api.post<ImportReport>("/api/admin/import/questions", request, { timeout: 120_000 });
   return res.data;
 }

@@ -1,0 +1,7 @@
+# Strona główna, regulamin i polityka prywatności są publiczne. Aplikacja i panel wymagają logowania, więc nie ma czego indeksować.
+User-agent: *
+Disallow: /app/
+Disallow: /admin
+Allow: /
+
+# Mapa strony nie jest potrzebna: publiczne są tylko trzy adresy.

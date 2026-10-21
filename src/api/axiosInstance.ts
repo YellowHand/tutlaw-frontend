@@ -3,8 +3,16 @@ import { ROUTES } from "../config/routes";
 import { clearStoredToken, getStoredToken } from "../features/auth/tokenStorage";
 import { refreshSession } from "./refreshSession";
 
+/**
+ * Limit czasu zwykłego żądania. Bez niego (domyślnie axios czeka w nieskończoność) zawieszony serwer zostawiłby
+ * użytkownika z wiecznym kółkiem ładowania. Po przekroczeniu żądanie kończy się błędem sieciowym i ekran pokazuje
+ * swój komunikat o błędzie. Dłuższe operacje (np. import pytań) podają własny, większy limit.
+ */
+export const REQUEST_TIMEOUT_MS = 30_000;
+
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
+  timeout: REQUEST_TIMEOUT_MS,
 });
 
 /** Strony dostępne bez logowania: tu nie przekierowujemy na /login, bo użytkownik i tak już tam jest. */

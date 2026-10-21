@@ -34,13 +34,15 @@ Frontend pokazuje wynik i przechowuje w pamięci tylko to, co potrzebne do bież
 port-fe/
 ├── README.md               Krótki opis projektu, szybki start, odnośniki do dokumentacji
 ├── index.html              Jedyna strona HTML (tytuł, opis, ikony); ładuje src/main.tsx
-├── package.json            Zależności i polecenia (dev, build, lint, preview, docs:*)
+├── package.json            Zależności i polecenia (dev, build, lint, preview, deploy, docs:*)
 ├── vite.config.ts          Wtyczki: React i Tailwind
 ├── eslint.config.js        Reguły ESLint (tylko pliki .ts i .tsx)
 ├── tsconfig*.json          Ustawienia TypeScript (app: katalog src, node: vite.config.ts)
-├── .env, .env.example      VITE_API_BASE_URL dla pracy lokalnej
-├── .env.production         VITE_API_BASE_URL dla buildu produkcyjnego (do uzupełnienia)
-├── public/                 Pliki serwowane bez zmian: favicon, ikony na telefon, manifest, obraz podglądu linku
+├── .env.development        VITE_API_BASE_URL dla pracy lokalnej (npm run dev)
+├── .env.production         VITE_API_BASE_URL dla buildu na serwer (https://api.gradusiuris.pl)
+├── .env.example            Wzór (własne nadpisania: .env.local)
+├── deploy/                 deploy-frontend.sh: wysyłka na S3 i odświeżenie CloudFront (npm run deploy)
+├── public/                 Pliki serwowane bez zmian: favicon, ikony na telefon, manifest, robots.txt, obraz podglądu linku
 ├── docs/                   Ta dokumentacja
 └── src/
     ├── main.tsx            Punkt wejścia: czcionka, style, <App />
@@ -177,5 +179,6 @@ Szczegóły niedoskonałości (np. kilka powtórzonych funkcji pomocniczych) są
 | `npm run build` | `tsc -b` (sprawdzenie typów), potem `vite build` do katalogu `dist/` |
 | `npm run lint` | ESLint na całym projekcie |
 | `npm run preview` | Podgląd zbudowanej wersji z `dist/` |
+| `npm run deploy` | Wysyłka zbudowanej strony na AWS (S3 + CloudFront), patrz [08](08-konfiguracja-i-uruchomienie.md) |
 | `npm run docs:check` | Sprawdza, czy ta dokumentacja zgadza się z kodem |
 | `npm run docs:build` | Buduje `docs/dokumentacja.html` (patrz [08](08-konfiguracja-i-uruchomienie.md)) |

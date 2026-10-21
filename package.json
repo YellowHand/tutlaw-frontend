@@ -1,5 +1,5 @@
 {
-  "name": "temp-frontend",
+  "name": "gradusiuris-frontend",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "deploy": "bash deploy/deploy-frontend.sh",
     "docs:check": "node docs/tools/check-docs.mjs",
     "docs:build": "npm --prefix docs/tools ci && node docs/tools/build-viewer.mjs"
   },

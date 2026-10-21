@@ -2,7 +2,7 @@
 
 [← Spis treści](README.md)
 
-Jak uruchomić frontend lokalnie, co ustawia się w plikach `.env`, jak zbudować wersję produkcyjną i jak zbudować
+Jak uruchomić frontend lokalnie, co ustawia się w plikach `.env.*`, jak zbudować wersję produkcyjną i jak zbudować
 podgląd tej dokumentacji.
 
 ## Czego potrzebujesz
@@ -20,11 +20,12 @@ npm ci          # instaluje dokładnie te wersje bibliotek, które są w package
 npm run dev     # serwer deweloperski, domyślnie http://localhost:5173
 ```
 
-Port **5173** jest ważny: backend ma na razie na stałe wpisane to źródło w ustawieniach CORS i w linku aktywacyjnym z
-maila (patrz [Znane ograniczenia](10-znane-ograniczenia.md) oraz dokumentacja backendu). Jeśli Vite uruchomi się na
-innym porcie, bo 5173 jest zajęty, logowanie przestanie działać z powodu CORS.
+Port **5173** jest ważny: lokalny backend (profil `dev`) dopuszcza w CORS adres `http://localhost:5173` i taki adres wstawia do
+linków w mailach (zmienna `FRONTEND_URL`). Jeśli Vite uruchomi się na innym porcie, bo 5173 jest zajęty, logowanie przestanie
+działać z powodu CORS (ustaw wtedy `FRONTEND_URL` backendu na ten port albo zwolnij 5173).
 
-Kolejność uruchamiania: najpierw baza i backend (patrz jego `docs/05-konfiguracja-i-uruchomienie.md`), potem `npm run dev`.
+Kolejność uruchamiania: najpierw baza i backend z profilem `dev` (patrz jego `docs/05-konfiguracja-i-uruchomienie.md`), potem
+`npm run dev`. Maile z linkiem aktywacyjnym zobaczysz lokalnie w Mailpit (`http://localhost:8025`).
 
 Na świeżej bazie aplikacja działa, ale **nie ma w niej jeszcze pytań**: akty prawne i pytania wczytuje się skryptami SQL (opis w
 tym samym dokumencie backendu, część „Wczytywanie treści skryptami SQL”). Dopóki ich nie wczytasz, Testy pokażą puste dziedziny.
@@ -32,13 +33,14 @@ tym samym dokumencie backendu, część „Wczytywanie treści skryptami SQL”)
 ## Zmienne środowiskowe
 
 Frontend czyta **jedną** zmienną, `VITE_API_BASE_URL`: adres backendu, do którego idą wszystkie wywołania `/api/...`
-(użycie: `import.meta.env.VITE_API_BASE_URL` w `src/api/axiosInstance.ts`).
+(użycie: `import.meta.env.VITE_API_BASE_URL` w `src/api/axiosInstance.ts`). Dwa środowiska to dwa pliki, które Vite wybiera
+sam według trybu:
 
 | Plik | Kiedy obowiązuje | Zawartość |
 |------|------------------|-----------|
-| `.env` | Praca lokalna (`npm run dev`) i każdy build, jeśli nie ma nadpisania | `VITE_API_BASE_URL=http://localhost:8080` |
-| `.env.example` | Wzór dla nowego środowiska (kopiujesz do `.env`) | To samo co `.env` |
-| `.env.production` | Tylko `npm run build` (tryb produkcyjny); nadpisuje `.env` | **Wartość zastępcza** `https://WPISZ-ADRES-BACKENDU.example`; trzeba wpisać prawdziwy adres przed wdrożeniem |
+| `.env.development` | `npm run dev` (praca lokalna) | `VITE_API_BASE_URL=http://localhost:8080` |
+| `.env.production` | `npm run build` (wersja na serwer) | `VITE_API_BASE_URL=https://api.gradusiuris.pl` |
+| `.env.example` | Wzór; własne nadpisania trzymaj w `.env.local` | `VITE_API_BASE_URL=http://localhost:8080` |
 
 Co trzeba wiedzieć:
 
@@ -47,10 +49,11 @@ Co trzeba wiedzieć:
 - Tylko zmienne zaczynające się od `VITE_` trafiają do przeglądarki. Wszystko, co tam trafia, jest jawne dla każdego, kto
   otworzy stronę; **nie wpisuj tu żadnych sekretów**. Adres backendu nie jest sekretem.
 - **Pusta wartość** (`VITE_API_BASE_URL=`) oznacza „ten sam adres co strona”, o ile serwer WWW przekazuje `/api/...` do
-  backendu (tak zwany reverse proxy). Przy wartości zastępczej z pliku `.env.production` build się uda, ale
-  aplikacja nie będzie mogła połączyć się z serwerem.
-- Pliki `.env` i `.env.production` są w repozytorium (zawierają tylko adresy, nie hasła). W `.gitignore` są wpisy
-  `*.local`, więc osobiste nadpisania można trzymać w `.env.local` albo `.env.production.local`.
+  backendu (tak zwany reverse proxy). W naszym wdrożeniu strona i API mają osobne adresy, więc wartość jest pełnym adresem.
+- Pliki `.env.development` i `.env.production` są w repozytorium (zawierają tylko adresy, nie hasła). W `.gitignore` są wpisy
+  `*.local`, więc osobiste nadpisania można trzymać w `.env.local` albo `.env.development.local`. Zwykły plik
+  o nazwie .env (bez przyrostka) nie jest już używany.
+- Skrypt wdrożenia (`npm run deploy`) odmawia pracy, jeśli `.env.production` nie zawiera adresu zaczynającego się od `https://`.
 
 ## Polecenia npm
 
@@ -60,6 +63,7 @@ Co trzeba wiedzieć:
 | `npm run build` | `tsc -b` (sprawdza typy w całym `src/`), potem `vite build` | Katalog `dist/` |
 | `npm run lint` | ESLint na plikach `.ts` i `.tsx` | Lista uwag albo cisza |
 | `npm run preview` | Serwuje zbudowany `dist/` do sprawdzenia przed wdrożeniem | `http://localhost:4173` |
+| `npm run deploy` | Buduje i wysyła `dist/` na S3, potem odświeża CloudFront (`deploy/deploy-frontend.sh`) | Nowa wersja pod `https://gradusiuris.pl` |
 | `npm run docs:check` | Sprawdza, czy dokumentacja zgadza się z kodem | „OK” albo lista rozbieżności |
 | `npm run docs:build` | Buduje `docs/dokumentacja.html` | Jeden plik HTML |
 
@@ -71,20 +75,31 @@ też przerywa build.
 
 ### Budowanie
 
-1. Wpisz prawdziwy adres backendu w `.env.production` (`VITE_API_BASE_URL=https://api.twojadomena.pl`).
+1. Sprawdź adres backendu w `.env.production` (`VITE_API_BASE_URL=https://api.gradusiuris.pl`).
 2. Uzupełnij dane administratora serwisu w `src/config/legal.ts` (opis niżej).
 3. Uruchom `npm run build`.
 4. W katalogu `dist/` powstaje cała strona: `index.html`, katalog `assets/` (JavaScript, CSS i czcionki z
    zakodowanymi w nazwie sumami kontrolnymi, więc przeglądarka może je bezpiecznie trzymać w pamięci podręcznej) i pliki z
-   `public/` (ikony).
+   `public/` (ikony, `robots.txt`, manifest).
 
 ### Wdrożenie
 
-`dist/` to zwykłe pliki statyczne; można je położyć na dowolnym hostingu plików (serwer WWW, bucket z CDN, hosting
-statyczny). **Jeden wymóg jest obowiązkowy: przekierowanie wszystkich adresów na `index.html`.** Aplikacja używa
+`dist/` to zwykłe pliki statyczne. Docelowo leżą w prywatnym buckecie **Amazon S3**, a przed nim stoi **CloudFront** (HTTPS,
+certyfikat, cache) pod adresem `https://gradusiuris.pl`; backend działa osobno pod `https://api.gradusiuris.pl`. Konfigurację
+AWS opisują osobne instrukcje wdrożenia; same wysyłki dokonuje `npm run deploy`:
+
+```bash
+S3_BUCKET=gradusiuris-frontend CLOUDFRONT_DISTRIBUTION_ID=E123ABC456DEF npm run deploy
+```
+
+Skrypt `deploy/deploy-frontend.sh` buduje stronę, wysyła pliki z haszem w nazwie (`assets/`, cache na rok), potem resztę, na końcu
+`index.html` (bez cache, żeby przeglądarka zawsze dostała aktualną wersję), i unieważnia pamięć podręczną CloudFront. Stare
+pliki z `assets/` zostają na S3 celowo, żeby karty otwarte na starej wersji dociągnęły swoje fragmenty.
+
+**Jeden wymóg jest obowiązkowy: przekierowanie wszystkich adresów na `index.html`.** Aplikacja używa
 `BrowserRouter`, czyli adresów bez `#` (np. `/app/dashboard`). Gdyby serwer szukał pliku `app/dashboard`, po odświeżeniu
-strony albo po wejściu z linku z maila dostałbyś błąd 404 serwera. Przykład dla nginx (nie był uruchamiany w tym
-projekcie, to standardowy wzór):
+strony albo po wejściu z linku z maila dostałbyś błąd serwera. W CloudFront robi to reguła „własne strony błędów”:
+błędy 403 i 404 z S3 zamieniane są na odpowiedź 200 ze stroną `/index.html`. Dla zwykłego serwera WWW (np. nginx) wzór to:
 
 ```nginx
 location / {
@@ -92,15 +107,16 @@ location / {
 }
 ```
 
-Trzeba też pamiętać o rzeczach po stronie **backendu**, bez których wdrożona aplikacja nie zadziała (są odłożone na
-koniec i opisane w jego dokumentacji, `docs/07-znane-ograniczenia.md`):
+Po stronie **backendu** wdrożona aplikacja potrzebuje (ustawia się je zmiennymi środowiskowymi na serwerze, opis w
+`docs/05-konfiguracja-i-uruchomienie.md` backendu):
 
 | Sprawa | Dlaczego dotyczy frontendu |
 |--------|----------------------------|
-| CORS | Backend musi dopuszczać adres, pod którym stoi frontend. Dziś ma na stałe `http://localhost:5173` |
-| Adres w mailu aktywacyjnym | Link z maila prowadzi dziś na `http://localhost:5173/verify?token=...`; na produkcji musi wskazywać adres frontendu |
-| `FRONTEND_URL` | Backend składa z niego linki resetu hasła, które prowadzą na stronę `/reset-password?token=` tego frontendu |
-| HTTPS | Token logowania jest wysyłany w nagłówku każdego żądania; przez zwykłe HTTP byłby widoczny w sieci |
+| `FRONTEND_URL=https://gradusiuris.pl` | Backend dopuszcza ten adres w CORS i składa z niego linki aktywacji konta i resetu hasła (`/verify?token=`, `/reset-password?token=`) |
+| HTTPS | Token logowania jest wysyłany w nagłówku każdego żądania; przez zwykłe HTTP byłby widoczny w sieci. Zapewniają go CloudFront (strona) i Caddy (API) |
+
+Limit czasu żądań: zwykłe wywołania API kończą się błędem po 30 sekundach, import pytań po 120 sekundach
+(`REQUEST_TIMEOUT_MS` w `src/api/axiosInstance.ts`), odświeżanie sesji po 15 sekundach.
 
 ## Dane administratora serwisu: `src/config/legal.ts`
 
@@ -166,10 +182,10 @@ zmianie kodu uruchom go i popraw dokumentację tam, gdzie wskaże rozbieżność
 
 | Objaw | Przyczyna | Co zrobić |
 |-------|-----------|-----------|
-| Logowanie kończy się błędem „Brak połączenia z serwerem” | Backend nie działa albo `VITE_API_BASE_URL` wskazuje zły adres | Uruchom backend, sprawdź `.env`, zrestartuj `npm run dev` (zmiany w `.env` czytane są przy starcie) |
-| W konsoli przeglądarki błąd CORS | Frontend działa na innym porcie niż `5173` albo pod innym adresem | Uruchom na porcie 5173 (backend ma go na stałe) |
-| Po wdrożeniu odświeżenie strony pokazuje 404 serwera | Brak przekierowania na `index.html` | Dodaj regułę z sekcji „Wdrożenie” |
-| Po wdrożeniu aplikacja woła `…example` | Zostawiona wartość zastępcza w `.env.production` | Wpisz prawdziwy adres i zbuduj od nowa |
-| Link aktywacyjny z maila prowadzi na `localhost` | Adres wpisany na stałe w backendzie | Patrz dokumentacja backendu (znane ograniczenia) |
+| Logowanie kończy się błędem „Brak połączenia z serwerem” | Backend nie działa albo `VITE_API_BASE_URL` wskazuje zły adres | Uruchom backend, sprawdź `.env.development`, zrestartuj `npm run dev` (zmiany w plikach `.env*` czytane są przy starcie) |
+| W konsoli przeglądarki błąd CORS | Adres strony różni się od `FRONTEND_URL` (albo `CORS_ALLOWED_ORIGINS`) ustawionego w backendzie, np. inny port lub `www` | Ustaw w backendzie dokładnie ten adres, z którego otwierasz stronę (lokalnie `http://localhost:5173`) i uruchom backend ponownie |
+| Po wdrożeniu odświeżenie strony pokazuje błąd serwera (403/404 XML) | Brak przekierowania błędów na `index.html` w CloudFront | Dodaj własne strony błędów 403 i 404 → `/index.html`, kod 200 (patrz sekcja „Wdrożenie”) |
+| Po wdrożeniu widać starą wersję strony | Cache przeglądarki albo CloudFront | Odśwież bez cache (Ctrl+Shift+R); skrypt `npm run deploy` sam unieważnia cache CloudFront |
+| Link aktywacyjny z maila prowadzi na `localhost` | Backend działa z profilem `dev` albo ma zły `FRONTEND_URL` | Na serwerze nie ustawiaj profilu `dev` i wpisz `FRONTEND_URL=https://gradusiuris.pl` |
 | `npm run build` zatrzymuje się na błędzie TypeScript | Błąd typów albo nieużywana zmienna | Popraw wskazany plik; `npm run lint` pokaże resztę uwag |
 | `npm run dev` nie startuje, błąd wersji Node | Zbyt stary Node.js | Zainstaluj Node.js 20.19+ albo 22.12+ |

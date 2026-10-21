@@ -17,7 +17,7 @@ npm ci          # instaluje dokładnie te wersje bibliotek, które są w package
 npm run dev     # serwer deweloperski: http://localhost:5173
 ```
 
-Port 5173 jest ważny: backend ma go na razie wpisanego na stałe w ustawieniach CORS.
+Port 5173 jest ważny: lokalny backend (profil `dev`) dopuszcza w CORS właśnie ten adres.
 
 ## Polecenia
 
@@ -27,11 +27,12 @@ Port 5173 jest ważny: backend ma go na razie wpisanego na stałe w ustawieniach
 | `npm run build` | Sprawdza typy i buduje wersję produkcyjną do `dist/` |
 | `npm run preview` | Uruchamia zbudowaną wersję lokalnie |
 | `npm run lint` | Sprawdza kod regułami ESLint |
+| `npm run deploy` | Buduje i wysyła stronę na AWS (S3 + CloudFront), patrz `docs/08` |
 | `npm run docs:check` | Sprawdza, czy dokumentacja zgadza się z kodem |
 | `npm run docs:build` | Buduje `docs/dokumentacja.html` (frontend i backend w jednym pliku z wyszukiwarką) |
 
-Adres backendu to zmienna `VITE_API_BASE_URL` w plikach `.env` (lokalnie) i `.env.production` (build produkcyjny, tam
-jest jeszcze wartość zastępcza do podmiany przed wdrożeniem).
+Adres backendu to zmienna `VITE_API_BASE_URL` w plikach `.env.development` (lokalnie, `http://localhost:8080`) i
+`.env.production` (build na serwer, `https://api.gradusiuris.pl`).
 
 ## Dokumentacja
 
@@ -49,6 +50,5 @@ leżało obok frontendu (katalog `port-be` obok `port-fe`).
 
 ## Przed wdrożeniem na prawdziwy serwer
 
-Kilka rzeczy jest celowo odłożonych na sam koniec prac (m.in. adres backendu w `.env.production`, dane administratora
-w regulaminie, CORS i link aktywacyjny w backendzie). Pełna lista jest w
+Zostały rzeczy wymagające Twojej decyzji (m.in. dane administratora w regulaminie i przegląd prawnika). Pełna lista jest w
 [`docs/10-znane-ograniczenia.md`](docs/10-znane-ograniczenia.md).

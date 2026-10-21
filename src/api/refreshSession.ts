@@ -16,7 +16,7 @@ export type RefreshOutcome = "refreshed" | "rejected" | "unavailable";
 let inFlight: Promise<RefreshOutcome> | null = null;
 
 /** Osobny klient bez interceptorów, żeby odświeżanie nie wpadło w pętlę przy własnym 401. */
-const bare = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL });
+const bare = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL, timeout: 15_000 });
 
 async function callServer(refreshToken: string): Promise<RefreshOutcome> {
   try {
