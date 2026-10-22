@@ -3,6 +3,8 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { isAxiosError } from "axios";
 import { api } from "../api/axiosInstance";
 import { useAuth } from "../auth/useAuth";
+import { TurnstileWidget } from "../components/TurnstileWidget";
+import { useTurnstile } from "../lib/useTurnstile";
 import { serverMessage } from "../lib/errors";
 import { AuthLayout } from "../components/layout/AuthLayout";
 import { AuthField } from "../features/auth/AuthField";
@@ -17,6 +19,7 @@ export function LoginPage() {
   // Serwer odpowiada 409, gdy hasło jest dobre, ale konto nie zostało jeszcze aktywowane linkiem z maila.
   const [needsActivation, setNeedsActivation] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const botCheck = useTurnstile();
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -29,13 +32,14 @@ export function LoginPage() {
     setNeedsActivation(false);
     setSubmitting(true);
     try {
-      const res = await api.post("/api/auth/login", { privateEmail, password });
+      const res = await api.post("/api/auth/login", { privateEmail, password }, botCheck.requestConfig);
       login(res.data.accessToken, res.data.refreshToken);
       navigate(from, { replace: true });
     } catch (err) {
       setNeedsActivation(isAxiosError(err) && err.response?.status === 409);
       setError(serverMessage(err, "Logowanie nie powiodło się"));
       setSubmitting(false);
+      botCheck.reset();
     }
   }
 
@@ -76,13 +80,15 @@ export function LoginPage() {
           Nie pamiętasz hasła?
         </Link>
 
+        <TurnstileWidget resetKey={botCheck.resetKey} onToken={botCheck.setToken} />
+
         {error && (
           <p role="alert" className="text-sm text-danger">
             {error}
           </p>
         )}
 
-        <button type="submit" disabled={submitting} className={AUTH_PRIMARY_BUTTON_CLASS}>
+        <button type="submit" disabled={submitting || !botCheck.ready} className={AUTH_PRIMARY_BUTTON_CLASS}>
           {submitting ? "Loguję..." : "Zaloguj się"}
         </button>
       </form>

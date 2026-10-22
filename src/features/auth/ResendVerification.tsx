@@ -1,6 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { api } from "../../api/axiosInstance";
 import { serverMessage } from "../../lib/errors";
+import { TurnstileWidget } from "../../components/TurnstileWidget";
+import { useTurnstile } from "../../lib/useTurnstile";
 import { AuthField } from "./AuthField";
 import { AUTH_SECONDARY_BUTTON_CLASS } from "./styles";
 
@@ -16,6 +18,7 @@ export function ResendVerification({ initialEmail = "" }: ResendVerificationProp
   const [email, setEmail] = useState(initialEmail);
   const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
   const [error, setError] = useState<string | null>(null);
+  const botCheck = useTurnstile();
 
   useEffect(() => {
     if (status !== "sent") return;
@@ -28,11 +31,13 @@ export function ResendVerification({ initialEmail = "" }: ResendVerificationProp
     setError(null);
     setStatus("sending");
     try {
-      await api.post("/api/auth/resend-verification", { privateEmail: email });
+      await api.post("/api/auth/resend-verification", { privateEmail: email }, botCheck.requestConfig);
       setStatus("sent");
     } catch (err) {
       setStatus("idle");
       setError(serverMessage(err, "Nie udało się wysłać wiadomości. Spróbuj ponownie."));
+    } finally {
+      botCheck.reset();
     }
   }
 
@@ -48,6 +53,7 @@ export function ResendVerification({ initialEmail = "" }: ResendVerificationProp
         onChange={setEmail}
         required
       />
+      <TurnstileWidget resetKey={botCheck.resetKey} onToken={botCheck.setToken} />
       {error && (
         <p role="alert" className="text-sm text-danger">
           {error}
@@ -58,7 +64,7 @@ export function ResendVerification({ initialEmail = "" }: ResendVerificationProp
           Jeśli konto czeka na aktywację, wysłaliśmy nowy link na Twój mail uczelniany. Sprawdź też folder ze spamem.
         </p>
       )}
-      <button type="submit" disabled={status !== "idle"} className={AUTH_SECONDARY_BUTTON_CLASS}>
+      <button type="submit" disabled={status !== "idle" || !botCheck.ready} className={AUTH_SECONDARY_BUTTON_CLASS}>
         {status === "sending" ? "Wysyłam..." : status === "sent" ? "Wysłano" : "Wyślij link ponownie"}
       </button>
     </form>

@@ -2,6 +2,8 @@ import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api/axiosInstance";
 import { serverMessage } from "../lib/errors";
+import { TurnstileWidget } from "../components/TurnstileWidget";
+import { useTurnstile } from "../lib/useTurnstile";
 import { AuthLayout } from "../components/layout/AuthLayout";
 import { AuthField } from "../features/auth/AuthField";
 import { AUTH_PRIMARY_BUTTON_CLASS } from "../features/auth/styles";
@@ -14,6 +16,7 @@ export function RegisterPage() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const botCheck = useTurnstile();
   const navigate = useNavigate();
 
   async function handleSubmit(e: FormEvent) {
@@ -21,11 +24,16 @@ export function RegisterPage() {
     setError(null);
     setSubmitting(true);
     try {
-      await api.post("/api/auth/register", { privateEmail, universityEmail, password, acceptedTerms });
+      await api.post(
+        "/api/auth/register",
+        { privateEmail, universityEmail, password, acceptedTerms },
+        botCheck.requestConfig,
+      );
       navigate(ROUTES.checkEmail, { state: { email: privateEmail } });
     } catch (err) {
       setError(serverMessage(err, "Rejestracja nie powiodła się"));
       setSubmitting(false);
+      botCheck.reset();
     }
   }
 
@@ -97,13 +105,15 @@ export function RegisterPage() {
           </span>
         </label>
 
+        <TurnstileWidget resetKey={botCheck.resetKey} onToken={botCheck.setToken} />
+
         {error && (
           <p role="alert" className="text-sm text-danger">
             {error}
           </p>
         )}
 
-        <button type="submit" disabled={submitting} className={AUTH_PRIMARY_BUTTON_CLASS}>
+        <button type="submit" disabled={submitting || !botCheck.ready} className={AUTH_PRIMARY_BUTTON_CLASS}>
           {submitting ? "Zakładam konto..." : "Zarejestruj się"}
         </button>
       </form>

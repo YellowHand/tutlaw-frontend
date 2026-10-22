@@ -14,8 +14,9 @@ export const LEGAL = {
   analyticsProvider: "Google Analytics 4 (Google Ireland Limited, Irlandia; Google może przekazywać dane do USA)",
   analyticsRetention: "14 miesięcy",
   errorMonitoringProvider: "Sentry (Functional Software, Inc.), serwery w Unii Europejskiej (Niemcy)",
+  botProtectionProvider: "Cloudflare, Inc. (USA; sieć Cloudflare działa także w Unii Europejskiej)",
   backupRetention: "[uzupełnij: np. 30 dni]",
   logsRetention: "[uzupełnij: np. 30 dni]",
   termsUpdatedAt: "12 października 2026",
-  privacyUpdatedAt: "12 października 2026",
+  privacyUpdatedAt: "22 października 2026",
 } as const;

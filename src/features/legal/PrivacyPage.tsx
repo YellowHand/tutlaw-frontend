@@ -19,6 +19,7 @@ export function PrivacyPage() {
             "dane o nauce: odpowiedzi w testach, oceny powtórek, terminy kolejnych powtórek, wybraną ścieżkę, akty prawne w puli i statystyki,",
             "datę akceptacji regulaminu,",
             "dane techniczne: adres IP używany krótkotrwale do ograniczania liczby prób logowania oraz w dziennikach błędów serwera,",
+            "wynik sprawdzenia, czy formularz wypełnia człowiek (rejestracja, logowanie, reset hasła): w tym celu Cloudflare Turnstile otrzymuje adres IP i podstawowe informacje o przeglądarce; cały ruch do serwera aplikacji przechodzi też przez sieć Cloudflare, która odfiltrowuje ataki,",
             "dane statystyczne, wyłącznie za Twoją zgodą (Google Analytics): losowy identyfikator w pliku cookie, odwiedzane podstrony (bez parametrów w adresie), przybliżona lokalizacja (kraj, miasto), typ urządzenia i przeglądarki, czas wizyty,",
             "informacje o błędach aplikacji: rodzaj błędu, ślad techniczny, adres podstrony (bez parametrów), typ przeglądarki i system, czas oraz numer Twojego konta (liczba, np. „5”). Nie zawierają treści Twoich odpowiedzi, hasła ani adresu e-mail.",
           ]}
@@ -29,7 +30,7 @@ export function PrivacyPage() {
         <LegalList
           items={[
             "świadczenie usługi: konto, nauka, planowanie powtórek, statystyki (art. 6 ust. 1 lit. b RODO),",
-            "bezpieczeństwo serwisu i ochrona przed nadużyciami, np. zgadywaniem haseł (art. 6 ust. 1 lit. f RODO, czyli nasz uzasadniony interes),",
+            "bezpieczeństwo serwisu i ochrona przed nadużyciami, np. zgadywaniem haseł i automatycznym zakładaniem kont przez roboty (art. 6 ust. 1 lit. f RODO, czyli nasz uzasadniony interes),",
             "statystyki odwiedzin, żeby ulepszać serwis (art. 6 ust. 1 lit. a RODO oraz art. 173 Prawa telekomunikacyjnego, czyli Twoja zgoda; możesz ją wycofać w każdej chwili),",
             "wykrywanie i naprawianie błędów w serwisie (art. 6 ust. 1 lit. f RODO, czyli nasz uzasadniony interes),",
             "obowiązki wynikające z przepisów, jeśli takie wystąpią (art. 6 ust. 1 lit. c RODO).",
@@ -41,8 +42,8 @@ export function PrivacyPage() {
       <LegalSection heading="4. Komu możemy przekazać dane">
         <p>
           Dane przetwarzają wyłącznie podmioty, które pomagają nam prowadzić serwis, na podstawie umów powierzenia:
-          dostawca hostingu ({LEGAL.hostingProvider}), dostawca poczty wychodzącej ({LEGAL.mailProvider}) i dostawca narzędzia do
-          wykrywania błędów aplikacji ({LEGAL.errorMonitoringProvider}) oraz, tylko jeśli wyrazisz zgodę na statystyki,
+          dostawca hostingu ({LEGAL.hostingProvider}), dostawca poczty wychodzącej ({LEGAL.mailProvider}), dostawca ochrony przed robotami i atakami ({LEGAL.botProtectionProvider}) i dostawca
+          narzędzia do wykrywania błędów aplikacji ({LEGAL.errorMonitoringProvider}) oraz, tylko jeśli wyrazisz zgodę na statystyki,
           dostawca analityki ({LEGAL.analyticsProvider}). Dane
           przekazujemy poza Europejski Obszar Gospodarczy tylko wtedy, gdy dostawca zapewnia odpowiednie zabezpieczenia
           prawne, o czym informujemy w tym miejscu.
@@ -85,6 +86,12 @@ export function PrivacyPage() {
           z identyfikatorem (nazwy zaczynają się od „_ga”) i zlicza odwiedziny. Funkcje reklamowe Google są wyłączone. Dane
           statystyczne przechowujemy {LEGAL.analyticsRetention}. Dopóki nie klikniesz „Akceptuję”, niczego nie zapisujemy i nic
           nie wysyłamy do Google. Zgodę możesz wycofać w „Ustawieniach cookies”, a pliki cookie usuniemy.
+        </p>
+        <p>
+          Na ekranach rejestracji, logowania i resetu hasła wczytujemy z Cloudflare pole „Potwierdź, że nie jesteś robotem”. To
+          zabezpieczenie niezbędne do ochrony serwisu, więc działa bez zgody; Cloudflare może zapisać w przeglądarce krótkotrwałe dane
+          techniczne potrzebne do sprawdzenia i nie używa ich do reklam. Gdy blokujesz to pole (np. blokadą reklam), nie zalogujesz się
+          ani nie założysz konta.
         </p>
       </LegalSection>
 

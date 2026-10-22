@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { MailCheck } from "lucide-react";
 import { api } from "../api/axiosInstance";
 import { serverMessage } from "../lib/errors";
+import { TurnstileWidget } from "../components/TurnstileWidget";
+import { useTurnstile } from "../lib/useTurnstile";
 import { AuthLayout } from "../components/layout/AuthLayout";
 import { AuthField } from "../features/auth/AuthField";
 import { AUTH_PRIMARY_BUTTON_CLASS } from "../features/auth/styles";
@@ -13,18 +15,20 @@ export function ForgotPasswordPage() {
   const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const botCheck = useTurnstile();
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
     try {
-      await api.post("/api/auth/forgot-password", { privateEmail });
+      await api.post("/api/auth/forgot-password", { privateEmail }, botCheck.requestConfig);
       setSent(true);
     } catch (err) {
       setError(serverMessage(err, "Nie udało się wysłać wiadomości. Spróbuj ponownie."));
     } finally {
       setSubmitting(false);
+      botCheck.reset();
     }
   }
 
@@ -60,13 +64,15 @@ export function ForgotPasswordPage() {
             required
           />
 
+          <TurnstileWidget resetKey={botCheck.resetKey} onToken={botCheck.setToken} />
+
           {error && (
             <p role="alert" className="text-sm text-danger">
               {error}
             </p>
           )}
 
-          <button type="submit" disabled={submitting} className={AUTH_PRIMARY_BUTTON_CLASS}>
+          <button type="submit" disabled={submitting || !botCheck.ready} className={AUTH_PRIMARY_BUTTON_CLASS}>
             {submitting ? "Wysyłam..." : "Wyślij link"}
           </button>
         </form>
