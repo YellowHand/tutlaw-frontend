@@ -108,7 +108,7 @@ zamknięciu karty (patrz [10](10-znane-ograniczenia.md)).
 | Funkcja | Co kasuje | Kiedy jest używana |
 |---------|-----------|--------------------|
 | `clearStoredToken()` | Tylko token dostępu z pamięci i znacznik `gradus.session.v1` | Wygasła sesja (odświeżenie odrzucone) |
-| `clearSession()` | Token, znacznik oraz **wszystkie klucze zaczynające się od `gradus.`** (szkic egzaminu, zapamiętane ustawienia egzaminu, ostatni własny test, wybór zwiniętego panelu), **poza kopią wyglądu** `gradus.theme.v1` (patrz niżej) | Przycisk „Wyloguj się” i usunięcie konta |
+| `clearSession()` | Token, znacznik oraz **wszystkie klucze zaczynające się od `gradus.`** (szkic egzaminu, zapamiętane ustawienia egzaminu, ostatni własny test, wybór zwiniętego panelu), **poza kopią wyglądu** `gradus.theme.v1` i **decyzją o zgodzie** `gradus.consent.v1` (patrz niżej) | Przycisk „Wyloguj się” i usunięcie konta |
 
 Przycisk „Wyloguj się” (`LogoutButton`; w panelu bocznym, a na telefonie na ekranie Konto) wywołuje `logout()` z kontekstu (`clearSession()` i token w stanie na `null`),
 a potem przenosi na stronę główną przez `window.location.href`, czyli również z pełnym przeładowaniem. Efekt: na
@@ -120,13 +120,15 @@ wspólnym komputerze nie zostają ślady po poprzednim użytkowniku (w szkicu eg
 |-------|-------|----|--------------|-------------|
 | `localStorage` | `gradus.session.v1` | Znacznik „ta przeglądarka ma sesję” (wartość `1`, nic tajnego): po przeładowaniu mówi, czy próbować odtworzyć sesję z ciasteczka, a zmiana wywołuje zdarzenie `storage` w innych kartach | `AuthProvider.login`, odświeżanie sesji (`api/refreshSession.ts`) | Wylogowanie lub odrzucone odświeżenie |
 | ciasteczko | `gradus_refresh` | Token odświeżający (30 dni, jednorazowy: po każdym użyciu serwer wydaje nowy). `HttpOnly; Secure; SameSite=Strict; Path=/api/auth`: skrypty go nie widzą | Ustawia serwer (logowanie, odświeżenie, zmiana hasła) | Wylogowanie, usunięcie konta, wygaśnięcie po 30 dniach |
+| `localStorage` | `gradus.consent.v1` | Decyzja o zgodzie na statystyki (Google Analytics): `{"analytics": true/false, "version": 1, "at": "..."}`. Baner pyta, gdy wpisu nie ma lub zmieniła się wersja | `lib/consent.ts`, `components/ConsentBanner.tsx` | **Przeżywa wylogowanie** (ustawienie urządzenia, nie dane konta; wyjątek w `features/auth/session.ts`), znika z ręcznym wyczyszczeniem danych przeglądarki |
 | `localStorage` | `gradus.exam.draft.v2` | Niedokończony egzamin próbny: pytania (z numerami `questionId` z bazy), odpowiedzi, termin końca, próg w punktach z serwera, adres konta właściciela, wybrane źródło i numer egzaminu MS (`sheetId`) (wersja zapisu 3). Szkice z poprzedniej wersji klucza (`v1`) mają numery pytań sprzed przebudowy bazy, więc nie są wczytywane | `features/exam/examStorage.ts` | Po wysłaniu egzaminu, po porzuceniu, po wylogowaniu |
 | `localStorage` | `gradus.exam.settings.v1` | Ostatnio użyte ustawienia egzaminu: źródło pytań (`ALL`, `MINISTRY`, `AUTHORED` albo `SHEETS` dla egzaminów MS), wybrany egzamin MS (aplikacja i rok) i limit czasu (zakres, liczbę pytań i próg ustala format egzaminu, więc ich nie zapamiętujemy; zapis ze starszych wersji ma je jeszcze w sobie i są pomijane) | `features/exam/examStorage.ts` | Po wylogowaniu |
 | `localStorage` | `gradus.customTest.v4` | Ostatnio ułożony test „Nauka” w kreatorze: źródło pytań (`ALL`, `MINISTRY`, `AUTHORED`), „cała pula” albo numery aktów zaznaczonych w całości i rozdziałów zaznaczonych osobno (Student też wybiera akty i rozdziały, pod przedmiotami), rodzaj pytań (bez „Zaległych”, które mają własną odmianę kreatora) i liczba pytań (10, 20, 50, 100 albo 150 lub „wszystkie”). Starsze wersje klucza (`v1`–`v3`) są pomijane, bo nie znały źródła ani rozdziałów | `features/customTest/customTestStorage.ts` | Po wylogowaniu |
 | `localStorage` | `gradus.nav.collapsed.v1` | Czy panel boczny jest zwinięty (`1`) czy rozwinięty (`0`) | `components/layout/useNavCollapsed.ts` | Po wylogowaniu |
 | `localStorage` | `gradus.theme.v1` | Kopia wyglądu strony z konta (`DARK` albo `LIGHT`). Źródłem prawdy jest serwer (`PUT /api/me/theme`); kopia służy tylko temu, żeby od pierwszej klatki, zanim serwer odpowie, strona miała dobry kolor (skrypt w `index.html` czyta ten sam klucz, tylko na ścieżkach `/app`). Gdy ustawienia z serwera dotrą, wygrywa konto i kopia się odświeża | `features/settings/ThemeSync.tsx`, `lib/theme.ts` | **Przeżywa wylogowanie** (to nie jest dana osobowa; wyjątek wpisany w `features/auth/session.ts`), znika dopiero z ręcznym wyczyszczeniem danych przeglądarki |
 
-Aplikacja nie używa `sessionStorage` ani IndexedDB, a jedyne ciasteczko to `gradus_refresh`, które ustawia serwer.
+Aplikacja nie używa `sessionStorage` ani IndexedDB, a jedyne własne ciasteczko to `gradus_refresh`, które ustawia serwer.
+Po zgodzie na statystyki Google Analytics ustawia własne ciasteczka `_ga*`; po wycofaniu zgody `lib/analytics.ts` je kasuje.
 Przy starcie `purgeLegacyTokens()` usuwa stare klucze `accessToken` i `refreshToken` z wcześniejszych wersji. Każdy odczyt i zapis jest w `try/catch`: gdy
 pamięć jest niedostępna (np. tryb prywatny), aplikacja działa dalej, tylko bez zapamiętywania.
 
@@ -183,6 +185,8 @@ sequenceDiagram
 |-----------|------------------|
 | 200 | Zapisuje `accessToken` w pamięci (`login(res.data.accessToken)`; ciasteczko sesji ustawia serwer) i przechodzi na adres, z którego użytkownik przyszedł, a bez niego na Pulpit |
 | 409 | Hasło dobre, ale konto jeszcze nieaktywne: pokazuje komunikat serwera i formularz „wyślij link ponownie” |
+| 400 z komunikatem o robocie | Nie przeszło sprawdzenie Turnstile (brak albo zużyty token): pokazuje komunikat, a widget odnawia się sam. Token jest jednorazowy, więc po każdej próbie dostaje się nowy |
+| 503 | Cloudflare chwilowo nie odpowiada: serwer blokuje zamiast przepuszczać, ekran prosi o ponowienie |
 | inne | Pokazuje komunikat serwera (`message`) albo „Logowanie nie powiodło się”; brak połączenia ma osobny komunikat |
 
 Komunikaty błędów wyciąga funkcja `serverMessage` (`lib/errors.ts`): bierze pole `message` z odpowiedzi serwera, a gdy go

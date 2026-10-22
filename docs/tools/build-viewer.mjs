@@ -11,7 +11,15 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { hashMarkdown, headings as mdHeadings, listMarkdown, plainHeading, slugify } from "./lib/common.mjs";
+import {
+  BACKEND_DIR_NAMES,
+  findBackendDocs,
+  hashMarkdown,
+  headings as mdHeadings,
+  listMarkdown,
+  plainHeading,
+  slugify,
+} from "./lib/common.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const DOCS = path.resolve(here, "..");
@@ -29,7 +37,7 @@ if (flag("--help")) {
   process.exit(0);
 }
 const frontendOnly = flag("--frontend-only");
-const backendDir = path.resolve(process.cwd(), value("--backend") ?? path.join(ROOT, "..", "port-be", "docs"));
+const backendDir = path.resolve(process.cwd(), value("--backend") ?? findBackendDocs(ROOT));
 const outFile = path.resolve(process.cwd(), value("--out") ?? path.join(DOCS, "dokumentacja.html"));
 
 function die(message) {
@@ -40,7 +48,7 @@ function die(message) {
 if (!frontendOnly && !fs.existsSync(path.join(backendDir, "README.md"))) {
   die(
     `Nie znaleziono dokumentacji backendu w: ${backendDir}\n` +
-      "Połóż repozytorium backendu obok frontendu (katalog port-be obok port-fe), podaj katalog parametrem\n" +
+      `Połóż repozytorium backendu obok frontendu (rozpoznaję katalogi: ${BACKEND_DIR_NAMES.join(", ")}), podaj katalog parametrem\n` +
       "  --backend <ścieżka/do/docs>\n" +
       "albo zbuduj podgląd tylko z dokumentacji frontendu:\n" +
       "  node docs/tools/build-viewer.mjs --frontend-only"

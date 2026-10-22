@@ -3,8 +3,8 @@
 // Bez żadnych zależności: sam Node.js. Uruchomienie: npm run docs:check
 //
 // Opcje:
-//   --backend <katalog>   katalog docs/ backendu (domyślnie ../port-be/docs obok tego projektu); gdy go nie ma,
-//                         sprawdzenia względem backendu są pomijane
+//   --backend <katalog>   katalog docs/ backendu (domyślnie szuka obok tego projektu katalogu gradusiuris-backend,
+//                         tutlaw-backend, port-be albo backend); gdy go nie ma, sprawdzenia względem backendu są pomijane
 //   --help                krótka pomoc
 //
 // Kod wyjścia: 0 = wszystko się zgadza, 1 = są rozbieżności, 2 = błąd uruchomienia.
@@ -15,6 +15,7 @@ import {
   codeAll,
   codeIn,
   fencedBlocks,
+  findBackendDocs,
   hashMarkdown,
   headings,
   listMarkdown,
@@ -34,7 +35,7 @@ if (args.includes("--help")) {
 }
 const backendArgIndex = args.indexOf("--backend");
 const BACKEND_DOCS =
-  backendArgIndex >= 0 ? path.resolve(process.cwd(), args[backendArgIndex + 1] ?? "") : path.resolve(ROOT, "../port-be/docs");
+  backendArgIndex >= 0 ? path.resolve(process.cwd(), args[backendArgIndex + 1] ?? "") : findBackendDocs(ROOT);
 const hasBackend = fs.existsSync(path.join(BACKEND_DOCS, "api", "README.md"));
 
 // ---------- pomocnicze ----------
@@ -374,7 +375,9 @@ check("pamięć przeglądarki (localStorage ↔ 03-logowanie-i-sesja.md)", () =>
   for (const [file, src] of codeText) {
     for (const m of src.matchAll(/\bconst\s+[A-Z_]*KEY\s*=\s*"([^"]+)"/g)) keys.add(m[1]);
     for (const m of src.matchAll(/\blocalStorage\s*\.\s*(?:get|set|remove)Item\(\s*"([^"]+)"/g)) keys.add(m[1]);
-    if (/\b(sessionStorage|indexedDB)\b/.test(src) || /document\.cookie/.test(src)) {
+    // analytics.ts tylko KASUJE ciasteczka _ga* po wycofaniu zgody (opis w 03), nie zapisuje własnych.
+    const deletesGaCookies = rel(file).endsWith("lib/analytics.ts");
+    if (/\b(sessionStorage|indexedDB)\b/.test(src) || (!deletesGaCookies && /document\.cookie/.test(src))) {
       errors.push(`${rel(file)}: użycie sessionStorage, indexedDB albo ciasteczek; dokumentacja 03 mówi, że ich nie ma.`);
     }
   }
@@ -458,7 +461,9 @@ check("zmienna środowiskowa VITE_API_BASE_URL", () => {
     }
     const defined = [...read(file).matchAll(/^([A-Z_]+)=/gm)].map((m) => m[1]);
     for (const v of defined) if (!used.has(v)) errors.push(`${f} definiuje ${v}, której kod nie czyta.`);
-    for (const v of used) if (!defined.includes(v)) errors.push(`${f} nie definiuje ${v}.`);
+    // Zmienne opcjonalne (usługi zewnętrzne, puste = wyłączone) nie muszą być w każdym pliku; muszą być opisane w 08.
+    const OPTIONAL = new Set(["VITE_TURNSTILE_SITE_KEY", "VITE_GA_MEASUREMENT_ID", "VITE_SENTRY_DSN", "VITE_SENTRY_RELEASE"]);
+    for (const v of used) if (!defined.includes(v) && !OPTIONAL.has(v)) errors.push(`${f} nie definiuje ${v}.`);
   }
   for (const v of new Set([...t08.matchAll(/`(VITE_[A-Z_]+)`/g)].map((m) => m[1]))) if (!used.has(v)) errors.push(`08 opisuje ${v}, której kod nie czyta.`);
   return { errors, info: [...used].join(", ") };
@@ -594,7 +599,9 @@ for (const r of results) {
   total += r.errors.length;
 }
 console.log("");
-if (!hasBackend) console.log("Uwaga: nie znaleziono dokumentacji backendu (../port-be/docs), więc pominięto porównanie z nią.\n");
+if (!hasBackend) {
+  console.log(`Uwaga: nie znaleziono dokumentacji backendu (${BACKEND_DOCS}), więc pominięto porównanie z nią.\n`);
+}
 if (total === 0) {
   console.log(`Wszystko się zgadza (${results.length} sprawdzeń).`);
   process.exit(0);

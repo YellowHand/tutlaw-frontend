@@ -29,6 +29,22 @@ export function hashMarkdown(dir) {
   return h.digest("hex");
 }
 
+/** Nazwy katalogu backendu obok frontendu, w kolejności szukania (pierwsza to obecna nazwa repozytorium). */
+export const BACKEND_DIR_NAMES = ["gradusiuris-backend", "tutlaw-backend", "port-be", "backend"];
+
+/**
+ * Szuka katalogu docs/ backendu obok katalogu głównego frontendu. Zwraca pierwszy, w którym jest README.md. Gdy żadnego
+ * nie ma, zwraca ścieżkę pierwszej nazwy z listy, żeby komunikat o błędzie wskazał konkretne miejsce.
+ */
+export function findBackendDocs(frontendRoot) {
+  const parent = path.resolve(frontendRoot, "..");
+  for (const name of BACKEND_DIR_NAMES) {
+    const docs = path.join(parent, name, "docs");
+    if (fs.existsSync(path.join(docs, "README.md"))) return docs;
+  }
+  return path.join(parent, BACKEND_DIR_NAMES[0], "docs");
+}
+
 /** Zastępuje bloki kodu (``` … ```) pustymi liniami, zachowując numery linii. */
 export function stripFences(md) {
   const lines = md.split("\n");

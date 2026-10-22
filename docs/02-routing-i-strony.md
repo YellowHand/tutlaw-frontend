@@ -345,7 +345,7 @@ podsumowanie jest pod formularzem, a przycisk startu siedzi w dolnym pasku tuż 
 
 1. **„Źródło pytań”.** Trzy karty: „Wszystkie źródła”, „Ministerstwo Sprawiedliwości” (arkusze egzaminacyjne) i „Autorskie”
    (pytania napisane w aplikacji), każda z liczbą pytań (w Powtórkach: ile z nich czeka na powtórkę).
-2. **„Przepisy”.** „Cała pula” albo „Wybrane przepisy”, czyli drzewo (`ScopePicker`) dziedzin, aktów prawnych i rozdziałów.
+2. **„Akty prawne”.** „Cała pula” albo „Wybrane akty prawne”, czyli drzewo (`ScopePicker`) dziedzin, aktów prawnych i rozdziałów.
    Student zamiast dziedzin widzi przedmioty (te same akty i rozdziały). Drzewo pokazuje tylko to, w czym wybrane źródło ma
    pytania, więc po zmianie źródła niektóre akty znikają. Akt zaznaczony w całości obejmuje wszystkie jego pytania, także te
    bez rozdziału; zaznaczenie rozdziału zawęża wybór tylko do wskazanych rozdziałów (np. Kodeks karny, rozdziały XIX i XXXV).
@@ -355,7 +355,7 @@ podsumowanie jest pod formularzem, a przycisk startu siedzi w dolnym pasku tuż 
 4. **„Ile pytań?”**: 10, 20, 50, 100, 150 (te, na które nie starcza pytań, są wyszarzone, a na końcu bywa „Wszystkie (N)”) i
    informacja, że **kolejność pytań i odpowiedzi jest zawsze losowa**.
 
-„Zacznij test” jest nieaktywny, dopóki nie wybrano przepisów, liczby nie są policzone albo nic nie spełnia warunków; powód
+„Zacznij test” jest nieaktywny, dopóki nie wybrano aktów prawnych, liczby nie są policzone albo nic nie spełnia warunków; powód
 widać pod podsumowaniem (np. „Zaznacz co najmniej jedną dziedzinę, akt lub rozdział.”).
 
 Liczby przychodzą z serwera po każdej zmianie zakresu albo źródła (z opóźnieniem 250 ms, żeby szybkie klikanie nie dawało

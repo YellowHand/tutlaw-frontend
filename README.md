@@ -5,7 +5,7 @@ Strona internetowa aplikacji **Gradus iuris**: darmowej nauki do egzaminów na a
 fiszek, a algorytm FSRS-6 po stronie serwera sam układa powtórki.
 
 To aplikacja jednostronicowa napisana w React 19, TypeScript, Vite 8 i Tailwind CSS 4. Serwer (Java, Spring) leży w
-osobnym repozytorium `port-be`.
+osobnym repozytorium `gradusiuris-backend`.
 
 ## Szybki start
 
@@ -32,7 +32,8 @@ Port 5173 jest ważny: lokalny backend (profil `dev`) dopuszcza w CORS właśnie
 | `npm run docs:build` | Buduje `docs/dokumentacja.html` (frontend i backend w jednym pliku z wyszukiwarką) |
 
 Adres backendu to zmienna `VITE_API_BASE_URL` w plikach `.env.development` (lokalnie, `http://localhost:8080`) i
-`.env.production` (build na serwer, `https://api.gradusiuris.pl`).
+`.env.production` (build na serwer, `https://api.gradusiuris.pl`). Opcjonalne usługi (Cloudflare Turnstile, Google Analytics,
+Sentry) włączają zmienne `VITE_TURNSTILE_SITE_KEY`, `VITE_GA_MEASUREMENT_ID` i `VITE_SENTRY_DSN`; opis w `docs/08`.
 
 ## Dokumentacja
 
@@ -46,7 +47,7 @@ Cała dokumentacja jest po polsku w katalogu [`docs/`](docs/README.md):
 
 Po zmianie kodu albo opisów uruchom `npm run docs:check`, a po zmianie plików Markdown w `docs/` także
 `npm run docs:build`, żeby podgląd `dokumentacja.html` był aktualny. `docs:build` wymaga, żeby repozytorium backendu
-leżało obok frontendu (katalog `port-be` obok `port-fe`).
+leżało obok frontendu (katalog `gradusiuris-backend` obok `gradusiuris-frontend`).
 
 ## Przed wdrożeniem na prawdziwy serwer
 

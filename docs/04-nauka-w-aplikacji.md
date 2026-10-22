@@ -488,7 +488,7 @@ wybrało ścieżki), otwiera okno modalne „Witaj w Gradus iuris”. **Wybór j
 Test z puli zaczyna się na trzy sposoby, wszystkie z ekranu Testy (opis ekranu: [02](02-routing-i-strony.md)):
 **„Losuj z całej puli”** (liczba pytań i Start), **szybki zestaw** („Moje błędy”, „Zmiany w prawie”, „Nowe pytania”; start
 od razu) i **kreator** (karty „Nauka” i „Powtórki”, każda prowadzi na własną podstronę: `/app/tests/nauka` i `/app/tests/powtorki`).
-Kreator to **jedna strona** z sekcjami „Źródło pytań”, „Przepisy”, „Które pytania?” i „Ile pytań?” oraz przyklejonym podsumowaniem
+Kreator to **jedna strona** z sekcjami „Źródło pytań”, „Akty prawne”, „Które pytania?” i „Ile pytań?” oraz przyklejonym podsumowaniem
 „Twój test” (na telefonie przycisk startu jest w dolnym pasku). Wszystkie trzy kończą tak samo: serwer losuje pytania, zapisuje test w
 „Moich testach” i otwiera sesję `/app/test/custom`. Zasady:
 

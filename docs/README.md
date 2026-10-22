@@ -54,8 +54,9 @@ potrzebuje internetu ani serwera). Zawiera całą dokumentację frontendu i back
 npm run docs:build
 ```
 
-Polecenie wymaga, żeby repozytorium backendu leżało obok frontendu (katalog `port-be` obok `port-fe`). Inną lokalizację
-podajesz parametrem: `node docs/tools/build-viewer.mjs --backend ../ścieżka/do/backendu/docs`. Szczegóły są w
+Polecenie wymaga, żeby repozytorium backendu leżało obok frontendu (katalog `gradusiuris-backend` obok
+`gradusiuris-frontend`; rozpoznawane są też nazwy `tutlaw-backend`, `port-be` i `backend`). Inną lokalizację podajesz
+parametrem: `node docs/tools/build-viewer.mjs --backend ../ścieżka/do/backendu/docs`. Szczegóły są w
 [08](08-konfiguracja-i-uruchomienie.md).
 
 ## Pliki pomocnicze w tym katalogu

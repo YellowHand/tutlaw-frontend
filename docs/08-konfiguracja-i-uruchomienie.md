@@ -10,7 +10,7 @@ podgląd tej dokumentacji.
 | Narzędzie | Po co |
 |-----------|-------|
 | **Node.js** w wersji `^20.19` lub `22.12` i nowszej (npm jest w pakiecie) | Uruchomienie Vite 8 i budowanie. Starsze wersje Node nie zadziałają, bo wymaga ich Vite |
-| Działający **backend** (repozytorium `port-be`, domyślnie `http://localhost:8080`) | Bez niego ekrany logowania się wyświetlą, ale nic nie zapiszą ani nie pobiorą |
+| Działający **backend** (repozytorium `gradusiuris-backend`, domyślnie `http://localhost:8080`) | Bez niego ekrany logowania się wyświetlą, ale nic nie zapiszą ani nie pobiorą |
 | Nowoczesna przeglądarka | Vite buduje domyślnie pod cel `baseline-widely-available` (w Vite 8: Chrome i Edge 111, Firefox 114, Safari i iOS 16.4 oraz nowsze); starszych przeglądarek aplikacja nie wspiera |
 
 ## Szybki start (lokalnie)
@@ -32,22 +32,34 @@ tym samym dokumencie backendu, część „Wczytywanie treści skryptami SQL”)
 
 ## Zmienne środowiskowe
 
-Frontend czyta **jedną** zmienną, `VITE_API_BASE_URL`: adres backendu, do którego idą wszystkie wywołania `/api/...`
-(użycie: `import.meta.env.VITE_API_BASE_URL` w `src/api/axiosInstance.ts`). Dwa środowiska to dwa pliki, które Vite wybiera
-sam według trybu:
+Jedyna **obowiązkowa** zmienna to `VITE_API_BASE_URL`: adres backendu, do którego idą wszystkie wywołania `/api/...`
+(użycie: `import.meta.env.VITE_API_BASE_URL` w `src/api/axiosInstance.ts`). Pozostałe są opcjonalne i włączają usługi
+zewnętrzne tylko w wersji produkcyjnej (opis w części „Usługi zewnętrzne” niżej). Dwa środowiska to dwa pliki, które Vite
+wybiera sam według trybu:
 
 | Plik | Kiedy obowiązuje | Zawartość |
 |------|------------------|-----------|
-| `.env.development` | `npm run dev` (praca lokalna) | `VITE_API_BASE_URL=http://localhost:8080` |
-| `.env.production` | `npm run build` (wersja na serwer) | `VITE_API_BASE_URL=https://api.gradusiuris.pl` |
-| `.env.example` | Wzór; własne nadpisania trzymaj w `.env.local` | `VITE_API_BASE_URL=http://localhost:8080` |
+| `.env.development` | `npm run dev` (praca lokalna) | `VITE_API_BASE_URL=http://localhost:8080` (nic więcej: bez Sentry, analityki i Turnstile) |
+| `.env.production` | `npm run build` (wersja na serwer) | `VITE_API_BASE_URL=https://api.gradusiuris.pl` oraz klucze usług zewnętrznych (tabela niżej) |
+| `.env.example` | Wzór; własne nadpisania trzymaj w `.env.local` | `VITE_API_BASE_URL=http://localhost:8080` i komentarze o opcjonalnych zmiennych |
+
+| Zmienna | Do czego | Gdy pusta |
+|---------|----------|-----------|
+| `VITE_API_BASE_URL` | Adres backendu | Wymagana (patrz niżej) |
+| `VITE_TURNSTILE_SITE_KEY` | Klucz strony widgetu Cloudflare Turnstile („Potwierdź, że nie jesteś robotem”) | Nie ma widgetu, formularze działają jak dawniej |
+| `VITE_GA_MEASUREMENT_ID` | Identyfikator Google Analytics 4 (`G-...`) | Nie ma analityki ani banera zgody |
+| `VITE_SENTRY_DSN` | Adres projektu w Sentry (raportowanie błędów w przeglądarce) | Nic nie jest wysyłane |
+| `VITE_SENTRY_RELEASE` | Opcjonalna nazwa wydania w Sentry | Brak nazwy wydania |
+| `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` | Wysyłka map źródeł przy buildzie (**sekret**: tylko w `.env.production.local`, poza gitem) | Brak map źródeł |
 
 Co trzeba wiedzieć:
 
 - **Zmienna jest wpisywana w kod w momencie budowania**, nie odczytywana w przeglądarce w czasie działania. Zmiana adresu
   backendu wymaga ponownego `npm run build`.
 - Tylko zmienne zaczynające się od `VITE_` trafiają do przeglądarki. Wszystko, co tam trafia, jest jawne dla każdego, kto
-  otworzy stronę; **nie wpisuj tu żadnych sekretów**. Adres backendu nie jest sekretem.
+  otworzy stronę; **nie wpisuj tu żadnych sekretów**. Adres backendu, klucz strony Turnstile, identyfikator GA4 i DSN Sentry
+  nie są sekretami. **Sekret Turnstile (`TURNSTILE_SECRET`) jest tylko na serwerze**, w pliku środowiskowym backendu, nigdy w
+  frontendzie.
 - **Pusta wartość** (`VITE_API_BASE_URL=`) oznacza „ten sam adres co strona”, o ile serwer WWW przekazuje `/api/...` do
   backendu (tak zwany reverse proxy). W naszym wdrożeniu strona i API mają osobne adresy, więc wartość jest pełnym adresem.
 - Pliki `.env.development` i `.env.production` są w repozytorium (zawierają tylko adresy, nie hasła). W `.gitignore` są wpisy
@@ -82,6 +94,19 @@ też przerywa build.
    zakodowanymi w nazwie sumami kontrolnymi, więc przeglądarka może je bezpiecznie trzymać w pamięci podręcznej) i pliki z
    `public/` (ikony, `robots.txt`, manifest).
 
+### Usługi zewnętrzne
+
+Wszystkie są **wyłączone, dopóki odpowiednia zmienna jest pusta** (tak jest lokalnie), więc praca nad aplikacją nie wysyła
+nic do internetu.
+
+| Usługa | Co robi | Kod | Uwagi |
+|--------|---------|-----|-------|
+| Cloudflare Turnstile | Pole „Potwierdź, że nie jesteś robotem” na rejestracji, logowaniu, resecie hasła i ponownej wysyłce maila. Token jest jednorazowy i idzie do backendu w nagłówku `X-Turnstile-Token` | `lib/turnstile.ts`, `lib/useTurnstile.ts`, `components/TurnstileWidget.tsx` | Skrypt Cloudflare ładuje się dopiero na ekranie z widgetem. Do prób lokalnych Cloudflare daje klucz testowy (patrz `.env.example`). Backend musi mieć `TURNSTILE_SECRET`; najpierw wdróż frontend z kluczem, potem ustaw sekret |
+| Google Analytics 4 | Statystyki odwiedzin, **tylko po zgodzie** użytkownika (baner `ConsentBanner`, link „Ustawienia cookies”). Do Google trafia adres strony bez zapytania i fragmentu | `lib/analytics.ts`, `lib/consent.ts`, `components/AnalyticsController.tsx` | Decyzja leży w `localStorage` pod `gradus.consent.v1` i przeżywa wylogowanie |
+| Sentry | Raportowanie błędów z przeglądarki (serwer w UE). Bez nagrywania sesji, bez danych osobowych, adresy bez tokenów | `lib/monitoring.ts` (`initMonitoring()` w `main.tsx`) | Błędy zapytań do serwera są pomijane (5xx zgłasza backend) |
+
+Polityka prywatności (`features/legal/PrivacyPage.tsx`) wymienia te usługi; `config/legal.ts` ma pole `botProtectionProvider`.
+
 ### Wdrożenie
 
 `dist/` to zwykłe pliki statyczne. Docelowo leżą w prywatnym buckecie **Amazon S3**, a przed nim stoi **CloudFront** (HTTPS,
@@ -89,8 +114,11 @@ certyfikat, cache) pod adresem `https://gradusiuris.pl`; backend działa osobno 
 AWS opisują osobne instrukcje wdrożenia; same wysyłki dokonuje `npm run deploy`:
 
 ```bash
-S3_BUCKET=gradusiuris-frontend CLOUDFRONT_DISTRIBUTION_ID=E123ABC456DEF npm run deploy
+AWS_PROFILE=gradusiuris S3_BUCKET=<nazwa-bucketa> CLOUDFRONT_DISTRIBUTION_ID=<id-dystrybucji> npm run deploy
 ```
+
+Nazwę bucketa i identyfikator dystrybucji (zaczyna się od `E`) pokazują konsole S3 i CloudFront. Nie wpisuj ich do plików w
+repozytorium (ono bywa publiczne); trzymaj je we własnej notatce albo w historii powłoki.
 
 Skrypt `deploy/deploy-frontend.sh` buduje stronę, wysyła pliki z haszem w nazwie (`assets/`, cache na rok), potem resztę, na końcu
 `index.html` (bez cache, żeby przeglądarka zawsze dostała aktualną wersję), i unieważnia pamięć podręczną CloudFront. Stare
@@ -151,7 +179,7 @@ Polecenie robi dwie rzeczy: instaluje narzędzia do budowania (`npm --prefix doc
 
 | Sprawa | Szczegóły |
 |--------|-----------|
-| Skąd bierze dokumentację backendu | Z katalogu `../port-be/docs` (repozytorium backendu leży obok frontendu). Inny katalog: `node docs/tools/build-viewer.mjs --backend ścieżka/do/docs` |
+| Skąd bierze dokumentację backendu | Z katalogu `../gradusiuris-backend/docs` (repozytorium backendu leży obok frontendu; narzędzie rozpoznaje też nazwy `tutlaw-backend`, `port-be` i `backend`). Inny katalog: `node docs/tools/build-viewer.mjs --backend ścieżka/do/docs` |
 | Co, jeśli backendu nie ma | Narzędzie przerywa z czytelnym komunikatem. Z parametrem `--frontend-only` buduje podgląd tylko z dokumentacji frontendu |
 | Gdzie zapisuje wynik | `docs/dokumentacja.html` (inną ścieżkę podaje `--out`) |
 | Kiedy budować od nowa | Po każdej zmianie w plikach `.md` frontendu albo backendu. Plik jest wynikiem budowania, nie edytuje się go ręcznie |
@@ -171,7 +199,7 @@ dokumentacji, z tym, co jest w kodzie, i wypisuje rozbieżności. Sprawdza:
 | Wywołania serwera | Wszystkie `api.get/post/put/delete` w `src/` z tabelami w `05` |
 | Klucze w `localStorage` | Użycia w kodzie z tabelą w `03` |
 | Wersje bibliotek i polecenia npm | `package.json` z `01` i `08` |
-| Zmienna środowiskowa | `VITE_API_BASE_URL` w kodzie i w plikach `.env*` |
+| Zmienne środowiskowe | Wszystkie `import.meta.env.VITE_*` w `src/` z tabelą w tym dokumencie i plikami `.env*` |
 | Odnośniki i kotwice | Czy każdy odnośnik w plikach `.md` prowadzi do istniejącego pliku i nagłówka |
 | Zgodność z dokumentacją backendu (jeśli leży obok) | Czy każde wywołanie frontendu istnieje na liście endpointów backendu |
 

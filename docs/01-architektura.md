@@ -31,7 +31,7 @@ Frontend pokazuje wynik i przechowuje w pamięci tylko to, co potrzebne do bież
 ## Układ katalogów
 
 ```
-port-fe/
+gradusiuris-frontend/
 ├── README.md               Krótki opis projektu, szybki start, odnośniki do dokumentacji
 ├── index.html              Jedyna strona HTML (tytuł, opis, ikony); ładuje src/main.tsx
 ├── package.json            Zależności i polecenia (dev, build, lint, preview, deploy, docs:*)
@@ -39,7 +39,7 @@ port-fe/
 ├── eslint.config.js        Reguły ESLint (tylko pliki .ts i .tsx)
 ├── tsconfig*.json          Ustawienia TypeScript (app: katalog src, node: vite.config.ts)
 ├── .env.development        VITE_API_BASE_URL dla pracy lokalnej (npm run dev)
-├── .env.production         VITE_API_BASE_URL dla buildu na serwer (https://api.gradusiuris.pl)
+├── .env.production         VITE_API_BASE_URL dla buildu na serwer (https://api.gradusiuris.pl) i klucze Turnstile, GA4, Sentry
 ├── .env.example            Wzór (własne nadpisania: .env.local)
 ├── deploy/                 deploy-frontend.sh: wysyłka na S3 i odświeżenie CloudFront (npm run deploy)
 ├── public/                 Pliki serwowane bez zmian: favicon, ikony na telefon, manifest, robots.txt, obraz podglądu linku
@@ -84,7 +84,7 @@ port-fe/
 | `studytime` | 3 | Czas nauki: licznik na ekranach nauki (tylko przy widocznej karcie, pauza po 3 minutach bez ruchu) i wysyłanie porcji co ok. 30 s |
 | `tests` | 11 | Ekran Testów (pasek zaległych, „Losuj z całej puli”, rodzaje testu, szybkie zestawy), grupowanie aktów pod dziedzinami i przedmiotami, tasowanie odpowiedzi |
 
-W repozytorium jest łącznie 249 plików w `src/`.
+W repozytorium jest łącznie 259 plików w `src/`.
 
 ### Dlaczego strony są w dwóch miejscach
 
