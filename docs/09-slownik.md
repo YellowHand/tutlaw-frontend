@@ -97,7 +97,7 @@ dla użytkownika (albo pojęcie techniczne), w drugiej wyjaśnienie, w trzeciej 
 | **staleTime** | Jak długo dane z pamięci uchodzą za świeże i nie są pobierane ponownie | [05](05-warstwa-api-i-dane.md) |
 | **Szkielet** (`Skeleton`) | Szary pulsujący prostokąt pokazywany w czasie ładowania | `components/ui/Skeleton.tsx` |
 | **Tailwind** | Biblioteka stylów: wygląd zapisuje się klasami w kodzie | [06](06-wyglad-i-komponenty.md) |
-| **Token dostępu** (`accessToken`) | JWT zapisany w `localStorage` pod tym kluczem | `features/auth/tokenStorage.ts` |
+| **Token dostępu** (`accessToken`) | JWT trzymany tylko w pamięci karty (nie w `localStorage`) | `features/auth/tokenStorage.ts` |
 | **Twarda spacja** (`nbsp`) | Spacja, na której nie wolno łamać wiersza; po „w”, „z”, „i” w polskim tekście | `features/landing/typography.ts` |
 | **Unieważnienie** (`invalidateQueries`) | Oznaczenie danych w pamięci jako nieaktualnych, żeby pobrać je od nowa | `invalidateReviewData` w `features/review/hooks.ts` |
 | **Zapytanie kontenera** (`@container`) | Reguła stylów zależna od szerokości samej strony, a nie okna | [07](07-strona-glowna.md) |

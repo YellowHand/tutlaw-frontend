@@ -19,8 +19,8 @@ export function ChangePasswordCard() {
   const mutation = useMutation({
     mutationFn: () => changePassword(currentPassword, newPassword),
     onSuccess: (tokens) => {
-      // Serwer unieważnił stare sesje, więc ta przeglądarka dostaje nową parę tokenów, żeby zostać zalogowana.
-      login(tokens.accessToken, tokens.refreshToken);
+      // Serwer unieważnił stare sesje, więc ta przeglądarka dostaje nowy token dostępu (i nowe ciasteczko), żeby zostać zalogowana.
+      login(tokens.accessToken);
       setCurrentPassword("");
       setNewPassword("");
       setRepeat("");

@@ -33,7 +33,7 @@ export function LoginPage() {
     setSubmitting(true);
     try {
       const res = await api.post("/api/auth/login", { privateEmail, password }, botCheck.requestConfig);
-      login(res.data.accessToken, res.data.refreshToken);
+      login(res.data.accessToken);
       navigate(from, { replace: true });
     } catch (err) {
       setNeedsActivation(isAxiosError(err) && err.response?.status === 409);

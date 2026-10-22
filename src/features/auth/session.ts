@@ -13,11 +13,11 @@ const APP_KEY_PREFIX = "gradus.";
 const KEPT_KEYS: readonly string[] = [THEME_STORAGE_KEY, CONSENT_STORAGE_KEY];
 
 /**
- * Pełne czyszczenie po wylogowaniu z własnej woli albo po usunięciu konta: token sesji oraz wszystko, co aplikacja
+ * Pełne czyszczenie po wylogowaniu z własnej woli albo po usunięciu konta: token sesji (z pamięci) i znacznik sesji oraz wszystko, co aplikacja
  * zapisała w przeglądarce (szkic i ustawienia egzaminu próbnego, w szkicu jest adres e-mail właściciela), poza kopią wyglądu.
  * Dzięki temu na cudzym komputerze nie zostają ślady po poprzednim użytkowniku.
  *
- * Przy wygaśnięciu sesji (401) kasujemy tylko token, patrz {@link clearStoredToken}: po ponownym zalogowaniu
+ * Przy wygaśnięciu sesji (401) kasujemy tylko token i znacznik sesji, patrz {@link clearStoredToken}: po ponownym zalogowaniu
  * na to samo konto użytkownik nie traci rozpoczętego egzaminu.
  */
 export function clearSession(): void {

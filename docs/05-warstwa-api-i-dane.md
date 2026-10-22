@@ -14,7 +14,8 @@ Wszystkie wywołania idą przez jeden wspólny obiekt `api` (biblioteka axios):
 | Ustawienie | Wartość |
 |------------|---------|
 | Adres serwera (`baseURL`) | Zmienna `VITE_API_BASE_URL` z plików `.env.development` / `.env.production` (patrz [08](08-konfiguracja-i-uruchomienie.md)) |
-| Nagłówek `Authorization` | Dokładany do **każdego** żądania, jeśli w `localStorage` jest token dostępu: `Bearer <token>` |
+| Nagłówek `Authorization` | Dokładany do **każdego** żądania, jeśli w pamięci jest token dostępu: `Bearer <token>` |
+| Ciasteczka (`withCredentials`) | Włączone, żeby przeglądarka wysyłała ciasteczko sesji `gradus_refresh` do `/api/auth/...` (CORS po stronie serwera wpuszcza dokładnie adres frontendu) |
 | Czas oczekiwania, ponawianie | Brak własnych ustawień. Ponawianie robi tylko React Query (raz) |
 | Obsługa odpowiedzi `401` | Najpierw **odświeżenie sesji** tokenem odświeżającym i ponowienie żądania; dopiero gdy się nie uda, wylogowanie i przejście na `/login`. Szczegóły i wyjątki: [03](03-logowanie-i-sesja.md) |
 
@@ -62,12 +63,12 @@ Kolumna „Funkcja” podaje nazwę w kodzie, żeby można ją było znaleźć w
 |-----------|----------------|---------------|
 | `POST /api/auth/register` | `pages/RegisterPage.tsx` | Formularz rejestracji (mail prywatny, mail uczelniany, hasło, zgoda na regulamin) |
 | `GET /api/auth/verify` | `pages/VerifyPage.tsx` | Link aktywacyjny z maila (`/verify?token=`); jedno wywołanie na wejście dzięki `useRef` |
-| `POST /api/auth/login` | `pages/LoginPage.tsx` | Logowanie; odpowiedź zawiera `accessToken` i `refreshToken`, oba zapisywane w `localStorage` |
+| `POST /api/auth/login` | `pages/LoginPage.tsx` | Logowanie; odpowiedź zawiera tylko `accessToken` (w pamięci karty); token odświeżający serwer ustawia w ciasteczku `HttpOnly` |
 | `POST /api/auth/resend-verification` | `features/auth/ResendVerification.tsx` | „Wyślij link ponownie” (na ekranach logowania i weryfikacji) |
 | `POST /api/auth/forgot-password` | `pages/ForgotPasswordPage.tsx` | Prośba o link do zmiany hasła |
 | `POST /api/auth/reset-password` | `pages/ResetPasswordPage.tsx` | Ustawienie nowego hasła tokenem z maila |
-| `POST /api/auth/refresh` | `refreshSession` (`api/refreshSession.ts`) | Po `401` na zwykłym żądaniu: wymiana tokenu odświeżającego na nową parę. Wywołuje go interceptor, nie ekran |
-| `POST /api/auth/logout` | `postKeepalive` (`api/keepalive.ts`), wołane z `AuthContext` | „Wyloguj się”: unieważnia sesję na serwerze; wysyłane przez `fetch` z `keepalive`, bez nagłówka `Authorization` (token odświeżający idzie w treści) |
+| `POST /api/auth/refresh` | `refreshSession` (`api/refreshSession.ts`) | Po `401` na zwykłym żądaniu: serwer wymienia ciasteczko sesji na nowe i zwraca nowy `accessToken` (bez treści żądania). Wywołuje go interceptor albo `AuthProvider` przy starcie, nie ekran |
+| `POST /api/auth/logout` | `postKeepalive` (`api/keepalive.ts`), wołane z `AuthContext` | „Wyloguj się”: unieważnia sesję na serwerze; wysyłane przez `fetch` z `keepalive`, z `credentials: "include"`, bez nagłówka `Authorization` (sesję wskazuje ciasteczko) |
 
 ### Konto zalogowanego
 

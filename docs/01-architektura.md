@@ -101,7 +101,7 @@ flowchart TD
     B --> C["App.tsx"]
     C --> D["AppProviders (app/providers.tsx)"]
     D --> E["QueryClientProvider<br/>pamięć podręczna danych: ważne 60 s, 1 ponowienie"]
-    E --> F["AuthProvider<br/>token z localStorage"]
+    E --> F["AuthProvider<br/>token w pamięci + odtworzenie z ciasteczka"]
     F --> G["Router (app/router.tsx)<br/>BrowserRouter + wszystkie trasy"]
     G --> H["Ekran dla bieżącego adresu"]
 ```
@@ -112,7 +112,7 @@ flowchart TD
 3. `App.tsx` składa dwóch dostawców i router.
 4. `AppProviders` ustawia pamięć podręczną danych (React Query): dane są „świeże” 60 sekund, a nieudane zapytanie jest
    ponawiane raz. Poszczególne zapytania mogą to zmieniać (patrz [05](05-warstwa-api-i-dane.md)).
-5. `AuthProvider` odczytuje token dostępu z `localStorage` (klucz `accessToken`; obok leży `refreshToken`) i udostępnia go całej aplikacji
+5. `AuthProvider` trzyma token dostępu w pamięci karty, a po przeładowaniu odtwarza go z ciasteczka sesji `HttpOnly` (gdy w `localStorage` jest znacznik `gradus.session.v1`), i udostępnia go całej aplikacji
    (patrz [03](03-logowanie-i-sesja.md)).
 6. `Router` wybiera ekran według adresu (patrz [02](02-routing-i-strony.md)).
 

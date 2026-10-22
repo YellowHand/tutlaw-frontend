@@ -20,7 +20,9 @@ import { Wrap } from "../features/landing/ui";
  * "Zaloguj się" dostaje wszędzie "Przejdź do aplikacji".
  */
 export function LandingPage() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated: loggedIn, isInitializing } = useAuth();
+  // W trakcie odzyskiwania sesji (zalogowany po odświeżeniu strony) od razu pokazujemy wersję dla zalogowanych, bez mignięcia przycisku „Załóż konto”.
+  const isAuthenticated = loggedIn || isInitializing;
   const [searchParams] = useSearchParams();
   const accountDeleted = searchParams.get(ACCOUNT_DELETED_PARAM) === ACCOUNT_DELETED_VALUE;
 

@@ -9,30 +9,38 @@ w repozytorium backendu i w podglądzie `dokumentacja.html`.
 
 ## Sesja w skrócie
 
-- Po zalogowaniu serwer zwraca **parę tokenów**: krótki **token dostępu** JWT (`accessToken`, ważny 30 minut) i
-  **token odświeżający** (`refreshToken`, ważny 30 dni, jednorazowy). Frontend zapisuje oba w `localStorage` (klucze
-  `accessToken` i `refreshToken`) i dokleja do każdego żądania nagłówek `Authorization: Bearer <accessToken>`.
-- „Zalogowany” znaczy tu: w pamięci przeglądarki jest token. Frontend **nie sprawdza**, czy token jest ważny; robi to
-  serwer przy każdym żądaniu. Gdy token dostępu wygaśnie (`401`), przeglądarka **po cichu wymienia** token odświeżający
-  na nową parę i ponawia żądanie, więc aktywny użytkownik nie musi się logować co 30 minut. Wylogować go może dopiero
-  wygaśnięcie tokenu odświeżającego (30 dni), zmiana hasła, wylogowanie albo wykrycie kradzieży tokenu po stronie serwera.
-- Wylogowanie z własnej woli unieważnia sesję na serwerze (`POST /api/auth/logout`), kasuje tokeny i wszystko, co
-  aplikacja zapisała w przeglądarce. Wygaśnięcie sesji kasuje tylko tokeny (powód poniżej).
+- Sesja ma dwa tokeny, ale **żaden nie leży w `localStorage`**. **Token dostępu** (JWT, `accessToken` w odpowiedzi
+  logowania, ważny 30 minut) żyje wyłącznie w pamięci karty (zmienna w `tokenStorage.ts`) i jest doklejany do żądań jako
+  `Authorization: Bearer <accessToken>`. **Token odświeżający** (ważny 30 dni, jednorazowy) przeglądarka dostaje od
+  serwera w ciasteczku `gradus_refresh` (`HttpOnly; Secure; SameSite=Strict; Path=/api/auth`). Skrypt na stronie go nie
+  widzi, a przeglądarka wysyła go sama, tylko do `/api/auth/...`.
+- „Zalogowany” znaczy tu: w pamięci karty jest token dostępu. Po przeładowaniu strony pamięć jest pusta, więc
+  `AuthProvider` sprawdza **znacznik sesji** `gradus.session.v1` w `localStorage` (sama wartość `1`, nic tajnego) i jeśli
+  jest, wywołuje `POST /api/auth/refresh`: serwer po ciasteczku wydaje nowy token dostępu. Bez znacznika odwiedzający
+  nie robi zbędnych wywołań. Do czasu odpowiedzi trasy chronione pokazują ekran ładowania (`isInitializing`).
+- Frontend **nie sprawdza**, czy token jest ważny; robi to serwer przy każdym żądaniu. Gdy token dostępu wygaśnie
+  (`401`), przeglądarka **po cichu odświeża sesję** (ciasteczkiem) i ponawia żądanie, więc aktywny użytkownik nie musi
+  się logować co 30 minut. Wylogować go może dopiero wygaśnięcie sesji (30 dni), zmiana hasła, wylogowanie albo wykrycie
+  kradzieży tokenu po stronie serwera.
+- Wylogowanie z własnej woli (`POST /api/auth/logout`) unieważnia sesję na serwerze, a serwer kasuje ciasteczko; frontend
+  kasuje token z pamięci, znacznik i wszystko, co aplikacja zapisała w przeglądarce. Wygaśnięcie sesji kasuje tylko token
+  i znacznik (powód poniżej). Wylogowanie lub zalogowanie w jednej karcie obejmuje pozostałe: zmiana znacznika w
+  `localStorage` wywołuje zdarzenie `storage` w innych kartach.
 
 ## Gdzie co jest w kodzie
 
 | Plik | Rola |
 |------|------|
-| `auth/AuthContext.tsx` | `AuthProvider`: trzyma token dostępu w stanie Reacta, startuje od wartości z `localStorage`. Daje `login(accessToken, refreshToken)` i `logout()` (to drugie wysyła też wylogowanie na serwer) |
+| `auth/AuthContext.tsx` | `AuthProvider`: czyta token dostępu z pamięci (`useSyncExternalStore`), a po przeładowaniu odtwarza go z ciasteczka (jedno ponowienie po 1,5 s, gdy serwer chwilowo nie odpowiada), słucha zdarzenia `storage` z innych kart. Daje `login(accessToken)` i `logout()` (to drugie wysyła też wylogowanie na serwer) |
 | `auth/context.ts` | Sam kontekst i jego typ (osobny plik, żeby nie mieszać go z komponentem) |
-| `auth/useAuth.ts` | Hook `useAuth()` → `{ token, isAuthenticated, login, logout }`; poza `AuthProvider` rzuca błąd |
-| `features/auth/tokenStorage.ts` | Odczyt, zapis (`storeTokens`) i kasowanie obu tokenów z `localStorage` (z obsługą błędów pamięci), używane przez klienta HTTP |
+| `auth/useAuth.ts` | Hook `useAuth()` → `{ token, isAuthenticated, isInitializing, login, logout }`; poza `AuthProvider` rzuca błąd |
+| `features/auth/tokenStorage.ts` | Token dostępu w pamięci (`getAccessToken`, `setAccessToken`, subskrypcja), znacznik sesji `gradus.session.v1` w `localStorage` (z obsługą błędów pamięci) i `purgeLegacyTokens()`, które przy starcie usuwa stare klucze `accessToken` i `refreshToken` |
 | `features/auth/session.ts` | `clearSession()`: pełne czyszczenie po wylogowaniu lub usunięciu konta |
 | `features/auth/role.ts` | `roleFromToken()` i `useIsAdmin()`: rola z tokenu (tylko do pokazywania przycisków) |
 | `api/axiosInstance.ts` | Klient HTTP: dokleja token, po 401 odświeża sesję i ponawia żądanie, a gdy się nie da, wylogowuje |
-| `api/refreshSession.ts` | Odświeżanie sesji: jedno wspólne dla wszystkich żądań w karcie i blokada Web Locks między kartami |
+| `api/refreshSession.ts` | Odświeżanie sesji ciasteczkiem (`withCredentials`): jedno wspólne dla wszystkich żądań w karcie i blokada Web Locks między kartami |
 | `api/keepalive.ts` | `postKeepalive`: żądanie, które dochodzi do serwera mimo zamykania karty (wylogowanie, ostatnie sekundy czasu nauki) |
-| `components/ProtectedRoute.tsx` | Wpuszcza na `/app/...` tylko z tokenem |
+| `components/ProtectedRoute.tsx` | Wpuszcza na `/app/...` tylko z tokenem; gdy trwa odtwarzanie sesji po przeładowaniu, czeka z ekranem ładowania |
 | `components/layout/LogoutButton.tsx` | Przycisk „Wyloguj się”: ikona w panelu bocznym (odmiana `icon`), napis na ekranie Konto na telefonie (odmiana `text`) |
 
 ## Klient HTTP: token i błąd 401
@@ -40,7 +48,7 @@ w repozytorium backendu i w podglądzie `dokumentacja.html`.
 Wszystkie wywołania serwera idą przez jeden obiekt `api` (`api/axiosInstance.ts`). Jego adres bazowy to
 `VITE_API_BASE_URL` (patrz [08](08-konfiguracja-i-uruchomienie.md)).
 
-**Przed każdym żądaniem** (interceptor żądań): jeśli w `localStorage` jest token dostępu, dopisuje `Authorization: Bearer ...`.
+**Przed każdym żądaniem** (interceptor żądań): jeśli w pamięci jest token dostępu, dopisuje `Authorization: Bearer ...`.
 
 **Po każdej odpowiedzi** (interceptor odpowiedzi) reaguje na błąd tylko w jednym przypadku: **status 401 na adres
 spoza `/api/auth/`**. Wtedy:
@@ -50,11 +58,11 @@ flowchart TD
     E["Odpowiedź 401"] --> A{"Adres zaczyna się od /api/auth/ ?"}
     A -- tak --> F["Nic nie robi.<br/>Formularz pokaże własny komunikat<br/>(np. złe hasło)"]
     A -- nie --> R["Odświeżenie sesji<br/>POST /api/auth/refresh<br/>(jedno wspólne dla wszystkich żądań)"]
-    R -- "udane" --> OK["Zapisuje nową parę tokenów<br/>i ponawia żądanie (raz)"]
+    R -- "udane" --> OK["Zapisuje nowy token dostępu<br/>(nowe ciasteczko ustawia serwer)<br/>i ponawia żądanie (raz)"]
     R -- "serwer niedostępny lub błąd 5xx" --> NE["Nic nie robi.<br/>Sesja może być w porządku,<br/>żądanie kończy się błędem"]
     R -- "odrzucone (401)" --> B{"W pamięci jest już inny token<br/>niż ten, z którym poszło żądanie?"}
     B -- tak --> G["Ponawia żądanie z nowym tokenem.<br/>Nowa sesja zostaje"]
-    B -- nie --> C["Kasuje oba tokeny"]
+    B -- nie --> C["Kasuje token i znacznik sesji"]
     C --> D{"Użytkownik jest na stronie publicznej?"}
     D -- tak --> H["Zostaje, gdzie jest"]
     D -- nie --> I["Przeładowanie na /login"]
@@ -65,18 +73,19 @@ Dlaczego tak:
 - **Odświeżanie jest jednokrotne.** Serwer przy każdej wymianie unieważnia stary token odświeżający, a użycie zużytego
   uznaje za kradzież i kończy całą sesję. Dlatego gdy kilka żądań naraz dostanie 401, wszystkie czekają na **jedno**
   odświeżenie (jedna obietnica w pamięci karty). Między kartami przeglądarki robi to samo blokada **Web Locks**: karta,
-  która wejdzie druga, widzi już nowe tokeny w `localStorage` i ich używa, zamiast zużywać token drugi raz. Serwer
-  dodatkowo przepuszcza ponowne użycie w ciągu 10 sekund od wymiany.
+  która wejdzie druga, czeka na zakończenie odświeżenia w pierwszej karcie i dostaje to samo, nowe ciasteczko (przeglądarka
+  współdzieli je między kartami), zamiast zużywać stary token drugi raz. Serwer dodatkowo przepuszcza ponowne użycie w
+  ciągu 10 sekund od wymiany.
 - **Błędy 403 nie wylogowują.** 403 znaczy „nie masz uprawnień do tej czynności” (np. zwykły użytkownik próbuje ukryć
   kartę), a sesja jest w porządku.
 - **Adresy `/api/auth/...`** (logowanie, rejestracja, reset hasła, samo odświeżanie) zwracają 401 przy złych danych albo
   nieważnym tokenie. Takie błędy pokazuje sam formularz albo obsługuje odświeżanie; nie uruchamiają kolejnego odświeżania.
-- **Brak sieci to nie wylogowanie.** Gdy odświeżenie nie dojdzie do serwera albo ten odpowie błędem 5xx, tokenów nie
+- **Brak sieci to nie wylogowanie.** Gdy odświeżenie nie dojdzie do serwera albo ten odpowie błędem 5xx, sesji nie
   kasujemy: użytkownik zobaczy błąd, ale po powrocie połączenia nadal jest zalogowany.
-- **Stary token.** Zmiana hasła daje nową parę tokenów i unieważnia stare. Żądanie wysłane tuż przed zmianą może wrócić z
+- **Stary token.** Zmiana hasła daje nowy token dostępu i nowe ciasteczko, a stare sesje unieważnia. Żądanie wysłane tuż przed zmianą może wrócić z
   401, ale nie może wylogować już nowej sesji, dlatego interceptor porównuje token wysłany z tym, który jest teraz w
   pamięci.
-- **Tylko tokeny.** Przy wygaśnięciu sesji nie czyścimy reszty danych aplikacji: użytkownik, który zaloguje się ponownie na
+- **Tylko sesja.** Przy wygaśnięciu sesji nie czyścimy reszty danych aplikacji: użytkownik, który zaloguje się ponownie na
   to samo konto, nie traci rozpoczętego egzaminu próbnego (patrz [04](04-nauka-w-aplikacji.md)).
 - Przekierowanie robi `window.location.href`, czyli **pełne przeładowanie** strony. Dzięki temu znika też pamięć
   podręczna danych (React Query) poprzedniej sesji.
@@ -85,19 +94,21 @@ Dlaczego tak:
 
 ### Czy to dobra praktyka produkcyjna?
 
-Krótki token dostępu plus długi, **jednorazowy** token odświeżający z rotacją i wykrywaniem kradzieży to standardowy,
-zalecany wzorzec (backend trzyma w bazie tylko skrót tokenu odświeżającego, więc wyciek bazy nie daje sesji). Słabym
-punktem jest **miejsce przechowywania**: `localStorage` jest dostępne dla każdego skryptu na stronie, więc przy ataku XSS
-token da się wykraść. Docelowo token odświeżający powinien leżeć w ciasteczku `HttpOnly; Secure; SameSite`, niedostępnym
-dla skryptów; wymaga to zmian w CORS i wdrożenia (frontend i backend pod jedną domeną), więc zostało na etap wdrożenia
-(patrz [10](10-znane-ograniczenia.md)).
+Tak. Krótki token dostępu w pamięci plus długi, **jednorazowy** token odświeżający w ciasteczku
+`HttpOnly; Secure; SameSite=Strict` z rotacją i wykrywaniem kradzieży to standardowy, zalecany wzorzec (backend trzyma w
+bazie tylko skrót tokenu odświeżającego, więc wyciek bazy nie daje sesji). Skrypt wstrzyknięty do strony (XSS) nie może
+odczytać ciasteczka `HttpOnly`, a token dostępu żyje tylko w pamięci karty i 30 minut. Ciasteczko nie wymaga wspólnej
+domeny: frontend (`gradusiuris.pl`) i API (`api.gradusiuris.pl`) to ta sama witryna (*site*), więc `SameSite=Strict` działa,
+a CORS wpuszcza dokładnie jeden adres frontendu z `allowCredentials`. Zostaje ryzyko XSS w trakcie otwartej karty
+(skrypt może wywoływać API w imieniu użytkownika), ale nie może wynieść sesji na zewnątrz ani jej przedłużyć po
+zamknięciu karty (patrz [10](10-znane-ograniczenia.md)).
 
 ## Wylogowanie i czyszczenie danych
 
 | Funkcja | Co kasuje | Kiedy jest używana |
 |---------|-----------|--------------------|
-| `clearStoredToken()` | Tylko tokeny: `accessToken` i `refreshToken` | Wygasła sesja (odświeżenie odrzucone) |
-| `clearSession()` | Tokeny oraz **wszystkie klucze zaczynające się od `gradus.`** (szkic egzaminu, zapamiętane ustawienia egzaminu, ostatni własny test, wybór zwiniętego panelu), **poza kopią wyglądu** `gradus.theme.v1` (patrz niżej) | Przycisk „Wyloguj się” i usunięcie konta |
+| `clearStoredToken()` | Tylko token dostępu z pamięci i znacznik `gradus.session.v1` | Wygasła sesja (odświeżenie odrzucone) |
+| `clearSession()` | Token, znacznik oraz **wszystkie klucze zaczynające się od `gradus.`** (szkic egzaminu, zapamiętane ustawienia egzaminu, ostatni własny test, wybór zwiniętego panelu), **poza kopią wyglądu** `gradus.theme.v1` (patrz niżej) | Przycisk „Wyloguj się” i usunięcie konta |
 
 Przycisk „Wyloguj się” (`LogoutButton`; w panelu bocznym, a na telefonie na ekranie Konto) wywołuje `logout()` z kontekstu (`clearSession()` i token w stanie na `null`),
 a potem przenosi na stronę główną przez `window.location.href`, czyli również z pełnym przeładowaniem. Efekt: na
@@ -107,20 +118,20 @@ wspólnym komputerze nie zostają ślady po poprzednim użytkowniku (w szkicu eg
 
 | Gdzie | Klucz | Co | Kto zapisuje | Kiedy znika |
 |-------|-------|----|--------------|-------------|
-| `localStorage` | `accessToken` | Krótki token dostępu (JWT, 30 minut) | `AuthProvider.login`, odświeżanie sesji (`api/refreshSession.ts`) | Wylogowanie lub odrzucone odświeżenie |
-| `localStorage` | `refreshToken` | Token odświeżający (30 dni, jednorazowy: po każdym użyciu serwer wydaje nowy) | `AuthProvider.login`, odświeżanie sesji | Wylogowanie lub odrzucone odświeżenie |
+| `localStorage` | `gradus.session.v1` | Znacznik „ta przeglądarka ma sesję” (wartość `1`, nic tajnego): po przeładowaniu mówi, czy próbować odtworzyć sesję z ciasteczka, a zmiana wywołuje zdarzenie `storage` w innych kartach | `AuthProvider.login`, odświeżanie sesji (`api/refreshSession.ts`) | Wylogowanie lub odrzucone odświeżenie |
+| ciasteczko | `gradus_refresh` | Token odświeżający (30 dni, jednorazowy: po każdym użyciu serwer wydaje nowy). `HttpOnly; Secure; SameSite=Strict; Path=/api/auth`: skrypty go nie widzą | Ustawia serwer (logowanie, odświeżenie, zmiana hasła) | Wylogowanie, usunięcie konta, wygaśnięcie po 30 dniach |
 | `localStorage` | `gradus.exam.draft.v2` | Niedokończony egzamin próbny: pytania (z numerami `questionId` z bazy), odpowiedzi, termin końca, próg w punktach z serwera, adres konta właściciela, wybrane źródło i numer egzaminu MS (`sheetId`) (wersja zapisu 3). Szkice z poprzedniej wersji klucza (`v1`) mają numery pytań sprzed przebudowy bazy, więc nie są wczytywane | `features/exam/examStorage.ts` | Po wysłaniu egzaminu, po porzuceniu, po wylogowaniu |
 | `localStorage` | `gradus.exam.settings.v1` | Ostatnio użyte ustawienia egzaminu: źródło pytań (`ALL`, `MINISTRY`, `AUTHORED` albo `SHEETS` dla egzaminów MS), wybrany egzamin MS (aplikacja i rok) i limit czasu (zakres, liczbę pytań i próg ustala format egzaminu, więc ich nie zapamiętujemy; zapis ze starszych wersji ma je jeszcze w sobie i są pomijane) | `features/exam/examStorage.ts` | Po wylogowaniu |
 | `localStorage` | `gradus.customTest.v4` | Ostatnio ułożony test „Nauka” w kreatorze: źródło pytań (`ALL`, `MINISTRY`, `AUTHORED`), „cała pula” albo numery aktów zaznaczonych w całości i rozdziałów zaznaczonych osobno (Student też wybiera akty i rozdziały, pod przedmiotami), rodzaj pytań (bez „Zaległych”, które mają własną odmianę kreatora) i liczba pytań (10, 20, 50, 100 albo 150 lub „wszystkie”). Starsze wersje klucza (`v1`–`v3`) są pomijane, bo nie znały źródła ani rozdziałów | `features/customTest/customTestStorage.ts` | Po wylogowaniu |
 | `localStorage` | `gradus.nav.collapsed.v1` | Czy panel boczny jest zwinięty (`1`) czy rozwinięty (`0`) | `components/layout/useNavCollapsed.ts` | Po wylogowaniu |
 | `localStorage` | `gradus.theme.v1` | Kopia wyglądu strony z konta (`DARK` albo `LIGHT`). Źródłem prawdy jest serwer (`PUT /api/me/theme`); kopia służy tylko temu, żeby od pierwszej klatki, zanim serwer odpowie, strona miała dobry kolor (skrypt w `index.html` czyta ten sam klucz, tylko na ścieżkach `/app`). Gdy ustawienia z serwera dotrą, wygrywa konto i kopia się odświeża | `features/settings/ThemeSync.tsx`, `lib/theme.ts` | **Przeżywa wylogowanie** (to nie jest dana osobowa; wyjątek wpisany w `features/auth/session.ts`), znika dopiero z ręcznym wyczyszczeniem danych przeglądarki |
 
-Aplikacja nie używa `sessionStorage`, plików cookie ani IndexedDB. Każdy odczyt i zapis jest w `try/catch`: gdy
+Aplikacja nie używa `sessionStorage` ani IndexedDB, a jedyne ciasteczko to `gradus_refresh`, które ustawia serwer.
+Przy starcie `purgeLegacyTokens()` usuwa stare klucze `accessToken` i `refreshToken` z wcześniejszych wersji. Każdy odczyt i zapis jest w `try/catch`: gdy
 pamięć jest niedostępna (np. tryb prywatny), aplikacja działa dalej, tylko bez zapamiętywania.
 
-Tokeny leżą w `localStorage` (a nie w ciasteczku `HttpOnly`), co jest świadomą decyzją projektu na ten etap, opisaną w
-[Znanych ograniczeniach](10-znane-ograniczenia.md). Polityka prywatności w aplikacji wspomina o tokenach, a nie wymienia
-szkicu egzaminu ani zapamiętanych ustawień (patrz tamże).
+Polityka prywatności w aplikacji wspomina o ciasteczku sesji i znaczniku w `localStorage`, a nie wymienia szkicu
+egzaminu ani zapamiętanych ustawień (patrz [Znane ograniczenia](10-znane-ograniczenia.md)).
 
 ## Rola administratora
 
@@ -170,7 +181,7 @@ sequenceDiagram
 
 | Odpowiedź | Co robi frontend |
 |-----------|------------------|
-| 200 | Zapisuje `accessToken` i `refreshToken` (`login(...)`) i przechodzi na adres, z którego użytkownik przyszedł, a bez niego na Pulpit |
+| 200 | Zapisuje `accessToken` w pamięci (`login(res.data.accessToken)`; ciasteczko sesji ustawia serwer) i przechodzi na adres, z którego użytkownik przyszedł, a bez niego na Pulpit |
 | 409 | Hasło dobre, ale konto jeszcze nieaktywne: pokazuje komunikat serwera i formularz „wyślij link ponownie” |
 | inne | Pokazuje komunikat serwera (`message`) albo „Logowanie nie powiodło się”; brak połączenia ma osobny komunikat |
 
@@ -191,8 +202,8 @@ nie ma, tekst zastępczy podany przez ekran. Jeśli serwer w ogóle nie odpowied
 `features/account/ChangePasswordCard.tsx` → `PUT /api/users/me/password` z `currentPassword` i `newPassword`.
 
 - Frontend sprawdza, czy oba nowe hasła są takie same i czy nowe różni się od obecnego.
-- Serwer unieważnia wszystkie dotychczasowe tokeny konta i **zwraca nową parę tokenów**; frontend od razu ją zapisuje
-  (`login(accessToken, refreshToken)`), więc ta przeglądarka zostaje zalogowana, a pozostałe urządzenia zostają wylogowane.
+- Serwer unieważnia wszystkie dotychczasowe tokeny konta i **zwraca nowy token dostępu i nowe ciasteczko**; frontend od razu zapisuje token
+  (`login(accessToken)`), więc ta przeglądarka zostaje zalogowana, a pozostałe urządzenia zostają wylogowane.
 
 ## Pobranie danych i usunięcie konta (RODO)
 

@@ -1,6 +1,6 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { ROUTES } from "../config/routes";
-import { clearStoredToken, getStoredToken } from "../features/auth/tokenStorage";
+import { clearStoredToken, getAccessToken } from "../features/auth/tokenStorage";
 import { refreshSession } from "./refreshSession";
 
 /**
@@ -13,6 +13,9 @@ export const REQUEST_TIMEOUT_MS = 30_000;
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
   timeout: REQUEST_TIMEOUT_MS,
+  // Dołączamy ciasteczka: w jednym z nich serwer trzyma token odświeżający (HttpOnly, widoczny tylko dla przeglądarki) i bez tej
+  // flagi przeglądarka nie zapisałaby go po zalogowaniu ani nie wysłałaby przy odświeżaniu sesji.
+  withCredentials: true,
 });
 
 /** Strony dostępne bez logowania: tu nie przekierowujemy na /login, bo użytkownik i tak już tam jest. */
@@ -29,7 +32,7 @@ const PUBLIC_PATHS: string[] = [
 ];
 
 api.interceptors.request.use((config) => {
-  const token = getStoredToken();
+  const token = getAccessToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -75,7 +78,7 @@ api.interceptors.response.use(
 
     if (outcome === "refreshed") {
       config._afterRefresh = true;
-      config.headers.Authorization = `Bearer ${getStoredToken() ?? ""}`;
+      config.headers.Authorization = `Bearer ${getAccessToken() ?? ""}`;
       return api.request(config);
     }
 
@@ -84,7 +87,7 @@ api.interceptors.response.use(
 
     // Serwer odrzucił token odświeżający. Jeśli w międzyczasie ta przeglądarka dostała nowe tokeny (np. zmiana hasła
     // w tej karcie), to 401 dotyczy starej sesji i nowej nie wylogowujemy.
-    const currentToken = getStoredToken();
+    const currentToken = getAccessToken();
     if (currentToken !== null && currentToken !== sentToken) {
       config._afterRefresh = true;
       config.headers.Authorization = `Bearer ${currentToken}`;

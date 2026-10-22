@@ -1,8 +1,8 @@
 import { api } from "../../api/axiosInstance";
 
-export interface TokenPair {
+/** Odpowiedź serwera po zalogowaniu i zmianie hasła. Token odświeżający przychodzi w ciasteczku HttpOnly, nie w treści. */
+export interface AccessTokenResponse {
   accessToken: string;
-  refreshToken: string;
 }
 
 export interface MeResponse {
@@ -23,11 +23,11 @@ export async function fetchAccountExport(): Promise<string> {
 }
 
 /**
- * Zmienia hasło zalogowanego użytkownika (bez zmiany adresu e-mail). Odpowiedź zawiera nową parę tokenów:
- * dotychczasowe sesje przestają działać, więc aplikacja podmienia tokeny w tej przeglądarce.
+ * Zmienia hasło zalogowanego użytkownika (bez zmiany adresu e-mail). Odpowiedź zawiera nowy token dostępu
+ * (nowe ciasteczko sesji przeglądarka zapisuje sama): dotychczasowe sesje przestają działać, więc aplikacja podmienia token.
  */
-export async function changePassword(currentPassword: string, newPassword: string): Promise<TokenPair> {
-  const { data } = await api.put<TokenPair>("/api/users/me/password", { currentPassword, newPassword });
+export async function changePassword(currentPassword: string, newPassword: string): Promise<AccessTokenResponse> {
+  const { data } = await api.put<AccessTokenResponse>("/api/users/me/password", { currentPassword, newPassword });
   return data;
 }
 

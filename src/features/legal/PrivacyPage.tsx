@@ -18,7 +18,7 @@ export function PrivacyPage() {
             "hasło, które zapisujemy wyłącznie jako zaszyfrowany skrót (nie znamy Twojego hasła),",
             "dane o nauce: odpowiedzi w testach, oceny powtórek, terminy kolejnych powtórek, wybraną ścieżkę, akty prawne w puli i statystyki,",
             "datę akceptacji regulaminu,",
-            "dane techniczne: adres IP używany krótkotrwale do ograniczania liczby prób logowania oraz w dziennikach błędów serwera,",
+            "dane techniczne: adres IP używany krótkotrwale do ograniczania liczby prób logowania oraz w dziennikach błędów serwera, oraz identyfikator sesji logowania (w ciasteczku, w bazie tylko jako skrót),",
             "wynik sprawdzenia, czy formularz wypełnia człowiek (rejestracja, logowanie, reset hasła): w tym celu Cloudflare Turnstile otrzymuje adres IP i podstawowe informacje o przeglądarce; cały ruch do serwera aplikacji przechodzi też przez sieć Cloudflare, która odfiltrowuje ataki,",
             "dane statystyczne, wyłącznie za Twoją zgodą (Google Analytics): losowy identyfikator w pliku cookie, odwiedzane podstrony (bez parametrów w adresie), przybliżona lokalizacja (kraj, miasto), typ urządzenia i przeglądarki, czas wizyty,",
             "informacje o błędach aplikacji: rodzaj błędu, ślad techniczny, adres podstrony (bez parametrów), typ przeglądarki i system, czas oraz numer Twojego konta (liczba, np. „5”). Nie zawierają treści Twoich odpowiedzi, hasła ani adresu e-mail.",
@@ -77,8 +77,9 @@ export function PrivacyPage() {
 
       <LegalSection heading="7. Pliki cookie i pamięć przeglądarki">
         <p>
-          Nie używamy plików cookie reklamowych. W pamięci przeglądarki (localStorage) zapisujemy to, co niezbędne do
-          działania serwisu: po zalogowaniu token sesji (znika po wylogowaniu), wybrany wygląd i Twoją decyzję o zgodzie na
+          Nie używamy plików cookie reklamowych. Do działania serwisu zapisujemy tylko to, co niezbędne: po zalogowaniu
+          bezpieczne ciasteczko sesji (niedostępne dla skryptów na stronie, ważne do 30 dni, usuwane po wylogowaniu) oraz w
+          pamięci przeglądarki (localStorage) znacznik, że jesteś zalogowany, wybrany wygląd i Twoją decyzję o zgodzie na
           statystyki. Do tego nie potrzebujemy zgody.
         </p>
         <p>
