@@ -11,6 +11,7 @@ export const LEGAL = {
   contactEmail: "[uzupełnij: adres e-mail do kontaktu]",
   hostingProvider: "Amazon Web Services EMEA SARL (region Europa, Frankfurt)",
   mailProvider: "Amazon Simple Email Service (Amazon SES, region Europa, Frankfurt)",
+  errorMonitoringProvider: "Sentry (Functional Software, Inc.), serwery w Unii Europejskiej (Niemcy)",
   backupRetention: "[uzupełnij: np. 30 dni]",
   logsRetention: "[uzupełnij: np. 30 dni]",
   termsUpdatedAt: "12 października 2026",

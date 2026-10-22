@@ -18,7 +18,8 @@ export function PrivacyPage() {
             "hasło, które zapisujemy wyłącznie jako zaszyfrowany skrót (nie znamy Twojego hasła),",
             "dane o nauce: odpowiedzi w testach, oceny powtórek, terminy kolejnych powtórek, wybraną ścieżkę, akty prawne w puli i statystyki,",
             "datę akceptacji regulaminu,",
-            "dane techniczne: adres IP używany krótkotrwale do ograniczania liczby prób logowania oraz w dziennikach błędów serwera.",
+            "dane techniczne: adres IP używany krótkotrwale do ograniczania liczby prób logowania oraz w dziennikach błędów serwera,",
+            "informacje o błędach aplikacji: rodzaj błędu, ślad techniczny, adres podstrony (bez parametrów), typ przeglądarki i system, czas oraz numer Twojego konta (liczba, np. „5”). Nie zawierają treści Twoich odpowiedzi, hasła ani adresu e-mail.",
           ]}
         />
       </LegalSection>
@@ -28,6 +29,7 @@ export function PrivacyPage() {
           items={[
             "świadczenie usługi: konto, nauka, planowanie powtórek, statystyki (art. 6 ust. 1 lit. b RODO),",
             "bezpieczeństwo serwisu i ochrona przed nadużyciami, np. zgadywaniem haseł (art. 6 ust. 1 lit. f RODO, czyli nasz uzasadniony interes),",
+            "wykrywanie i naprawianie błędów w serwisie (art. 6 ust. 1 lit. f RODO, czyli nasz uzasadniony interes),",
             "obowiązki wynikające z przepisów, jeśli takie wystąpią (art. 6 ust. 1 lit. c RODO).",
           ]}
         />
@@ -37,7 +39,8 @@ export function PrivacyPage() {
       <LegalSection heading="4. Komu możemy przekazać dane">
         <p>
           Dane przetwarzają wyłącznie podmioty, które pomagają nam prowadzić serwis, na podstawie umów powierzenia:
-          dostawca hostingu ({LEGAL.hostingProvider}) i dostawca poczty wychodzącej ({LEGAL.mailProvider}). Dane
+          dostawca hostingu ({LEGAL.hostingProvider}), dostawca poczty wychodzącej ({LEGAL.mailProvider}) i dostawca narzędzia do
+          wykrywania błędów aplikacji ({LEGAL.errorMonitoringProvider}). Dane
           przekazujemy poza Europejski Obszar Gospodarczy tylko wtedy, gdy dostawca zapewnia odpowiednie zabezpieczenia
           prawne, o czym informujemy w tym miejscu.
         </p>

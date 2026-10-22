@@ -29,8 +29,15 @@ if [ "${SKIP_CHECKS:-0}" != "1" ]; then
   npm ci
   npx eslint .
 fi
+# Wersja wydania dla Sentry (ten sam znacznik trafia do kodu i do wysyłanych map źródeł).
+export VITE_SENTRY_RELEASE="${VITE_SENTRY_RELEASE:-$(git rev-parse --short HEAD 2>/dev/null || echo unknown)}"
 npm run build
 [ -f dist/index.html ] || { echo "Brak dist/index.html po buildzie" >&2; exit 1; }
+# Zabezpieczenie: mapy źródeł nie mogą trafić na publiczny S3 (wtyczka Sentry usuwa je po wysłaniu).
+if find dist -name '*.map' | grep -q .; then
+  echo "W dist/ są pliki .map. Nie wysyłam ich na S3 (byłyby publiczne). Sprawdź konfigurację Sentry w vite.config.ts." >&2
+  exit 1
+fi
 
 echo "== 3/5 Wysyłanie plików z haszem (assets/, cache na rok)"
 aws s3 sync dist/assets "s3://$S3_BUCKET/assets" \

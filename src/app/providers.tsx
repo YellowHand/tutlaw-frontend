@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "../auth/AuthContext";
+import { MonitoringUserSync } from "../auth/MonitoringUserSync";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -14,7 +15,10 @@ const queryClient = new QueryClient({
 export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>{children}</AuthProvider>
+      <AuthProvider>
+        <MonitoringUserSync />
+        {children}
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

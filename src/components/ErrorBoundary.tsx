@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { AlertTriangle } from "lucide-react";
+import { reportRenderError } from "../lib/monitoring";
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -27,6 +28,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
     console.error("Błąd ekranu", error, info.componentStack);
+    reportRenderError(error, info);
   }
 
   componentDidUpdate(prev: ErrorBoundaryProps): void {

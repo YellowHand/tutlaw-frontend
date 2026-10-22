@@ -7,6 +7,8 @@ export interface TokenPair {
 
 export interface MeResponse {
   email: string;
+  /** Numer konta (ten sam, co w dziennikach serwera). Starszy backend mógł go nie zwracać. */
+  id?: number | null;
 }
 
 export async function fetchMe(): Promise<MeResponse> {
