@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { CookieSettingsLink } from "../../components/CookieSettingsLink";
 import { LogoutButton } from "../../components/layout/LogoutButton";
 import { PageHeader } from "../../components/layout/PageHeader";
 import { Card } from "../../components/ui/Card";
@@ -58,7 +59,8 @@ export function AccountPage() {
           <Link to={ROUTES.terms} className="text-accent-ink underline">
             regulaminie
           </Link>
-          .
+          .{" "}
+          <CookieSettingsLink className="cursor-pointer text-accent-ink underline" />
         </p>
       </div>
     </div>

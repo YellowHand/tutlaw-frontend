@@ -19,6 +19,7 @@ export function PrivacyPage() {
             "dane o nauce: odpowiedzi w testach, oceny powtórek, terminy kolejnych powtórek, wybraną ścieżkę, akty prawne w puli i statystyki,",
             "datę akceptacji regulaminu,",
             "dane techniczne: adres IP używany krótkotrwale do ograniczania liczby prób logowania oraz w dziennikach błędów serwera,",
+            "dane statystyczne, wyłącznie za Twoją zgodą (Google Analytics): losowy identyfikator w pliku cookie, odwiedzane podstrony (bez parametrów w adresie), przybliżona lokalizacja (kraj, miasto), typ urządzenia i przeglądarki, czas wizyty,",
             "informacje o błędach aplikacji: rodzaj błędu, ślad techniczny, adres podstrony (bez parametrów), typ przeglądarki i system, czas oraz numer Twojego konta (liczba, np. „5”). Nie zawierają treści Twoich odpowiedzi, hasła ani adresu e-mail.",
           ]}
         />
@@ -29,6 +30,7 @@ export function PrivacyPage() {
           items={[
             "świadczenie usługi: konto, nauka, planowanie powtórek, statystyki (art. 6 ust. 1 lit. b RODO),",
             "bezpieczeństwo serwisu i ochrona przed nadużyciami, np. zgadywaniem haseł (art. 6 ust. 1 lit. f RODO, czyli nasz uzasadniony interes),",
+            "statystyki odwiedzin, żeby ulepszać serwis (art. 6 ust. 1 lit. a RODO oraz art. 173 Prawa telekomunikacyjnego, czyli Twoja zgoda; możesz ją wycofać w każdej chwili),",
             "wykrywanie i naprawianie błędów w serwisie (art. 6 ust. 1 lit. f RODO, czyli nasz uzasadniony interes),",
             "obowiązki wynikające z przepisów, jeśli takie wystąpią (art. 6 ust. 1 lit. c RODO).",
           ]}
@@ -40,7 +42,8 @@ export function PrivacyPage() {
         <p>
           Dane przetwarzają wyłącznie podmioty, które pomagają nam prowadzić serwis, na podstawie umów powierzenia:
           dostawca hostingu ({LEGAL.hostingProvider}), dostawca poczty wychodzącej ({LEGAL.mailProvider}) i dostawca narzędzia do
-          wykrywania błędów aplikacji ({LEGAL.errorMonitoringProvider}). Dane
+          wykrywania błędów aplikacji ({LEGAL.errorMonitoringProvider}) oraz, tylko jeśli wyrazisz zgodę na statystyki,
+          dostawca analityki ({LEGAL.analyticsProvider}). Dane
           przekazujemy poza Europejski Obszar Gospodarczy tylko wtedy, gdy dostawca zapewnia odpowiednie zabezpieczenia
           prawne, o czym informujemy w tym miejscu.
         </p>
@@ -61,6 +64,7 @@ export function PrivacyPage() {
             "sprostowania danych oraz ich usunięcia (usunięcia konta),",
             "ograniczenia przetwarzania i sprzeciwu wobec przetwarzania opartego na uzasadnionym interesie,",
             "przeniesienia danych,",
+            "wycofania zgody na statystyki w dowolnym momencie (link „Ustawienia cookies” w stopce i na ekranie Konto); wycofanie nie wpływa na zgodność z prawem wcześniejszego przetwarzania,",
             "wniesienia skargi do Prezesa Urzędu Ochrony Danych Osobowych (ul. Stawki 2, 00-193 Warszawa).",
           ]}
         />
@@ -72,8 +76,15 @@ export function PrivacyPage() {
 
       <LegalSection heading="7. Pliki cookie i pamięć przeglądarki">
         <p>
-          Nie używamy plików cookie reklamowych ani analitycznych. Po zalogowaniu zapisujemy w pamięci przeglądarki
-          (localStorage) token sesji. Jest on niezbędny do działania serwisu i znika po wylogowaniu.
+          Nie używamy plików cookie reklamowych. W pamięci przeglądarki (localStorage) zapisujemy to, co niezbędne do
+          działania serwisu: po zalogowaniu token sesji (znika po wylogowaniu), wybrany wygląd i Twoją decyzję o zgodzie na
+          statystyki. Do tego nie potrzebujemy zgody.
+        </p>
+        <p>
+          Za Twoją zgodą (przycisk „Akceptuję” na pasku u dołu strony) używamy Google Analytics, który zapisuje pliki cookie
+          z identyfikatorem (nazwy zaczynają się od „_ga”) i zlicza odwiedziny. Funkcje reklamowe Google są wyłączone. Dane
+          statystyczne przechowujemy {LEGAL.analyticsRetention}. Dopóki nie klikniesz „Akceptuję”, niczego nie zapisujemy i nic
+          nie wysyłamy do Google. Zgodę możesz wycofać w „Ustawieniach cookies”, a pliki cookie usuniemy.
         </p>
       </LegalSection>
 

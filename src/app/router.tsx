@@ -1,5 +1,7 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { AnalyticsController } from "../components/AnalyticsController";
+import { ConsentBanner } from "../components/ConsentBanner";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 import { RouteFallback } from "../components/RouteFallback";
@@ -53,6 +55,8 @@ const AdminReportsPage = lazy(() => import("../features/admin/AdminReportsPage")
 export function Router() {
   return (
     <BrowserRouter>
+      <AnalyticsController />
+      <ConsentBanner />
       <ErrorBoundary fullScreen>
         <Suspense fallback={<RouteFallback />}>
           <Routes>

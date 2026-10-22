@@ -1,3 +1,4 @@
+import { CONSENT_STORAGE_KEY } from "../../lib/consent";
 import { THEME_STORAGE_KEY } from "../../lib/theme";
 import { clearStoredToken } from "./tokenStorage";
 
@@ -7,8 +8,9 @@ const APP_KEY_PREFIX = "gradus.";
 /**
  * Klucze, które przeżywają wylogowanie. Kopia wyglądu (ciemny/jasny) nie jest daną osobową, a po ponownym zalogowaniu na
  * tym samym urządzeniu pozwala od pierwszej klatki mieć właściwy kolor. Wygląd z konta i tak ma pierwszeństwo.
+ * Decyzja o zgodzie na statystyki też zostaje: to ustawienie urządzenia, a po wylogowaniu baner nie ma pytać od nowa.
  */
-const KEPT_KEYS: readonly string[] = [THEME_STORAGE_KEY];
+const KEPT_KEYS: readonly string[] = [THEME_STORAGE_KEY, CONSENT_STORAGE_KEY];
 
 /**
  * Pełne czyszczenie po wylogowaniu z własnej woli albo po usunięciu konta: token sesji oraz wszystko, co aplikacja

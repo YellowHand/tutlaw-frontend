@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { CookieSettingsLink } from "../../components/CookieSettingsLink";
 import { Logo } from "../../components/layout/Logo";
 import { ROUTES } from "../../config/routes";
 
@@ -33,6 +34,7 @@ export function LegalPage({ title, updatedAt, children }: LegalPageProps) {
           <Link to={ROUTES.privacy} className="text-accent-ink underline">
             Polityka prywatności
           </Link>
+          <CookieSettingsLink className="cursor-pointer text-accent-ink underline" />
           <Link to={ROUTES.landing} className="text-fg-muted underline">
             Strona główna
           </Link>

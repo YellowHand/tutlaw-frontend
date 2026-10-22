@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { CookieSettingsLink } from "../../components/CookieSettingsLink";
 import { Logo } from "../../components/layout/Logo";
 import { ROUTES } from "../../config/routes";
 import { COPY } from "./copy";
@@ -21,6 +22,7 @@ export function LandingFooter({ isAuthenticated }: { isAuthenticated: boolean })
             <Link to={ROUTES.privacy} className={FOOT_LINK}>
               {COPY.footer.privacy}
             </Link>
+            <CookieSettingsLink className={`${FOOT_LINK} cursor-pointer`} />
             {!isAuthenticated && (
               <Link to={ROUTES.login} className={FOOT_LINK}>
                 {COPY.cta.login}
